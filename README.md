@@ -2,7 +2,7 @@
 
 An extensible java agent framework that instruments programs running on the JVM (modifying the bytecode at class loading time), with the purpose of capturing method invocation events (start, finish, errors ...) and notifying custom listeners.
 
-> This project is a candidate to be released as OSS in the future, so its scope should be kept as generic as possible and not without including any ShiftLeft core feature.
+> This project is a candidate to be released as OSS in the future, so its scope should be kept as generic as possible without including any ShiftLeft core feature.
 
 **Table of Contents**
 - [io.shiftleft:bctrace](#ioshiftleftctrace)
