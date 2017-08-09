@@ -103,7 +103,7 @@ This module could not be possible without:
 - Ignacio del Valle Alles (<https://github.com/idelvall/>)
 
 ## License
-Based on [brutusin:instrumentation](httpd://github.com/brutusin/instrumentation) by Ignacio del Valle Alles distributed under [Apache v2.0](http://www.apache.org/licenses/LICENSE-2.0) license.
+Based on [brutusin:instrumentation](https://github.com/brutusin/instrumentation) by Ignacio del Valle Alles distributed under [Apache v2.0](http://www.apache.org/licenses/LICENSE-2.0) license.
 
 ShiftLeft license to TBD (Hopefully OSS is a future)
 
