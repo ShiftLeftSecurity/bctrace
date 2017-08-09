@@ -1,0 +1,58 @@
+<?xml version="1.0"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>io.shiftleft</groupId>
+  <artifactId>bctrace</artifactId>
+  <version>0.0.0-SNAPSHOT</version>
+  <name>${project.groupId}:${project.artifactId}</name>
+  <description>Extensible java agent framework to instrument programs running on the JVM</description>
+  <developers>
+    <developer>
+      <id>idelvall</id>
+      <name>Ignacio del Valle Alles</name>
+      <email>idelvall@shiftleft.io</email>
+      <url>http://brutusin.org</url>
+      <organization>ShiftLeft</organization>
+      <roles>
+        <role>architect</role>
+        <role>developer</role>
+      </roles>
+    </developer>
+  </developers>
+  <url>https://github.com/ShiftLeftSecurity/bctrace</url>
+  <properties>
+    <maven.compiler.source>1.6</maven.compiler.source>
+    <maven.compiler.target>1.6</maven.compiler.target>
+  </properties>
+  <distributionManagement>
+    <repository>
+      <id>shiftleft-artifactory</id>
+      <name>shiftleft releases</name>
+      <url>https://shiftleft.jfrog.io/shiftleft/libs-release-local</url>
+    </repository>
+    <snapshotRepository>
+      <id>shiftleft-artifactory</id>
+      <name>shiftleft releases</name>
+      <url>https://shiftleft.jfrog.io/shiftleft/libs-snapshot-local</url>
+    </snapshotRepository>
+  </distributionManagement>
+  <dependencies>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.12</version>
+      <scope>test</scope>   
+    </dependency>
+    <dependency>
+      <groupId>org.brutusin</groupId>
+      <artifactId>commons</artifactId>
+      <version>1.0.0</version>
+      <scope>test</scope>   
+    </dependency>
+    <dependency>
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm-all</artifactId>
+      <version>5.2</version>
+    </dependency>
+  </dependencies>
+</project>
