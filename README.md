@@ -95,11 +95,6 @@ On hook initialization, the framework passes a unique instance of [`Instrumentat
 This module could not be possible without:
 * [org.ow2.asm:asm-all](http://asm.ow2.org/)
 
-## Main stack
-This module could not be possible without:
-* [org.ow2.asm:asm-all](http://asm.ow2.org/)
-
-
 ## Authors
 
 - Ignacio del Valle Alles (<https://github.com/idelvall/>)
