@@ -72,7 +72,7 @@ Hooks offer two main functionalities:
 - Event callback (what actions to perform under the execution events ocurred in the intrumented methods)
 
 ### Instrumentation
-On hook initialization, the framework passes a unique instance of [`Instrumentation`](https://github.com/ShiftLeftSecurity/instrumentation/blob/master/src/main/java/io/shiftleft/bctrace/spi/Instrumentation.java)  to the hook instances, to provide them retransformation capabilities, as well as accounting of the classes affected they are instrumenting.
+On hook initialization, the framework passes a unique instance of [`Instrumentation`](src/main/java/io/shiftleft/bctrace/spi/Instrumentation.java)  to the hook instances, to provide them retransformation capabilities, as well as accounting of the classes affected they are instrumenting.
 
 ### MethodRegistry
 [`MethodRegistry`](src/main/java/io/shiftleft/bctrace/runtime/MethodRegistry.java) offers a singleton instance that provides O(1) id (int) to/from method translations.
