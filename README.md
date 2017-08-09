@@ -10,7 +10,7 @@ An extensible java agent framework that instruments programs running on the JVM 
   - [Usage](#usage)
   - [Registering hooks](#registering-hooks)
   - [API](#api)
-  - [Maven dependenciy](#maven-dependenciy)
+  - [Maven dependency](#maven-dependency)
   - [Authors](#authors)
   - [License](#license)
 	
