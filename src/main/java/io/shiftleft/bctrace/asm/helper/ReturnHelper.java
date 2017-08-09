@@ -73,8 +73,8 @@ public class ReturnHelper {
             il.add(new VarInsnNode(Opcodes.ALOAD, frameDataVarIndex));
             il.add(ASMUtils.getPushInstruction(index));
             il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
-                    "org/brutusin/bctrace/runtime/Callback", "onFinishedReturn",
-                    "(Ljava/lang/Object;Lorg/brutusin/bctrace/runtime/FrameData;I)V", false));
+                    "io/shiftleft/bctrace/runtime/Callback", "onFinishedReturn",
+                    "(Ljava/lang/Object;Lio/shiftleft/bctrace/runtime/FrameData;I)V", false));
         }
         return il;
     }
@@ -96,8 +96,8 @@ public class ReturnHelper {
             il.add(new VarInsnNode(Opcodes.ALOAD, frameDataVarIndex));
             il.add(ASMUtils.getPushInstruction(index));
             il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
-                    "org/brutusin/bctrace/runtime/Callback", "onFinishedReturn",
-                    "(Ljava/lang/Object;Lorg/brutusin/bctrace/runtime/FrameData;I)V", false));
+                    "io/shiftleft/bctrace/runtime/Callback", "onFinishedReturn",
+                    "(Ljava/lang/Object;Lio/shiftleft/bctrace/runtime/FrameData;I)V", false));
         }
         return il;
     }

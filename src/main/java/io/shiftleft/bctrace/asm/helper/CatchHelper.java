@@ -80,8 +80,8 @@ public class CatchHelper {
             il.add(new VarInsnNode(Opcodes.ALOAD, frameDataVarIndex));
             il.add(ASMUtils.getPushInstruction(index));
             il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
-                    "org/brutusin/bctrace/runtime/Callback", "onFinishedThrowable",
-                    "(Ljava/lang/Throwable;Lorg/brutusin/bctrace/runtime/FrameData;I)V", false));
+                    "io/shiftleft/bctrace/runtime/Callback", "onFinishedThrowable",
+                    "(Ljava/lang/Throwable;Lio/shiftleft/bctrace/runtime/FrameData;I)V", false));
         }
         return il;
     }

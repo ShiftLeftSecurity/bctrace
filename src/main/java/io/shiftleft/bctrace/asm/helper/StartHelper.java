@@ -54,8 +54,8 @@ public class StartHelper {
         il.add(ASMUtils.getPushInstruction(methodId));
         addMethodParametersVariable(il, mn);
         il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
-                "org/brutusin/bctrace/runtime/FrameData", "getInstance",
-                "(Ljava/lang/Object;I[Ljava/lang/Object;)Lorg/brutusin/bctrace/runtime/FrameData;", false));
+                "io/shiftleft/bctrace/runtime/FrameData", "getInstance",
+                "(Ljava/lang/Object;I[Ljava/lang/Object;)Lio/shiftleft/bctrace/runtime/FrameData;", false));
 
         il.add(new InsnNode(Opcodes.DUP));
         il.add(new VarInsnNode(Opcodes.ASTORE, mn.maxLocals));
@@ -67,8 +67,8 @@ public class StartHelper {
             }
             il.add(ASMUtils.getPushInstruction(index));
             il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
-                    "org/brutusin/bctrace/runtime/Callback", "onStart",
-                    "(Lorg/brutusin/bctrace/runtime/FrameData;I)Ljava/lang/Object;", false));
+                    "io/shiftleft/bctrace/runtime/Callback", "onStart",
+                    "(Lio/shiftleft/bctrace/runtime/FrameData;I)Ljava/lang/Object;", false));
 
             il.add(new InsnNode(Opcodes.POP));
         }
