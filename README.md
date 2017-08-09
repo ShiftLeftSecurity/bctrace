@@ -3,7 +3,7 @@
 An extensible java agent framework that instruments programs running on the JVM (modifying the bytecode at class loading time), with the purpose of capturing method invocation events (start, finish, errors ...) and notifying custom listeners.
 
 **Table of Contents**
-- [org.brutusin:bctrace](#orgbrutusinbctrace)
+- [io.shiftleft:bctrace](#ioshiftleftctrace)
   - [How it works](#how-it-works)
   - [Usage](#usage)
   - [Registering hooks](#registering-hooks)
@@ -17,7 +17,7 @@ The [java instrumentation package](http://docs.oracle.com/javase/6/docs/api/java
 
 Since Java version 1.6 these agents can perform also perform dynamic instrumentation, that is retransforming the bytecode of classes already loaded. 
 
-This library provides an configurable agent ([org.brutusin.btrace.Init](src/main/java/org/brutusin/bctrace/Init.java)) aimed at injecting custom [hooks](src/main/java/org/brutusin/bctrace/spi/Hook.java) into the code of the specified methods of the target application.
+This library provides an configurable agent ([io.shiftleft.btrace.Init](src/main/java/io/shiftleft/bctrace/Init.java)) aimed at injecting custom [hooks](src/main/java/o/shiftleft/bctrace/spi/Hook.java) into the code of the specified methods of the target application.
 
 
 From a simplified point of view, the dynamic transformation turns a method like this: 
@@ -62,23 +62,23 @@ The agent also offers an API for registering hooks dynamically.
 These are the main types to consider:
 
 ### BcTrace
-[`BcTrace`](src/main/java/org/brutusin/bctrace/Bctrace.java) class offers a singleton instance that allows to register/unregister hooks dinamically from code.
+[`BcTrace`](src/main/java/o/shiftleft/bctrace/Bctrace.java) class offers a singleton instance that allows to register/unregister hooks dinamically from code.
 
 ### Hook
-[`Hook`](src/main/java/org/brutusin/bctrace/spi/Hook.java) class represents the main abstraction that client projects has to implement. Hooks are registered programatically using the previous API, or statically from the descriptor file (see ["registering hooks"](#registering-hooks)).
+[`Hook`](src/main/java/io/shiftleft/bctrace/spi/Hook.java) class represents the main abstraction that client projects has to implement. Hooks are registered programatically using the previous API, or statically from the descriptor file (see ["registering hooks"](#registering-hooks)).
 
 Hooks offer two main functionalities: 
 - Filtering information (what methods to instrument)  
 - Event callback (what actions to perform under the execution events ocurred in the intrumented methods)
 
 ### Instrumentation
-On hook initialization, the framework passes a unique instance of [`Instrumentation`](https://github.com/ShiftLeftSecurity/instrumentation/blob/master/src/main/java/org/brutusin/bctrace/spi/Instrumentation.java)  to the hook instances, to provide them retransformation capabilities, as well as accounting of the classes affected they are instrumenting.
+On hook initialization, the framework passes a unique instance of [`Instrumentation`](https://github.com/ShiftLeftSecurity/instrumentation/blob/master/src/main/java/io/shiftleft/bctrace/spi/Instrumentation.java)  to the hook instances, to provide them retransformation capabilities, as well as accounting of the classes affected they are instrumenting.
 
 ### MethodRegistry
-[`MethodRegistry`](src/main/java/org/brutusin/bctrace/runtime/MethodRegistry.java) offers a singleton instance that provides O(1) id (int) to/from method translations.
+[`MethodRegistry`](src/main/java/io/shiftleft/bctrace/runtime/MethodRegistry.java) offers a singleton instance that provides O(1) id (int) to/from method translations.
 
 ### FrameData
-[`FrameData`](src/main/java/org/brutusin/bctrace/runtime/FrameData.java) objects contain all the information about a execution frame, method, arguments and target object. This object are passed by the framework to the listeners for every execution event.
+[`FrameData`](src/main/java/io/shiftleft/bctrace/runtime/FrameData.java) objects contain all the information about a execution frame, method, arguments and target object. This object are passed by the framework to the listeners for every execution event.
 
 ## Maven dependency 
 
@@ -97,11 +97,6 @@ This module could not be possible without:
 This module could not be possible without:
 * [org.ow2.asm:asm-all](http://asm.ow2.org/)
 
-## Brutusin dependent modules
-* [org.brutusin:logging-instrumentation](https://github.com/brutusin/logging-instrumentation)
-
-## Support, bugs and requests
-https://github.com/brutusin/instrumentation/issues
 
 ## Authors
 
