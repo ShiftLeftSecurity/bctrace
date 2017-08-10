@@ -47,7 +47,7 @@ public Object foo(Object bar){
 Agent projects making use of this library must create a **fat-jar** including all their dependencies. 
 Agent jars must contain at least this entry in its manifest:
 ```
-Premain-Class: org.brutusin.bctrace.Init
+Premain-Class: io.shiftleft.bctrace.Init
 ```
 This fat-jar is the agent jar that will be passed as an argument to the java command:
 
