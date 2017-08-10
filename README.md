@@ -76,11 +76,11 @@ Hooks offer two main functionalities:
 ### Instrumentation
 On hook initialization, the framework passes a unique instance of [`Instrumentation`](src/main/java/io/shiftleft/bctrace/spi/Instrumentation.java) to the hook instances, to provide them retransformation capabilities, as well as accounting of all the classes they are instrumenting.
 
-### MethodRegistry
-[`MethodRegistry`](src/main/java/io/shiftleft/bctrace/runtime/MethodRegistry.java) offers a singleton instance that provides O(1) mappings: id ([`int:FrameData.methodId`](https://github.com/ShiftLeftSecurity/bctrace/blob/master/src/main/java/io/shiftleft/bctrace/runtime/FrameData.java)) <> method ([`MethodInfo`](src/main/java/io/shiftleft/bctrace/runtime/MethodInfo.java)).
-
 ### FrameData
 [`FrameData`](src/main/java/io/shiftleft/bctrace/runtime/FrameData.java) objects contain all the information about a execution frame, method, arguments and target object. This object are passed by the framework to the listeners for every execution event.
+
+### MethodRegistry
+[`MethodRegistry`](src/main/java/io/shiftleft/bctrace/runtime/MethodRegistry.java) offers a singleton instance that provides O(1) mappings: id ([`int:FrameData.methodId`](https://github.com/ShiftLeftSecurity/bctrace/blob/master/src/main/java/io/shiftleft/bctrace/runtime/FrameData.java)) <> method ([`MethodInfo`](src/main/java/io/shiftleft/bctrace/runtime/MethodInfo.java)).
 
 ## Maven dependency 
 
