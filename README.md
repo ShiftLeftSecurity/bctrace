@@ -17,7 +17,7 @@ An extensible java agent framework aimed at instrumenting programs running on th
 ## How it works
 The [java instrumentation package](http://docs.oracle.com/javase/6/docs/api/java/lang/instrument/package-summary.html) introduced in Java version 1.5, provides a simple way to transform java-class definition at loading time, consisting basically in a `byte[]` to `byte[]` transformation, by the so called "java agents".
 
-Since Java version 1.6 these agents can perform also perform dynamic instrumentation, that is retransforming the bytecode of classes already loaded. 
+Since Java version 1.6 these agents can perform also dynamic instrumentation, that is, retransforming the bytecode of classes already loaded. 
 
 This library provides an configurable agent ([io.shiftleft.btrace.Init](src/main/java/io/shiftleft/bctrace/Init.java)) aimed at injecting custom [hooks](src/main/java/o/shiftleft/bctrace/spi/Hook.java) into the code of the specified methods of the target application.
 
