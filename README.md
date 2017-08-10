@@ -86,7 +86,7 @@ On hook initialization, the framework passes a unique instance of [`Instrumentat
 
 ```xml
 <dependency>
-    <groupId>org.brutusin</groupId>
+    <groupId>io.shiftleft</groupId>
     <artifactId>bctrace</artifactId>
 </dependency>
 ```
