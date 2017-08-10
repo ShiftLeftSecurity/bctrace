@@ -32,13 +32,19 @@ public Object foo(Object bar){
 into that:
 ```java
 public Object foo(Object bar){
-    onStart(bar);
-    try{
+    hook1.getListener().onStart(bar);
+    ...
+    hookn.getListener().onStart(bar);
+    try {
         Object ret = new Object();
-        onFinished(ret);
+	hook1.getListener().onFinishedReturn(ret);
+	...
+	hookn.getListener().onFinishedReturn(ret);
         return ret;
-    } catch(Throwable th){
-        onThrowable(th);
+    } catch(Throwable th) {
+    	hook1.getListener().onFinishedThrowable(th);
+	...
+	hookn.getListener().onFinishedThrowable(th);
         throw th; // at bytecode level this is legal
     }
 }
