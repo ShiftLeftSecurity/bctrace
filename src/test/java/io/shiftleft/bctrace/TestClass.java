@@ -33,61 +33,68 @@ import org.apache.commons.io.IOUtils;
  */
 public class TestClass {
 
-    public static long fact(long n) {
-        if (n == 1) {
-            return 1;
-        } else {
-            return fact(n - 1) * n;
-        }
-    }
+  public TestClass() {
+  }
+  
+  public TestClass(int i) {
+    throw new TestRuntimeException("This constructor throws a Runtime Exception");
+  }
 
-    public static long factWrapper(Long n) {
-        if (n == 1) {
-            return 1;
-        } else {
-            return factWrapper(n - 1) * n;
-        }
+  public static long fact(long n) {
+    if (n == 1) {
+      return 1;
+    } else {
+      return fact(n - 1) * n;
     }
+  }
 
-    public static void throwRuntimeException() {
-        throw new TestRuntimeException("A testing runtime exception");
+  public static long factWrapper(Long n) {
+    if (n == 1) {
+      return 1;
+    } else {
+      return factWrapper(n - 1) * n;
     }
+  }
 
-    public static long getLongWithConditionalException(boolean throwException) {
-        if (throwException) {
-            throwRuntimeException();
-        }
-        return 1;
+  public static void throwRuntimeException() {
+    throw new TestRuntimeException("A testing runtime exception");
+  }
+
+  public static long getLongWithConditionalException(boolean throwException) {
+    if (throwException) {
+      throwRuntimeException();
     }
+    return 1;
+  }
 
-    public static long getLong() {
-        return 2;
+  public static long getLong() {
+    return 2;
+  }
+
+  public static int getInt() {
+    return 2;
+  }
+
+  public static Object getObject() {
+    return "2";
+  }
+
+  public static void execVoid() {
+  }
+
+  public static void main(String[] args) throws Exception {
+    Class clazz = TestClass.class;
+    String className = clazz.getCanonicalName();
+    String resourceName = className.replace('.', '/') + ".class";
+    InputStream is = clazz.getClassLoader().getResourceAsStream(resourceName);
+    byte[] bytes = IOUtils.toByteArray(is);
+    BcTraceTest.viewByteCode(bytes);
+  }
+
+  public static class TestRuntimeException extends RuntimeException {
+
+    public TestRuntimeException(String message) {
+      super(message);
     }
-
-    public static int getInt() {
-        return 2;
-    }
-
-    public static Object getObject() {
-        return "2";
-    }
-
-    public static void execVoid() {
-    }
-
-    public static void main(String[] args) throws Exception {
-        Class clazz = TestClass.class;
-        String className = clazz.getCanonicalName();
-        String resourceName = className.replace('.', '/') + ".class";
-        InputStream is = clazz.getClassLoader().getResourceAsStream(resourceName);
-        byte[] bytes = IOUtils.toByteArray(is);
-        BcTraceTest.viewByteCode(bytes);
-    }
-
-    public static class TestRuntimeException extends RuntimeException {
-
-        public TestRuntimeException(String message) {
-            super(message);
-        }
-    }
+  }
 }

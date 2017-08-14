@@ -123,7 +123,7 @@ public class Transformer implements ClassFileTransformer {
                 continue;
             }
             if (mn.name.contains("init")) {
-                continue;
+              //  continue;
             }
             LinkedList<Integer> hooksToUse = new LinkedList<Integer>();
             Hook[] hooks = Callback.hooks;

@@ -21,8 +21,8 @@
   </developers>
   <url>https://github.com/ShiftLeftSecurity/bctrace</url>
   <properties>
-    <maven.compiler.source>1.6</maven.compiler.source>
-    <maven.compiler.target>1.6</maven.compiler.target>
+    <compileSource>1.6</compileSource>
+    <testCompileSource>1.6</testCompileSource>
   </properties>
   <distributionManagement>
     <repository>
@@ -55,4 +55,30 @@
       <version>5.2</version>
     </dependency>
   </dependencies>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.6.1</version>
+        <configuration>
+          <source>${compileSource}</source>
+          <target>${compileSource}</target>
+        </configuration>
+        <executions>
+          <execution>
+            <id>test-compile</id>
+            <phase>test-compile</phase>
+            <goals>
+              <goal>testCompile</goal>
+            </goals>
+            <configuration>
+              <source>${testCompileSource}</source>
+              <target>${testCompileSource}</target>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build> 
 </project>
