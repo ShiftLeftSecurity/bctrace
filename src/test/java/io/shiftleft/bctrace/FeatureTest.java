@@ -106,7 +106,7 @@ public class FeatureTest extends BcTraceTest {
     clazz.newInstance();
   }
 
-  @Test
+  //@Test
   public void testConstructor2() throws Exception {
     final StringBuilder steps = new StringBuilder();
     Class clazz = getInstrumentClass(TestClass.class, new Hook[]{

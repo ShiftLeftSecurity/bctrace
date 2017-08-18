@@ -22,7 +22,7 @@
   <url>https://github.com/ShiftLeftSecurity/bctrace</url>
   <properties>
     <compileJavaVersion>1.6</compileJavaVersion>
-    <compileTestJavaVersion>1.6</compileTestJavaVersion>
+    <compileTestJavaVersion>1.7</compileTestJavaVersion>
   </properties>
   <distributionManagement>
     <repository>
