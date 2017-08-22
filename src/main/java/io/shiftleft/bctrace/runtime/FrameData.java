@@ -31,30 +31,30 @@ package io.shiftleft.bctrace.runtime;
  */
 public final class FrameData {
 
-    public int methodId;
-    public Object instance;
-    public Object[] args;
+  public int methodId;
+  public Object instance;
+  public Object[] args;
 
-    private FrameData() {
-    }
+  private FrameData() {
+  }
 
-    public static FrameData getInstance(Object instance, int methodId, Object[] args) {
-        FrameData ret = new FrameData();
-        ret.instance = instance;
-        ret.args = args;
-        ret.methodId = methodId;
-        return ret;
-    }
+  public static FrameData getInstance(Object instance, int methodId, Object[] args) {
+    FrameData ret = new FrameData();
+    ret.instance = instance;
+    ret.args = args;
+    ret.methodId = methodId;
+    return ret;
+  }
 
-    public FrameData copy() {
-        FrameData fd = new FrameData();
-        fd.args = args;
-        fd.methodId = methodId;
-        fd.instance = instance;
-        return fd;
-    }
+  public FrameData copy() {
+    FrameData fd = new FrameData();
+    fd.args = args;
+    fd.methodId = methodId;
+    fd.instance = instance;
+    return fd;
+  }
 
-    void dispose() {
-        // have in mind copies instances no in the pool
-    }
+  void dispose() {
+    // have in mind copies instances no in the pool
+  }
 }

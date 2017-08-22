@@ -34,34 +34,34 @@ import java.util.Map;
  */
 public final class MethodRegistry {
 
-    private static final MethodRegistry INSTANCE = new MethodRegistry();
+  private static final MethodRegistry INSTANCE = new MethodRegistry();
 
-    private final ArrayList<MethodInfo> methodArray = new ArrayList<MethodInfo>();
-    private final Map<MethodInfo, Integer> methodMap = new HashMap<MethodInfo, Integer>();
+  private final ArrayList<MethodInfo> methodArray = new ArrayList<MethodInfo>();
+  private final Map<MethodInfo, Integer> methodMap = new HashMap<MethodInfo, Integer>();
 
-    public static MethodRegistry getInstance() {
-        return INSTANCE;
+  public static MethodRegistry getInstance() {
+    return INSTANCE;
+  }
+
+  private MethodRegistry() {
+  }
+
+  public synchronized MethodInfo getMethod(int id) {
+    return methodArray.get(id);
+  }
+
+  public synchronized int getMethodId(String binaryClassName, String methodName, String methodDescriptor) {
+    MethodInfo mi = new MethodInfo(binaryClassName, methodName, methodDescriptor);
+    Integer id = methodMap.get(mi);
+    if (id == null) {
+      methodArray.add(mi);
+      id = methodArray.size() - 1;
+      methodMap.put(mi, id);
     }
+    return id;
+  }
 
-    private MethodRegistry() {
-    }
-
-    public synchronized MethodInfo getMethod(int id) {
-        return methodArray.get(id);
-    }
-
-    public synchronized int getMethodId(String className, String signature) {
-        MethodInfo mi = new MethodInfo(className, signature);
-        Integer id = methodMap.get(mi);
-        if (id == null) {
-            methodArray.add(mi);
-            id = methodArray.size() - 1;
-            methodMap.put(mi, id);
-        }
-        return id;
-    }
-
-    public synchronized int size() {
-        return methodArray.size();
-    }
+  public synchronized int size() {
+    return methodArray.size();
+  }
 }

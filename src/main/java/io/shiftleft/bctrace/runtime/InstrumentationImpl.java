@@ -39,61 +39,61 @@ import java.util.Set;
  */
 public final class InstrumentationImpl implements Instrumentation {
 
-    private final java.lang.instrument.Instrumentation javaInstrumentation;
-    private final Set<String> transformedClassNames = new HashSet<String>();
+  private final java.lang.instrument.Instrumentation javaInstrumentation;
+  private final Set<String> transformedClassNames = new HashSet<String>();
 
-    private boolean stale = true;
-    private Class[] transformedClasses;
+  private boolean stale = true;
+  private Class[] transformedClasses;
 
-    public InstrumentationImpl(java.lang.instrument.Instrumentation javaInstrumentation) {
-        this.javaInstrumentation = javaInstrumentation;
-    }
+  public InstrumentationImpl(java.lang.instrument.Instrumentation javaInstrumentation) {
+    this.javaInstrumentation = javaInstrumentation;
+  }
 
-    @Override
-    public boolean isRetransformClassesSupported() {
-        return javaInstrumentation.isRetransformClassesSupported();
-    }
+  @Override
+  public boolean isRetransformClassesSupported() {
+    return javaInstrumentation.isRetransformClassesSupported();
+  }
 
-    @Override
-    public boolean isModifiableClass(Class<?> clazz) {
-        return javaInstrumentation.isModifiableClass(clazz);
-    }
+  @Override
+  public boolean isModifiableClass(Class<?> clazz) {
+    return javaInstrumentation.isModifiableClass(clazz);
+  }
 
-    @Override
-    public Class[] getTransformedClasses() {
-        if (stale) {
-            List<Class> list = new LinkedList<Class>();
-            Class[] loaded = getAllLoadedClasses();
-            for (Class clazz : loaded) {
-                if (transformedClassNames.contains(clazz.getName())) {
-                    list.add(clazz);
-                }
-            }
-            transformedClasses = list.toArray(new Class[list.size()]);
-            stale = false;
+  @Override
+  public Class[] getTransformedClasses() {
+    if (stale) {
+      List<Class> list = new LinkedList<Class>();
+      Class[] loaded = getAllLoadedClasses();
+      for (Class clazz : loaded) {
+        if (transformedClassNames.contains(clazz.getName())) {
+          list.add(clazz);
         }
-        return transformedClasses;
+      }
+      transformedClasses = list.toArray(new Class[list.size()]);
+      stale = false;
     }
+    return transformedClasses;
+  }
 
-    @Override
-    public void retransformClasses(Class<?>... classes) throws UnmodifiableClassException {
-        if (classes != null) {
-            javaInstrumentation.retransformClasses(classes);
-        }
+  @Override
+  public void retransformClasses(Class<?>... classes) throws UnmodifiableClassException {
+    if (classes != null) {
+      javaInstrumentation.retransformClasses(classes);
     }
+  }
 
-    @Override
-    public Class[] getAllLoadedClasses() {
-        return javaInstrumentation.getAllLoadedClasses();
-    }
+  @Override
+  public Class[] getAllLoadedClasses() {
+    return javaInstrumentation.getAllLoadedClasses();
+  }
 
-    public void removeTransformedClass(String className) {
-        transformedClassNames.remove(className);
-        stale = true;
-    }
+  public void removeTransformedClass(String className) {
+    transformedClassNames.remove(className);
+    stale = true;
+  }
 
-    public void addTransformedClass(String className) {
-        transformedClassNames.add(className);
-        stale = true;
-    }
+  public void addTransformedClass(String className) {
+    transformedClassNames.add(className);
+    stale = true;
+  }
 }

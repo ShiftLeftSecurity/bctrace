@@ -33,50 +33,50 @@ package io.shiftleft.bctrace.spi;
  */
 public abstract class Hook {
 
-    protected Instrumentation instrumentation;
+  protected Instrumentation instrumentation;
 
-    /**
-     * Initializes the plugin. Called once at startup before initial
-     * instrumentation is performed.
-     *
-     * @param instrumentation Intrumentation callback, allowing triggering
-     * retransformations
-     */
-    public final void init(Instrumentation instrumentation) {
-        this.instrumentation = instrumentation;
-        doInit();
-    }
+  /**
+   * Initializes the plugin. Called once at startup before initial
+   * instrumentation is performed.
+   *
+   * @param instrumentation Intrumentation callback, allowing triggering
+   * retransformations
+   */
+  public final void init(Instrumentation instrumentation) {
+    this.instrumentation = instrumentation;
+    doInit();
+  }
 
-    /**
-     * Allows subclasses to implement initialization logic.
-     */
-    public void doInit() {
-    }
+  /**
+   * Allows subclasses to implement initialization logic.
+   */
+  public void doInit() {
+  }
 
-    public final Instrumentation getInstrumentation() {
-        return instrumentation;
-    }
+  public final Instrumentation getInstrumentation() {
+    return instrumentation;
+  }
 
-    /**
-     * Returns the filter, deciding what methods to instrument.
-     *
-     * @return
-     */
-    public abstract Filter getFilter();
+  /**
+   * Returns the filter, deciding what methods to instrument.
+   *
+   * @return
+   */
+  public abstract Filter getFilter();
 
-    /**
-     * Returns the listener invoked by the instrumented method hooks.
-     *
-     * @return
-     */
-    public abstract Listener getListener();
+  /**
+   * Returns the listener invoked by the instrumented method hooks.
+   *
+   * @return
+   */
+  public abstract Listener getListener();
 
-    /**
-     * Communicates an error to the hook implementation
-     *
-     * @param th
-     */
-    public void onError(Throwable th) {
+  /**
+   * Communicates an error to the hook implementation
+   *
+   * @param th
+   */
+  public void onError(Throwable th) {
 
-    }
+  }
 }

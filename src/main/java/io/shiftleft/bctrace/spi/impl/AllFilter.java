@@ -36,13 +36,13 @@ import org.objectweb.asm.tree.MethodNode;
  */
 public class AllFilter implements Filter {
 
-    @Override
-    public boolean instrumentClass(String className, ProtectionDomain protectionDomain, ClassLoader cl) {
-        return true;
-    }
+  @Override
+  public boolean instrumentClass(String className, ProtectionDomain protectionDomain, ClassLoader cl) {
+    return true;
+  }
 
-    @Override
-    public boolean instrumentMethod(ClassNode classNode, MethodNode mn) {
-        return true;
-    }
+  @Override
+  public boolean instrumentMethod(ClassNode classNode, MethodNode mn) {
+    return true;
+  }
 }

@@ -30,53 +30,59 @@ package io.shiftleft.bctrace.runtime;
  */
 public final class MethodInfo {
 
-    private final String className;
-    private final String signature;
+  private final String binaryClassName;
+  private final String methodName;
+  private final String methodDescriptor;
 
-    private final String representation;
+  private final String representation;
 
-    public MethodInfo(String className, String signature) {
-        this.className = className;
-        this.signature = signature;
-        this.representation = className + "." + signature;
+  public MethodInfo(String binaryClassName, String methodName, String methodDescriptor) {
+    this.binaryClassName = binaryClassName;
+    this.methodName = methodName;
+    this.methodDescriptor = methodDescriptor;
+    this.representation = binaryClassName + "." + methodName + methodDescriptor;
+  }
+
+  public String getBinaryClassName() {
+    return binaryClassName;
+  }
+
+  public String getMethodName() {
+    return methodName;
+  }
+
+  public String getMethodDescriptor() {
+    return methodDescriptor;
+  }
+
+  @Override
+  public String toString() {
+    return representation;
+  }
+
+  @Override
+  public int hashCode() {
+    int hash = 3;
+    hash = 79 * hash + (this.representation != null ? this.representation.hashCode() : 0);
+    return hash;
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj) {
+      return true;
     }
-
-    public String getClassName() {
-        return className;
+    if (obj == null) {
+      return false;
     }
-
-    public String getSignature() {
-        return signature;
+    if (getClass() != obj.getClass()) {
+      return false;
     }
-
-    @Override
-    public String toString() {
-        return representation;
+    final MethodInfo other = (MethodInfo) obj;
+    if ((this.representation == null) ? (other.representation != null) : !this.representation.equals(other.representation)) {
+      return false;
     }
+    return true;
+  }
 
-    @Override
-    public int hashCode() {
-        int hash = 7;
-        hash = 83 * hash + (this.className != null ? this.className.hashCode() : 0);
-        hash = 83 * hash + (this.signature != null ? this.signature.hashCode() : 0);
-        return hash;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if (obj == null) {
-            return false;
-        }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-        final MethodInfo other = (MethodInfo) obj;
-        if ((this.className == null) ? (other.className != null) : !this.className.equals(other.className)) {
-            return false;
-        }
-        return !((this.signature == null) ? (other.signature != null) : !this.signature.equals(other.signature));
-    }
 }

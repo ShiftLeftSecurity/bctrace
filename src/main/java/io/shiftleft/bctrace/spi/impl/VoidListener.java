@@ -29,25 +29,25 @@ import io.shiftleft.bctrace.runtime.FrameData;
 
 /**
  * A listener that hears but not listens. :)
- * 
+ *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
 public class VoidListener implements Listener {
 
-    @Override
-    public Object onStart(FrameData fd) {
-        return null;
-    }
+  @Override
+  public Object onStart(FrameData fd) {
+    return null;
+  }
 
-    @Override
-    public void onFinishedReturn(Object ret, FrameData fd) {
-    }
+  @Override
+  public void onFinishedReturn(Object ret, FrameData fd) {
+  }
 
-    @Override
-    public void onFinishedThrowable(Throwable th, FrameData fd) {
-    }
+  @Override
+  public void onFinishedThrowable(Throwable th, FrameData fd) {
+  }
 
-    @Override
-    public void onBeforeThrown(Throwable th, FrameData fd) {
-    }
+  @Override
+  public void onBeforeThrown(Throwable th, FrameData fd) {
+  }
 }

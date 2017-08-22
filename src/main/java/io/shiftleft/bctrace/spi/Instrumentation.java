@@ -34,45 +34,45 @@ import java.lang.instrument.UnmodifiableClassException;
  */
 public interface Instrumentation {
 
-    /**
-     * Whether or not this JVM supports class retransformation.
-     *
-     * @see
-     * <a href="https://docs.oracle.com/javase/6/docs/api/java/lang/instrument/Instrumentation.html#isRetransformClassesSupported()">Instrumentation.isRetransformClassesSupported()</a>
-     * @return
-     */
-    boolean isRetransformClassesSupported();
+  /**
+   * Whether or not this JVM supports class retransformation.
+   *
+   * @see
+   * <a href="https://docs.oracle.com/javase/6/docs/api/java/lang/instrument/Instrumentation.html#isRetransformClassesSupported()">Instrumentation.isRetransformClassesSupported()</a>
+   * @return
+   */
+  boolean isRetransformClassesSupported();
 
-    /**
-     * Whether or not this class can be retransformed.
-     *
-     * @param clazz
-     * @return
-     */
-    boolean isModifiableClass(Class<?> clazz);
+  /**
+   * Whether or not this class can be retransformed.
+   *
+   * @param clazz
+   * @return
+   */
+  boolean isModifiableClass(Class<?> clazz);
 
-    /**
-     * Returns an array of all classes currently loaded by the JVM.
-     *
-     * @return
-     */
-    Class[] getAllLoadedClasses();
+  /**
+   * Returns an array of all classes currently loaded by the JVM.
+   *
+   * @return
+   */
+  Class[] getAllLoadedClasses();
 
-    /**
-     * Returns the names of the classes instrumented with the current hook.
-     *
-     * @return
-     */
-    Class[] getTransformedClasses();
+  /**
+   * Returns the names of the classes instrumented with the current hook.
+   *
+   * @return
+   */
+  Class[] getTransformedClasses();
 
-    /**
-     * Retransforms the classes.
-     *
-     * @see
-     * <a href="https://docs.oracle.com/javase/6/docs/api/java/lang/instrument/Instrumentation.html#retransformClasses(java.lang.Class...)">Instrumentation.retransformClasses(java.lang.Class...)</a>
-     * @param classes
-     * @throws UnmodifiableClassException
-     */
-    void retransformClasses(Class<?>... classes) throws UnmodifiableClassException;
+  /**
+   * Retransforms the classes.
+   *
+   * @see
+   * <a href="https://docs.oracle.com/javase/6/docs/api/java/lang/instrument/Instrumentation.html#retransformClasses(java.lang.Class...)">Instrumentation.retransformClasses(java.lang.Class...)</a>
+   * @param classes
+   * @throws UnmodifiableClassException
+   */
+  void retransformClasses(Class<?>... classes) throws UnmodifiableClassException;
 
 }

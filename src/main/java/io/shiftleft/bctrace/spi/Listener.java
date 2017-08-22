@@ -34,46 +34,46 @@ import io.shiftleft.bctrace.runtime.FrameData;
  */
 public interface Listener {
 
-    /**
-     * Invoked by instrumented methods before any of its original instructions
-     * (if multiple plugins are registered, listener notification is performed
-     * according to their respective plugin registration order).
-     *
-     * @param fd Current stack frame data
-     * @return
-     */
-    public Object onStart(FrameData fd);
+  /**
+   * Invoked by instrumented methods before any of its original instructions (if
+   * multiple plugins are registered, listener notification is performed
+   * according to their respective plugin registration order).
+   *
+   * @param fd Current stack frame data
+   * @return
+   */
+  public Object onStart(FrameData fd);
 
-    /**
-     * Invoked by instrumented methods just before return (if multiple plugins
-     * are registered, listener notification is performed according to their
-     * respective plugin <b>reverse</b> registration order).
-     *
-     * @param ret Object being returned by the method. Wrapper type if the
-     * original return type is primitive. <code>null</code> if the method return
-     * type is <code>void</code>
-     * @param fd Current stack frame data
-     */
-    public void onFinishedReturn(Object ret, FrameData fd);
+  /**
+   * Invoked by instrumented methods just before return (if multiple plugins are
+   * registered, listener notification is performed according to their
+   * respective plugin <b>reverse</b> registration order).
+   *
+   * @param ret Object being returned by the method. Wrapper type if the
+   * original return type is primitive. <code>null</code> if the method return
+   * type is <code>void</code>
+   * @param fd Current stack frame data
+   */
+  public void onFinishedReturn(Object ret, FrameData fd);
 
-    /**
-     * Invoked by instrumented methods just before rising a throwable to the
-     * caller (if multiple plugins are registered, listener notification is
-     * performed according to their respective plugin <b>reverse</b>
-     * registration order).
-     *
-     * @param th thowable to be raised
-     * @param fd Current stack frame data
-     */
-    public void onFinishedThrowable(Throwable th, FrameData fd);
+  /**
+   * Invoked by instrumented methods just before rising a throwable to the
+   * caller (if multiple plugins are registered, listener notification is
+   * performed according to their respective plugin <b>reverse</b>
+   * registration order).
+   *
+   * @param th thowable to be raised
+   * @param fd Current stack frame data
+   */
+  public void onFinishedThrowable(Throwable th, FrameData fd);
 
-    /**
-     * Invoked by instrumented methods just before the actual method throws a
-     * throwable.
-     *
-     * @param th thowable to be thrown
-     * @param fd Current stack frame data
-     */
-    public void onBeforeThrown(Throwable th, FrameData fd);
+  /**
+   * Invoked by instrumented methods just before the actual method throws a
+   * throwable.
+   *
+   * @param th thowable to be thrown
+   * @param fd Current stack frame data
+   */
+  public void onBeforeThrown(Throwable th, FrameData fd);
 
 }

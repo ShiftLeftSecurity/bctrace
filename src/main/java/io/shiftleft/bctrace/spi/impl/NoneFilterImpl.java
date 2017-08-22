@@ -30,19 +30,19 @@ import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 
 /**
- * A filter that does not accepts any class or method. 
+ * A filter that does not accepts any class or method.
  *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
 public class NoneFilterImpl implements Filter {
 
-    @Override
-    public boolean instrumentClass(String className, ProtectionDomain protectionDomain, ClassLoader cl) {
-        return false;
-    }
+  @Override
+  public boolean instrumentClass(String className, ProtectionDomain protectionDomain, ClassLoader cl) {
+    return false;
+  }
 
-    @Override
-    public boolean instrumentMethod(ClassNode classNode, MethodNode mn) {
-        return false;
-    }
+  @Override
+  public boolean instrumentMethod(ClassNode classNode, MethodNode mn) {
+    return false;
+  }
 }

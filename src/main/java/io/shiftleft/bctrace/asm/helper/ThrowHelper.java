@@ -41,30 +41,30 @@ import org.objectweb.asm.tree.VarInsnNode;
  */
 public class ThrowHelper {
 
-    public static void addTraceThrow(MethodNode mn, int frameDataVarIndex, LinkedList<Integer> hooksToUse) {
-        InsnList il = mn.instructions;
-        Iterator<AbstractInsnNode> it = il.iterator();
-        while (it.hasNext()) {
-            AbstractInsnNode abstractInsnNode = it.next();
+  public static void addTraceThrow(MethodNode mn, int frameDataVarIndex, LinkedList<Integer> hooksToUse) {
+    InsnList il = mn.instructions;
+    Iterator<AbstractInsnNode> it = il.iterator();
+    while (it.hasNext()) {
+      AbstractInsnNode abstractInsnNode = it.next();
 
-            switch (abstractInsnNode.getOpcode()) {
-                case Opcodes.ATHROW:
-                    il.insertBefore(abstractInsnNode, getThrowTraceInstructions(frameDataVarIndex, hooksToUse));
-                    break;
-            }
-        }
+      switch (abstractInsnNode.getOpcode()) {
+        case Opcodes.ATHROW:
+          il.insertBefore(abstractInsnNode, getThrowTraceInstructions(frameDataVarIndex, hooksToUse));
+          break;
+      }
     }
+  }
 
-    private static InsnList getThrowTraceInstructions(int frameDataVarIndex, LinkedList<Integer> hooksToUse) {
-        InsnList il = new InsnList();
-        for (Integer index : hooksToUse) {
-            il.add(new InsnNode(Opcodes.DUP));
-            il.add(new VarInsnNode(Opcodes.ALOAD, frameDataVarIndex));
-            il.add(ASMUtils.getPushInstruction(index));
-            il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
-                    "io/shiftleft/bctrace/runtime/Callback", "onBeforeThrown",
-                    "(Ljava/lang/Throwable;Lio/shiftleft/bctrace/runtime/FrameData;I)V", false));
-        }
-        return il;
+  private static InsnList getThrowTraceInstructions(int frameDataVarIndex, LinkedList<Integer> hooksToUse) {
+    InsnList il = new InsnList();
+    for (Integer index : hooksToUse) {
+      il.add(new InsnNode(Opcodes.DUP));
+      il.add(new VarInsnNode(Opcodes.ALOAD, frameDataVarIndex));
+      il.add(ASMUtils.getPushInstruction(index));
+      il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
+              "io/shiftleft/bctrace/runtime/Callback", "onBeforeThrown",
+              "(Ljava/lang/Throwable;Lio/shiftleft/bctrace/runtime/FrameData;I)V", false));
     }
+    return il;
+  }
 }

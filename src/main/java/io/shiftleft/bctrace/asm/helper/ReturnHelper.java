@@ -42,63 +42,63 @@ import org.objectweb.asm.tree.VarInsnNode;
  */
 public class ReturnHelper {
 
-    public static void addTraceReturn(MethodNode mn, int frameDataVarIndex, LinkedList<Integer> hooksToUse) {
-        InsnList il = mn.instructions;
-        Iterator<AbstractInsnNode> it = il.iterator();
-        Type returnType = Type.getReturnType(mn.desc);
+  public static void addTraceReturn(MethodNode mn, int frameDataVarIndex, LinkedList<Integer> hooksToUse) {
+    InsnList il = mn.instructions;
+    Iterator<AbstractInsnNode> it = il.iterator();
+    Type returnType = Type.getReturnType(mn.desc);
 
-        while (it.hasNext()) {
-            AbstractInsnNode abstractInsnNode = it.next();
+    while (it.hasNext()) {
+      AbstractInsnNode abstractInsnNode = it.next();
 
-            switch (abstractInsnNode.getOpcode()) {
-                case Opcodes.RETURN:
-                    il.insertBefore(abstractInsnNode, getVoidReturnTraceInstructions(frameDataVarIndex, hooksToUse));
-                    break;
-                case Opcodes.IRETURN:
-                case Opcodes.LRETURN:
-                case Opcodes.FRETURN:
-                case Opcodes.ARETURN:
-                case Opcodes.DRETURN:
-                    il.insertBefore(abstractInsnNode, getReturnTraceInstructions(returnType, frameDataVarIndex, hooksToUse));
-            }
-        }
+      switch (abstractInsnNode.getOpcode()) {
+        case Opcodes.RETURN:
+          il.insertBefore(abstractInsnNode, getVoidReturnTraceInstructions(frameDataVarIndex, hooksToUse));
+          break;
+        case Opcodes.IRETURN:
+        case Opcodes.LRETURN:
+        case Opcodes.FRETURN:
+        case Opcodes.ARETURN:
+        case Opcodes.DRETURN:
+          il.insertBefore(abstractInsnNode, getReturnTraceInstructions(returnType, frameDataVarIndex, hooksToUse));
+      }
     }
+  }
 
-    private static InsnList getVoidReturnTraceInstructions(int frameDataVarIndex, LinkedList<Integer> hooksToUse) {
-        InsnList il = new InsnList();
-        Iterator<Integer> descendingIterator = hooksToUse.descendingIterator();
-        while (descendingIterator.hasNext()) {
-            Integer index = descendingIterator.next();
-            il.add(new InsnNode(Opcodes.ACONST_NULL));
-            il.add(new VarInsnNode(Opcodes.ALOAD, frameDataVarIndex));
-            il.add(ASMUtils.getPushInstruction(index));
-            il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
-                    "io/shiftleft/bctrace/runtime/Callback", "onFinishedReturn",
-                    "(Ljava/lang/Object;Lio/shiftleft/bctrace/runtime/FrameData;I)V", false));
-        }
-        return il;
+  private static InsnList getVoidReturnTraceInstructions(int frameDataVarIndex, LinkedList<Integer> hooksToUse) {
+    InsnList il = new InsnList();
+    Iterator<Integer> descendingIterator = hooksToUse.descendingIterator();
+    while (descendingIterator.hasNext()) {
+      Integer index = descendingIterator.next();
+      il.add(new InsnNode(Opcodes.ACONST_NULL));
+      il.add(new VarInsnNode(Opcodes.ALOAD, frameDataVarIndex));
+      il.add(ASMUtils.getPushInstruction(index));
+      il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
+              "io/shiftleft/bctrace/runtime/Callback", "onFinishedReturn",
+              "(Ljava/lang/Object;Lio/shiftleft/bctrace/runtime/FrameData;I)V", false));
     }
+    return il;
+  }
 
-    private static InsnList getReturnTraceInstructions(Type returnType, int frameDataVarIndex, LinkedList<Integer> hooksToUse) {
-        InsnList il = new InsnList();
-        Iterator<Integer> descendingIterator = hooksToUse.descendingIterator();
-        while (descendingIterator.hasNext()) {
-            Integer index = descendingIterator.next();
-            if (returnType.getSize() == 1) {
-                il.add(new InsnNode(Opcodes.DUP));
-            } else {
-                il.add(new InsnNode(Opcodes.DUP2));
-            }
-            MethodInsnNode mNode = ASMUtils.getWrapperContructionInst(returnType);
-            if (mNode != null) {
-                il.add(mNode);
-            }
-            il.add(new VarInsnNode(Opcodes.ALOAD, frameDataVarIndex));
-            il.add(ASMUtils.getPushInstruction(index));
-            il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
-                    "io/shiftleft/bctrace/runtime/Callback", "onFinishedReturn",
-                    "(Ljava/lang/Object;Lio/shiftleft/bctrace/runtime/FrameData;I)V", false));
-        }
-        return il;
+  private static InsnList getReturnTraceInstructions(Type returnType, int frameDataVarIndex, LinkedList<Integer> hooksToUse) {
+    InsnList il = new InsnList();
+    Iterator<Integer> descendingIterator = hooksToUse.descendingIterator();
+    while (descendingIterator.hasNext()) {
+      Integer index = descendingIterator.next();
+      if (returnType.getSize() == 1) {
+        il.add(new InsnNode(Opcodes.DUP));
+      } else {
+        il.add(new InsnNode(Opcodes.DUP2));
+      }
+      MethodInsnNode mNode = ASMUtils.getWrapperContructionInst(returnType);
+      if (mNode != null) {
+        il.add(mNode);
+      }
+      il.add(new VarInsnNode(Opcodes.ALOAD, frameDataVarIndex));
+      il.add(ASMUtils.getPushInstruction(index));
+      il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
+              "io/shiftleft/bctrace/runtime/Callback", "onFinishedReturn",
+              "(Ljava/lang/Object;Lio/shiftleft/bctrace/runtime/FrameData;I)V", false));
     }
+    return il;
+  }
 }

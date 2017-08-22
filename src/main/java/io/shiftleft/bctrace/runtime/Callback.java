@@ -32,29 +32,29 @@ import io.shiftleft.bctrace.spi.Hook;
  */
 public final class Callback {
 
-    public static Hook[] hooks;
+  public static Hook[] hooks;
 
-    public static Object onStart(FrameData fd, int i) {
-        return hooks[i].getListener().onStart(fd);
-    }
+  public static Object onStart(FrameData fd, int i) {
+    return hooks[i].getListener().onStart(fd);
+  }
 
-    public static void onFinishedReturn(Object ret, FrameData fd, int i) {
-        try {
-            hooks[i].getListener().onFinishedReturn(ret, fd);
-        } finally {
-            fd.dispose();
-        }
+  public static void onFinishedReturn(Object ret, FrameData fd, int i) {
+    try {
+      hooks[i].getListener().onFinishedReturn(ret, fd);
+    } finally {
+      fd.dispose();
     }
+  }
 
-    public static void onFinishedThrowable(Throwable th, FrameData fd, int i) {
-        try {
-            hooks[i].getListener().onFinishedThrowable(th, fd);
-        } finally {
-            fd.dispose();
-        }
+  public static void onFinishedThrowable(Throwable th, FrameData fd, int i) {
+    try {
+      hooks[i].getListener().onFinishedThrowable(th, fd);
+    } finally {
+      fd.dispose();
     }
+  }
 
-    public static void onBeforeThrown(Throwable th, FrameData fd, int i) {
-        hooks[i].getListener().onBeforeThrown(th, fd);
-    }
+  public static void onBeforeThrown(Throwable th, FrameData fd, int i) {
+    hooks[i].getListener().onBeforeThrown(th, fd);
+  }
 }

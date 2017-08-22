@@ -39,57 +39,57 @@ import io.shiftleft.bctrace.spi.Hook;
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
 public final class Bctrace {
-    
-    static Bctrace instance;
-    
-    private final Transformer transformer;
-    private final List<Hook> hooks;
-    private final java.lang.instrument.Instrumentation javaInstrumentation;
-    
-    Bctrace(java.lang.instrument.Instrumentation javaInstrumentation, Hook[] initialHooks) {
-        this.javaInstrumentation = javaInstrumentation;
-        this.hooks = Collections.synchronizedList(new ArrayList<Hook>());
-        this.transformer = new Transformer();
-        if(initialHooks!=null){
-            for (Hook initialHook : initialHooks) {
-                addHook(initialHook);
-            }
-        }
-        javaInstrumentation.addTransformer(transformer, javaInstrumentation.isRetransformClassesSupported());
+
+  static Bctrace instance;
+
+  private final Transformer transformer;
+  private final List<Hook> hooks;
+  private final java.lang.instrument.Instrumentation javaInstrumentation;
+
+  Bctrace(java.lang.instrument.Instrumentation javaInstrumentation, Hook[] initialHooks) {
+    this.javaInstrumentation = javaInstrumentation;
+    this.hooks = Collections.synchronizedList(new ArrayList<Hook>());
+    this.transformer = new Transformer();
+    if (initialHooks != null) {
+      for (Hook initialHook : initialHooks) {
+        addHook(initialHook);
+      }
     }
-    
-    public static Bctrace getInstance() {
-        if (instance == null) {
-            throw new Error("Instrumentation is not properly configured. Please verify agent manifest attributes");
-        }
-        return instance;
+    javaInstrumentation.addTransformer(transformer, javaInstrumentation.isRetransformClassesSupported());
+  }
+
+  public static Bctrace getInstance() {
+    if (instance == null) {
+      throw new Error("Instrumentation is not properly configured. Please verify agent manifest attributes");
     }
-    
-    public void addHook(Hook hook) {
-        this.hooks.add(hook);
-        updateCallback();
-        hook.init(new InstrumentationImpl(javaInstrumentation));
+    return instance;
+  }
+
+  public void addHook(Hook hook) {
+    this.hooks.add(hook);
+    updateCallback();
+    hook.init(new InstrumentationImpl(javaInstrumentation));
+  }
+
+  public void removeHook(Hook hook) {
+    removeHook(hook, true);
+  }
+
+  public void removeHook(Hook hook, boolean retransform) {
+    int index = this.hooks.indexOf(hook);
+    this.hooks.set(index, null);
+    if (retransform) {
+      try {
+        hook.getInstrumentation().retransformClasses(hook.getInstrumentation().getTransformedClasses());
+      } catch (UnmodifiableClassException ex) {
+        throw new AssertionError();
+      }
     }
-    
-    public void removeHook(Hook hook) {
-        removeHook(hook, true);
-    }
-    
-    public void removeHook(Hook hook, boolean retransform) {
-        int index = this.hooks.indexOf(hook);
-        this.hooks.set(index, null);
-        if (retransform) {
-            try {
-                hook.getInstrumentation().retransformClasses(hook.getInstrumentation().getTransformedClasses());
-            } catch (UnmodifiableClassException ex) {
-                throw new AssertionError();
-            }
-        }
-        updateCallback();
-    }
-    
-    private void updateCallback() {
-        Callback.hooks = hooks.toArray(new Hook[hooks.size()]);
-    }
-    
+    updateCallback();
+  }
+
+  private void updateCallback() {
+    Callback.hooks = hooks.toArray(new Hook[hooks.size()]);
+  }
+
 }

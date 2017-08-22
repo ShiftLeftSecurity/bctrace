@@ -49,104 +49,104 @@ import org.objectweb.asm.tree.MethodNode;
  */
 public class Transformer implements ClassFileTransformer {
 
-    @Override
-    public byte[] transform(final ClassLoader loader,
-            final String className, final Class<?> classBeingRedefined,
-            final ProtectionDomain protectionDomain,
-            final byte[] classfileBuffer)
-            throws IllegalClassFormatException {
+  @Override
+  public byte[] transform(final ClassLoader loader,
+          final String className, final Class<?> classBeingRedefined,
+          final ProtectionDomain protectionDomain,
+          final byte[] classfileBuffer)
+          throws IllegalClassFormatException {
 
-        try {
-            // Do not instrument agent classes
-            if (protectionDomain != null && protectionDomain.equals(getClass().getProtectionDomain())) {
-                return null;
-            }
-            if (className == null || classfileBuffer == null) {
-                return null;
-            }
-            if (className.startsWith("sun/") || className.startsWith("com/sun/") || className.startsWith("javafx/") || className.startsWith("org/springframework/boot/")) {
-                return null;
-            }
-            if (className.startsWith("java/lang/ThreadLocal")) {
-                return null;
-            }
+    try {
+      // Do not instrument agent classes
+      if (protectionDomain != null && protectionDomain.equals(getClass().getProtectionDomain())) {
+        return null;
+      }
+      if (className == null || classfileBuffer == null) {
+        return null;
+      }
+      if (className.startsWith("sun/") || className.startsWith("com/sun/") || className.startsWith("javafx/") || className.startsWith("org/springframework/boot/")) {
+        return null;
+      }
+      if (className.startsWith("java/lang/ThreadLocal")) {
+        return null;
+      }
 
-            LinkedList<Integer> matchingHooks = getMatchingHooks(className, protectionDomain, loader);
-            if (matchingHooks == null || matchingHooks.isEmpty()) {
-                return null;
-            }
+      LinkedList<Integer> matchingHooks = getMatchingHooks(className, protectionDomain, loader);
+      if (matchingHooks == null || matchingHooks.isEmpty()) {
+        return null;
+      }
 
-            ClassReader cr = new ClassReader(classfileBuffer);
-            ClassNode cn = new ClassNode();
-            cr.accept(cn, 0);
+      ClassReader cr = new ClassReader(classfileBuffer);
+      ClassNode cn = new ClassNode();
+      cr.accept(cn, 0);
 
-            boolean transformed = transformMethods(cn, matchingHooks);
-            if (!transformed) {
-                return null;
-            } else {
-                ClassWriter cw = new StaticClassWriter(cr, ClassWriter.COMPUTE_FRAMES, loader);
-                cn.accept(cw);
-                return cw.toByteArray();
-            }
-        } catch (Throwable th) {
-            Hook[] hooks = Callback.hooks;
-            if (hooks != null) {
-                for (Hook hook : hooks) {
-                    if (hook != null) {
-                        hook.onError(th);
-                    }
-                }
-            }
-            return null;
+      boolean transformed = transformMethods(cn, matchingHooks);
+      if (!transformed) {
+        return null;
+      } else {
+        ClassWriter cw = new StaticClassWriter(cr, ClassWriter.COMPUTE_FRAMES, loader);
+        cn.accept(cw);
+        return cw.toByteArray();
+      }
+    } catch (Throwable th) {
+      Hook[] hooks = Callback.hooks;
+      if (hooks != null) {
+        for (Hook hook : hooks) {
+          if (hook != null) {
+            hook.onError(th);
+          }
         }
+      }
+      return null;
     }
+  }
 
-    private LinkedList<Integer> getMatchingHooks(String className, ProtectionDomain protectionDomain, ClassLoader loader) {
-        LinkedList<Integer> ret = new LinkedList<Integer>();
-        Hook[] hooks = Callback.hooks;
-        if (hooks != null) {
-            for (int i = 0; i < hooks.length; i++) {
-                if (hooks[i].getFilter().instrumentClass(className, protectionDomain, loader)) {
-                    ret.add(i);
-                }
-                ((InstrumentationImpl) hooks[i].getInstrumentation()).removeTransformedClass(className);
-            }
+  private LinkedList<Integer> getMatchingHooks(String className, ProtectionDomain protectionDomain, ClassLoader loader) {
+    LinkedList<Integer> ret = new LinkedList<Integer>();
+    Hook[] hooks = Callback.hooks;
+    if (hooks != null) {
+      for (int i = 0; i < hooks.length; i++) {
+        if (hooks[i].getFilter().instrumentClass(className, protectionDomain, loader)) {
+          ret.add(i);
         }
-        return ret;
+        ((InstrumentationImpl) hooks[i].getInstrumentation()).removeTransformedClass(className);
+      }
     }
+    return ret;
+  }
 
-    private boolean transformMethods(ClassNode cn, LinkedList<Integer> matchingHooks) {
-        List<MethodNode> methods = cn.methods;
-        boolean transformed = false;
-        for (MethodNode mn : methods) {
-            if (ASMUtils.isAbstract(mn) || ASMUtils.isNative(mn)) {
-                continue;
-            }
-            if (mn.name.contains("init")) {
-                continue;
-            }
-            LinkedList<Integer> hooksToUse = new LinkedList<Integer>();
-            Hook[] hooks = Callback.hooks;
-            for (Integer i : matchingHooks) {
-                if (hooks[i] != null && hooks[i].getFilter().instrumentMethod(cn, mn)) {
-                    hooksToUse.add(i);
-                    ((InstrumentationImpl) hooks[i].getInstrumentation()).addTransformedClass(cn.name.replace('/', '.'));
-                }
-            }
-            if (!hooksToUse.isEmpty()) {
-                modifyMethod(cn, mn, hooksToUse);
-                transformed = true;
-            }
+  private boolean transformMethods(ClassNode cn, LinkedList<Integer> matchingHooks) {
+    List<MethodNode> methods = cn.methods;
+    boolean transformed = false;
+    for (MethodNode mn : methods) {
+      if (ASMUtils.isAbstract(mn) || ASMUtils.isNative(mn)) {
+        continue;
+      }
+      if (mn.name.contains("init")) {
+        continue;
+      }
+      LinkedList<Integer> hooksToUse = new LinkedList<Integer>();
+      Hook[] hooks = Callback.hooks;
+      for (Integer i : matchingHooks) {
+        if (hooks[i] != null && hooks[i].getFilter().instrumentMethod(cn, mn)) {
+          hooksToUse.add(i);
+          ((InstrumentationImpl) hooks[i].getInstrumentation()).addTransformedClass(cn.name.replace('/', '.'));
         }
-        return transformed;
+      }
+      if (!hooksToUse.isEmpty()) {
+        modifyMethod(cn, mn, hooksToUse);
+        transformed = true;
+      }
     }
+    return transformed;
+  }
 
-    private void modifyMethod(ClassNode cn, MethodNode mn, LinkedList<Integer> hooksToUse) {
-        
-        LabelNode startNode = CatchHelper.insertStartNode(mn);
-        int frameDataVarIndex = StartHelper.addTraceStart(cn, mn, hooksToUse);
-        ReturnHelper.addTraceReturn(mn, frameDataVarIndex, hooksToUse);
-        ThrowHelper.addTraceThrow(mn, frameDataVarIndex, hooksToUse);
-        CatchHelper.addTraceThrowableUncaught(mn, startNode, frameDataVarIndex, hooksToUse);
-    }
+  private void modifyMethod(ClassNode cn, MethodNode mn, LinkedList<Integer> hooksToUse) {
+
+    LabelNode startNode = CatchHelper.insertStartNode(mn);
+    int frameDataVarIndex = StartHelper.addTraceStart(cn, mn, hooksToUse);
+    ReturnHelper.addTraceReturn(mn, frameDataVarIndex, hooksToUse);
+    ThrowHelper.addTraceThrow(mn, frameDataVarIndex, hooksToUse);
+    CatchHelper.addTraceThrowableUncaught(mn, startNode, frameDataVarIndex, hooksToUse);
+  }
 }

@@ -39,43 +39,43 @@ import io.shiftleft.bctrace.spi.Hook;
  */
 public class Init {
 
-    private static final String DESCRIPTOR_NAME = ".bctrace";
+  private static final String DESCRIPTOR_NAME = ".bctrace";
 
-    public static void premain(final String arg, Instrumentation inst) throws Exception {
-        bootstrap(arg, inst);
+  public static void premain(final String arg, Instrumentation inst) throws Exception {
+    bootstrap(arg, inst);
+  }
+
+  public static void agentmain(String arg, Instrumentation inst) throws Exception {
+    bootstrap(arg, inst);
+  }
+
+  private static void bootstrap(String agentArgs, Instrumentation inst) throws Exception {
+
+    String[] hookClassNames = readHookClassNamesFromDescriptors();
+    Hook[] hooks = new Hook[hookClassNames.length];
+    for (int i = 0; i < hooks.length; i++) {
+      hooks[i] = (Hook) Class.forName(hookClassNames[i]).newInstance();
     }
+    Bctrace.instance = new Bctrace(inst, hooks);
+  }
 
-    public static void agentmain(String arg, Instrumentation inst) throws Exception {
-        bootstrap(arg, inst);
+  private static String[] readHookClassNamesFromDescriptors() throws IOException {
+    ClassLoader cl = Init.class.getClassLoader();
+    if (cl == null) {
+      cl = ClassLoader.getSystemClassLoader().getParent();
     }
-
-    private static void bootstrap(String agentArgs, Instrumentation inst) throws Exception {
-
-        String[] hookClassNames = readHookClassNamesFromDescriptors();
-        Hook[] hooks = new Hook[hookClassNames.length];
-        for (int i = 0; i < hooks.length; i++) {
-            hooks[i] = (Hook) Class.forName(hookClassNames[i]).newInstance();
+    Enumeration<URL> resources = cl.getResources(DESCRIPTOR_NAME);
+    ArrayList<String> list = new ArrayList<String>();
+    while (resources.hasMoreElements()) {
+      URL url = resources.nextElement();
+      Scanner scanner = new Scanner(url.openStream());
+      while (scanner.hasNextLine()) {
+        String line = scanner.nextLine().trim();
+        if (!line.isEmpty()) {
+          list.add(line);
         }
-        Bctrace.instance = new Bctrace(inst, hooks);
+      }
     }
-
-    private static String[] readHookClassNamesFromDescriptors() throws IOException {
-        ClassLoader cl = Init.class.getClassLoader();
-        if (cl == null) {
-            cl = ClassLoader.getSystemClassLoader().getParent();
-        }
-        Enumeration<URL> resources = cl.getResources(DESCRIPTOR_NAME);
-        ArrayList<String> list = new ArrayList<String>();
-        while (resources.hasMoreElements()) {
-            URL url = resources.nextElement();
-            Scanner scanner = new Scanner(url.openStream());
-            while (scanner.hasNextLine()) {
-                String line = scanner.nextLine().trim();
-                if (!line.isEmpty()) {
-                    list.add(line);
-                }
-            }
-        }
-        return list.toArray(new String[list.size()]);
-    }
+    return list.toArray(new String[list.size()]);
+  }
 }
