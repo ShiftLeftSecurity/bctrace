@@ -25,11 +25,11 @@
 package io.shiftleft.bctrace;
 
 import io.shiftleft.bctrace.asm.Transformer;
+import io.shiftleft.bctrace.asm.utils.ASMUtils;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.List;
-import org.apache.commons.io.IOUtils;
 import io.shiftleft.bctrace.runtime.Callback;
 import io.shiftleft.bctrace.runtime.InstrumentationImpl;
 import io.shiftleft.bctrace.spi.Hook;
@@ -51,7 +51,7 @@ public abstract class BcTraceTest {
         String className = clazz.getCanonicalName();
         String resourceName = className.replace('.', '/') + ".class";
         InputStream is = clazz.getClassLoader().getResourceAsStream(resourceName);
-        byte[] bytes = IOUtils.toByteArray(is);
+        byte[] bytes = ASMUtils.toByteArray(is);
         for (Hook hook : hooks) {
             hook.init(new InstrumentationImpl(null));
         }

@@ -44,12 +44,6 @@
       <scope>test</scope>   
     </dependency>
     <dependency>
-      <groupId>org.brutusin</groupId>
-      <artifactId>commons</artifactId>
-      <version>1.0.0</version>
-      <scope>test</scope>   
-    </dependency>
-    <dependency>
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm-all</artifactId>
       <version>5.2</version>

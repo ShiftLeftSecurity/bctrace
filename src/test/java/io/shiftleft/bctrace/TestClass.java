@@ -24,8 +24,8 @@
  */
 package io.shiftleft.bctrace;
 
+import io.shiftleft.bctrace.asm.utils.ASMUtils;
 import java.io.InputStream;
-import org.apache.commons.io.IOUtils;
 
 /**
  *
@@ -87,7 +87,7 @@ public class TestClass {
     String className = clazz.getCanonicalName();
     String resourceName = className.replace('.', '/') + ".class";
     InputStream is = clazz.getClassLoader().getResourceAsStream(resourceName);
-    byte[] bytes = IOUtils.toByteArray(is);
+    byte[] bytes = ASMUtils.toByteArray(is);
     BcTraceTest.viewByteCode(bytes);
   }
 
