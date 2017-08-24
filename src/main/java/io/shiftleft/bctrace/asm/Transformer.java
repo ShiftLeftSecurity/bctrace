@@ -64,9 +64,15 @@ public class Transformer implements ClassFileTransformer {
       if (className == null || classfileBuffer == null) {
         return null;
       }
-      if (className.startsWith("sun/") || className.startsWith("com/sun/") || className.startsWith("javafx/") || className.startsWith("org/springframework/boot/")) {
+      if (className.startsWith("io/shiftleft/bctrace/")) {
         return null;
       }
+      if (className.startsWith("sun/") || className.startsWith("com/sun/") || className.startsWith("javafx/")) {
+        return null;
+      }
+//      if (className.startsWith("org/springframework/boot/")) {
+//        return null;
+//      }
       if (className.startsWith("java/lang/ThreadLocal")) {
         return null;
       }
@@ -106,6 +112,9 @@ public class Transformer implements ClassFileTransformer {
     Hook[] hooks = Callback.hooks;
     if (hooks != null) {
       for (int i = 0; i < hooks.length; i++) {
+        if (className.startsWith(hooks[i].getJvmPackage())) {
+          return null;
+        }
         if (hooks[i].getFilter().instrumentClass(className, protectionDomain, loader)) {
           ret.add(i);
         }

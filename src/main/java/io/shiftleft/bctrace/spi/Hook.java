@@ -35,6 +35,12 @@ public abstract class Hook {
 
   protected Instrumentation instrumentation;
 
+  private final String jvmPackage;
+
+  public Hook() {
+    this.jvmPackage = getClass().getPackage().getName().replace('.', '/') + "/";
+  }
+
   /**
    * Initializes the plugin. Called once at startup before initial
    * instrumentation is performed.
@@ -55,6 +61,10 @@ public abstract class Hook {
 
   public final Instrumentation getInstrumentation() {
     return instrumentation;
+  }
+
+  public final String getJvmPackage() {
+    return jvmPackage;
   }
 
   /**
