@@ -32,29 +32,53 @@ package io.shiftleft.bctrace.runtime;
 public final class FrameData {
 
   public int methodId;
-  public Object instance;
-  public Object[] args;
 
-  private FrameData() {
+  public FrameData(int methodId) {
+    this.methodId = methodId;
   }
 
-  public static FrameData getInstance(Object instance, int methodId, Object[] args) {
-    FrameData ret = new FrameData();
-    ret.instance = instance;
-    ret.args = args;
-    ret.methodId = methodId;
-    return ret;
+  public static FrameData getInstance(int methodId) {
+    return new FrameData(methodId);
   }
 
   public FrameData copy() {
-    FrameData fd = new FrameData();
-    fd.args = args;
-    fd.methodId = methodId;
-    fd.instance = instance;
-    return fd;
+    return new FrameData(this.methodId);
   }
 
-  void dispose() {
-    // have in mind copies instances no in the pool
+  public MethodInfo getMethodInfo() {
+    return MethodRegistry.getInstance().getMethod(this.methodId);
+  }
+
+  public String getBinaryClassName() {
+    MethodInfo methodInfo = this.getMethodInfo();
+    if (methodInfo == null) {
+      return null;
+    }
+    return methodInfo.getBinaryClassName();
+  }
+
+  public String getMethodName() {
+    MethodInfo methodInfo = this.getMethodInfo();
+    if (methodInfo == null) {
+      return null;
+    }
+    return methodInfo.getMethodName();
+  }
+
+  public String getMethodDescriptor() {
+    MethodInfo methodInfo = this.getMethodInfo();
+    if (methodInfo == null) {
+      return null;
+    }
+    return methodInfo.getMethodDescriptor();
+  }
+
+  @Override
+  public String toString() {
+    MethodInfo methodInfo = this.getMethodInfo();
+    if (methodInfo == null) {
+      return null;
+    }
+    return methodInfo.toString();
   }
 }

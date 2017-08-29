@@ -52,7 +52,7 @@ public final class Bctrace {
     this.transformer = new Transformer();
     if (initialHooks != null) {
       for (Hook initialHook : initialHooks) {
-        addHook(initialHook);
+        this.addHook(initialHook);
       }
     }
     javaInstrumentation.addTransformer(transformer, javaInstrumentation.isRetransformClassesSupported());
@@ -67,7 +67,7 @@ public final class Bctrace {
 
   public void addHook(Hook hook) {
     this.hooks.add(hook);
-    updateCallback();
+    this.updateCallback();
     hook.init(new InstrumentationImpl(javaInstrumentation));
   }
 

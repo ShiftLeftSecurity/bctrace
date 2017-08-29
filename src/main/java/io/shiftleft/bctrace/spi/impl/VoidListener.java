@@ -35,19 +35,8 @@ import io.shiftleft.bctrace.runtime.FrameData;
 public class VoidListener implements Listener {
 
   @Override
-  public Object onStart(FrameData fd) {
-    return null;
+  public void onStart(long fd) {
+    return;
   }
 
-  @Override
-  public void onFinishedReturn(Object ret, FrameData fd) {
-  }
-
-  @Override
-  public void onFinishedThrowable(Throwable th, FrameData fd) {
-  }
-
-  @Override
-  public void onBeforeThrown(Throwable th, FrameData fd) {
-  }
 }

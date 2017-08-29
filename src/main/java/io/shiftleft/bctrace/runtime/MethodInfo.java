@@ -28,61 +28,50 @@ package io.shiftleft.bctrace.runtime;
  *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public final class MethodInfo {
+public final class MethodInfo implements Comparable<MethodInfo> {
 
   private final String binaryClassName;
   private final String methodName;
   private final String methodDescriptor;
-
-  private final String representation;
+  private String representation;
 
   public MethodInfo(String binaryClassName, String methodName, String methodDescriptor) {
     this.binaryClassName = binaryClassName;
     this.methodName = methodName;
     this.methodDescriptor = methodDescriptor;
-    this.representation = binaryClassName + "." + methodName + methodDescriptor;
   }
 
   public String getBinaryClassName() {
-    return binaryClassName;
+    return this.binaryClassName;
   }
 
   public String getMethodName() {
-    return methodName;
+    return this.methodName;
   }
 
   public String getMethodDescriptor() {
-    return methodDescriptor;
+    return this.methodDescriptor;
   }
 
   @Override
   public String toString() {
-    return representation;
+    // only generated when needed
+    if (this.representation == null) {
+      this.representation = this.binaryClassName + "." + this.methodName + this.methodDescriptor;
+    }
+    return this.representation;
   }
 
   @Override
-  public int hashCode() {
-    int hash = 3;
-    hash = 79 * hash + (this.representation != null ? this.representation.hashCode() : 0);
-    return hash;
+  public int compareTo(MethodInfo methodInfo) {
+    int classCmp = this.binaryClassName.compareTo(methodInfo.binaryClassName);
+    if (classCmp != 0) {
+      return classCmp;
+    }
+    int nameCmp = this.methodName.compareTo(methodInfo.methodName);
+    if (classCmp != 0) {
+      return nameCmp;
+    }
+    return this.methodDescriptor.compareTo(methodInfo.methodDescriptor);
   }
-
-  @Override
-  public boolean equals(Object obj) {
-    if (this == obj) {
-      return true;
-    }
-    if (obj == null) {
-      return false;
-    }
-    if (getClass() != obj.getClass()) {
-      return false;
-    }
-    final MethodInfo other = (MethodInfo) obj;
-    if ((this.representation == null) ? (other.representation != null) : !this.representation.equals(other.representation)) {
-      return false;
-    }
-    return true;
-  }
-
 }

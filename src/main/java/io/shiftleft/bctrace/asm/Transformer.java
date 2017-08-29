@@ -28,12 +28,10 @@ import io.shiftleft.bctrace.runtime.InstrumentationImpl;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.security.ProtectionDomain;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
-import io.shiftleft.bctrace.asm.helper.CatchHelper;
-import io.shiftleft.bctrace.asm.helper.ReturnHelper;
 import io.shiftleft.bctrace.asm.helper.StartHelper;
-import io.shiftleft.bctrace.asm.helper.ThrowHelper;
 import io.shiftleft.bctrace.asm.utils.ASMUtils;
 import io.shiftleft.bctrace.runtime.Callback;
 import io.shiftleft.bctrace.spi.Hook;
@@ -48,6 +46,16 @@ import org.objectweb.asm.tree.MethodNode;
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
 public class Transformer implements ClassFileTransformer {
+
+  private static final String[] NO_MODIFICATION = new String[] {
+      "io/shiftleft/bctrace/",
+      "java/lang/",
+      "sun/",
+      "com/sun/",
+      "javafx/",
+      "io/shiftleft/agent",
+      "oracle/"
+  };
 
   @Override
   public byte[] transform(final ClassLoader loader,
@@ -64,20 +72,13 @@ public class Transformer implements ClassFileTransformer {
       if (className == null || classfileBuffer == null) {
         return null;
       }
-      if (className.startsWith("io/shiftleft/bctrace/")) {
-        return null;
-      }
-      if (className.startsWith("sun/") || className.startsWith("com/sun/") || className.startsWith("javafx/")) {
-        return null;
-      }
-//      if (className.startsWith("org/springframework/boot/")) {
-//        return null;
-//      }
-      if (className.startsWith("java/lang/ThreadLocal")) {
-        return null;
+      for(String shouldNotChange: NO_MODIFICATION) {
+        if (className.startsWith(shouldNotChange)) {
+          return null;
+        }
       }
 
-      LinkedList<Integer> matchingHooks = getMatchingHooks(className, protectionDomain, loader);
+      ArrayList<Integer> matchingHooks = getMatchingHooks(className, protectionDomain, loader);
       if (matchingHooks == null || matchingHooks.isEmpty()) {
         return null;
       }
@@ -90,7 +91,8 @@ public class Transformer implements ClassFileTransformer {
       if (!transformed) {
         return null;
       } else {
-        ClassWriter cw = new StaticClassWriter(cr, ClassWriter.COMPUTE_FRAMES, loader);
+        ClassWriter cw = new StaticClassWriter(cr,
+            ClassWriter.COMPUTE_FRAMES|ClassWriter.COMPUTE_MAXS, loader);
         cn.accept(cw);
         return cw.toByteArray();
       }
@@ -107,10 +109,12 @@ public class Transformer implements ClassFileTransformer {
     }
   }
 
-  private LinkedList<Integer> getMatchingHooks(String className, ProtectionDomain protectionDomain, ClassLoader loader) {
-    LinkedList<Integer> ret = new LinkedList<Integer>();
+  private ArrayList<Integer> getMatchingHooks(String className, ProtectionDomain protectionDomain,
+      ClassLoader loader) {
+    ArrayList<Integer> ret = null;
     Hook[] hooks = Callback.hooks;
     if (hooks != null) {
+      ret = new ArrayList<Integer>(Callback.hooks.length);
       for (int i = 0; i < hooks.length; i++) {
         if (className.startsWith(hooks[i].getJvmPackage())) {
           return null;
@@ -124,17 +128,17 @@ public class Transformer implements ClassFileTransformer {
     return ret;
   }
 
-  private boolean transformMethods(ClassNode cn, LinkedList<Integer> matchingHooks) {
+  private boolean transformMethods(ClassNode cn, ArrayList<Integer> matchingHooks) {
     List<MethodNode> methods = cn.methods;
     boolean transformed = false;
     for (MethodNode mn : methods) {
       if (ASMUtils.isAbstract(mn) || ASMUtils.isNative(mn)) {
         continue;
       }
-      if (mn.name.contains("init")) {
+      if (mn.name.equals("<init>") || mn.name.equals("<cinit>") || mn.name.equals("<linit>")) {
         continue;
       }
-      LinkedList<Integer> hooksToUse = new LinkedList<Integer>();
+      ArrayList<Integer> hooksToUse = new ArrayList<Integer>();
       Hook[] hooks = Callback.hooks;
       for (Integer i : matchingHooks) {
         if (hooks[i] != null && hooks[i].getFilter().instrumentMethod(cn, mn)) {
@@ -150,12 +154,7 @@ public class Transformer implements ClassFileTransformer {
     return transformed;
   }
 
-  private void modifyMethod(ClassNode cn, MethodNode mn, LinkedList<Integer> hooksToUse) {
-
-    LabelNode startNode = CatchHelper.insertStartNode(mn);
-    int frameDataVarIndex = StartHelper.addTraceStart(cn, mn, hooksToUse);
-    ReturnHelper.addTraceReturn(mn, frameDataVarIndex, hooksToUse);
-    ThrowHelper.addTraceThrow(mn, frameDataVarIndex, hooksToUse);
-    CatchHelper.addTraceThrowableUncaught(mn, startNode, frameDataVarIndex, hooksToUse);
+  private void modifyMethod(ClassNode cn, MethodNode mn, ArrayList<Integer> hooksToUse) {
+    StartHelper.addTraceStart(cn, mn, hooksToUse);
   }
 }
