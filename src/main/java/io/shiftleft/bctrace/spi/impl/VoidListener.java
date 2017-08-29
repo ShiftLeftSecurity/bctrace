@@ -35,7 +35,7 @@ import io.shiftleft.bctrace.runtime.FrameData;
 public class VoidListener implements Listener {
 
   @Override
-  public void onStart(long fd) {
+  public void onStart(FrameData fd) {
     return;
   }
 

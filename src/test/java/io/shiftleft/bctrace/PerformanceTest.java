@@ -49,16 +49,18 @@ public class PerformanceTest extends BcTraceTest {
         public Listener getListener() {
             return new VoidListener() {
                 @Override
-                public Object onStart(FrameData fd) {
+                public void onStart(FrameData fd) {
+                    /*
                     if (((Long) fd.args[0]) % 2 == 0) {
                         System.nanoTime();
                     }
-                    return null;
+                    */
                 }
             };
         }
     }};
 
+    /*
     @Test
     public void testMinimimOverheadPrimitive() throws Exception {
         int stackDepth = 2000;
@@ -103,4 +105,6 @@ public class PerformanceTest extends BcTraceTest {
         System.out.println("Instrumented (wrapper): " + instrumentedElapse / 1e6 + " ms");
 
     }
+
+    */
 }
