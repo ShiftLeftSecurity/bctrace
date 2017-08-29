@@ -37,6 +37,10 @@ public final class FrameData {
     this.methodId = methodId;
   }
 
+  public FrameData(MethodInfo methodInfo) {
+    this.methodId = MethodRegistry.getInstance().getMethodId(methodInfo);
+  }
+
   public static FrameData getInstance(int methodId) {
     return new FrameData(methodId);
   }
@@ -80,5 +84,21 @@ public final class FrameData {
       return null;
     }
     return methodInfo.toString();
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (obj == null) {
+      return false;
+    } else if (obj instanceof FrameData) {
+      return this.methodId == ((FrameData) obj).methodId;
+    } else if (obj instanceof Integer) {
+      return this.methodId == (Integer) obj;
+    } else if (obj instanceof MethodInfo) {
+      return obj.equals(this);
+    } else if (obj instanceof String) {
+      return (new MethodInfo(this.methodId)).equals(obj);
+    }
+    return false;
   }
 }

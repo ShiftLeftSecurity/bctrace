@@ -57,7 +57,7 @@ public final class MethodRegistry {
   }
 
   public int size() {
-    return this.methodIdToInt.size();
+    return this.counter.get();
   }
 
   public MethodInfo getMethod(int id) {
@@ -79,14 +79,5 @@ public final class MethodRegistry {
     } else {
       return arg;
     }
-  }
-
-  public boolean methodIdExists(String binaryClassName, String methodName, String methodDescriptor) {
-    MethodInfo methodInfo = new MethodInfo(binaryClassName, methodName, methodDescriptor);
-    return this.methodIDExists(methodInfo);
-  }
-
-  public boolean methodIDExists(MethodInfo methodInfo) {
-    return this.methodInfoToInt.containsKey(methodInfo);
   }
 }
