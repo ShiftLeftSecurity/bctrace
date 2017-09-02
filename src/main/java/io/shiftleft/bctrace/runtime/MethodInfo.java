@@ -34,7 +34,7 @@ public final class MethodInfo {
   private final String methodName;
   private final String methodDescriptor;
 
-  private final String representation;
+  private String representation;
 
   public MethodInfo(String binaryClassName, String methodName, String methodDescriptor) {
     this.binaryClassName = binaryClassName;
@@ -44,20 +44,20 @@ public final class MethodInfo {
   }
 
   public String getBinaryClassName() {
-    return binaryClassName;
+    return this.binaryClassName;
   }
 
   public String getMethodName() {
-    return methodName;
+    return this.methodName;
   }
 
   public String getMethodDescriptor() {
-    return methodDescriptor;
+    return this.methodDescriptor;
   }
 
   @Override
   public String toString() {
-    return representation;
+    return this.representation;
   }
 
   @Override
@@ -84,5 +84,4 @@ public final class MethodInfo {
     }
     return true;
   }
-
 }
