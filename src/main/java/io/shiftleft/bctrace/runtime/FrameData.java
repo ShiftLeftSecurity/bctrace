@@ -32,73 +32,29 @@ package io.shiftleft.bctrace.runtime;
 public final class FrameData {
 
   public int methodId;
+  public Object instance;
+  public Object[] args;
 
-  public FrameData(int methodId) {
-    this.methodId = methodId;
+  private FrameData() {
   }
 
-  public FrameData(MethodInfo methodInfo) {
-    this.methodId = MethodRegistry.getInstance().getMethodId(methodInfo);
-  }
-
-  public static FrameData getInstance(int methodId) {
-    return new FrameData(methodId);
+  public static FrameData getInstance(Object instance, int methodId, Object[] args) {
+    FrameData ret = new FrameData();
+    ret.instance = instance;
+    ret.args = args;
+    ret.methodId = methodId;
+    return ret;
   }
 
   public FrameData copy() {
-    return new FrameData(this.methodId);
+    FrameData fd = new FrameData();
+    fd.args = args;
+    fd.methodId = methodId;
+    fd.instance = instance;
+    return fd;
   }
 
-  public MethodInfo getMethodInfo() {
-    return MethodRegistry.getInstance().getMethod(this.methodId);
-  }
-
-  public String getBinaryClassName() {
-    MethodInfo methodInfo = this.getMethodInfo();
-    if (methodInfo == null) {
-      return null;
-    }
-    return methodInfo.getBinaryClassName();
-  }
-
-  public String getMethodName() {
-    MethodInfo methodInfo = this.getMethodInfo();
-    if (methodInfo == null) {
-      return null;
-    }
-    return methodInfo.getMethodName();
-  }
-
-  public String getMethodDescriptor() {
-    MethodInfo methodInfo = this.getMethodInfo();
-    if (methodInfo == null) {
-      return null;
-    }
-    return methodInfo.getMethodDescriptor();
-  }
-
-  @Override
-  public String toString() {
-    MethodInfo methodInfo = this.getMethodInfo();
-    if (methodInfo == null) {
-      return null;
-    }
-    return methodInfo.toString();
-  }
-
-  @Override
-  public boolean equals(Object obj) {
-    if (obj == null) {
-      return false;
-    } else if (obj instanceof FrameData) {
-      return this.methodId == ((FrameData) obj).methodId;
-    } else if (obj instanceof Integer) {
-      return this.methodId == (Integer) obj;
-    } else if (obj instanceof MethodInfo) {
-      return obj.equals(this);
-    } else if (obj instanceof String) {
-      return (new MethodInfo(this.methodId)).equals(obj);
-    }
-    return false;
+  void dispose() {
+    // have in mind copies instances no in the pool
   }
 }

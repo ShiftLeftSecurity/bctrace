@@ -24,83 +24,80 @@
  */
 package io.shiftleft.bctrace.asm.helper;
 
+import java.util.Iterator;
 import java.util.LinkedList;
-import io.shiftleft.bctrace.runtime.MethodRegistry;
 import io.shiftleft.bctrace.asm.utils.ASMUtils;
 import java.util.ArrayList;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
-import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
 /**
  *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public class StartHelper {
+public class ReturnHelper {
 
-  public static int addTraceStart(ClassNode cn, MethodNode mn, ArrayList<Integer> hooksToUse) {
-    int methodId = MethodRegistry.getInstance().getMethodId(cn.name, mn.name, mn.desc);
-    InsnList il = new InsnList();
-    if (ASMUtils.isStatic(mn) || mn.name.equals("<init>")) {
-      il.add(new InsnNode(Opcodes.ACONST_NULL));
-    } else {
-      il.add(new VarInsnNode(Opcodes.ALOAD, 0));
-    }
-    il.add(ASMUtils.getPushInstruction(methodId));
-    addMethodParametersVariable(il, mn);
-    il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
-            "io/shiftleft/bctrace/runtime/FrameData", "getInstance",
-            "(Ljava/lang/Object;I[Ljava/lang/Object;)Lio/shiftleft/bctrace/runtime/FrameData;", false));
+  public static void addTraceReturn(MethodNode mn, int frameDataVarIndex, ArrayList<Integer> hooksToUse) {
+    InsnList il = mn.instructions;
+    Iterator<AbstractInsnNode> it = il.iterator();
+    Type returnType = Type.getReturnType(mn.desc);
 
-    il.add(new InsnNode(Opcodes.DUP));
-    il.add(new VarInsnNode(Opcodes.ASTORE, mn.maxLocals));
-    mn.maxLocals++;
-    for (int i = 0; i < hooksToUse.size(); i++) {
-      Integer index = hooksToUse.get(i);
-      if (i < hooksToUse.size() - 1) {
-        il.add(new InsnNode(Opcodes.DUP));
+    while (it.hasNext()) {
+      AbstractInsnNode abstractInsnNode = it.next();
+
+      switch (abstractInsnNode.getOpcode()) {
+        case Opcodes.RETURN:
+          il.insertBefore(abstractInsnNode, getVoidReturnTraceInstructions(frameDataVarIndex, hooksToUse));
+          break;
+        case Opcodes.IRETURN:
+        case Opcodes.LRETURN:
+        case Opcodes.FRETURN:
+        case Opcodes.ARETURN:
+        case Opcodes.DRETURN:
+          il.insertBefore(abstractInsnNode, getReturnTraceInstructions(returnType, frameDataVarIndex, hooksToUse));
       }
-      il.add(ASMUtils.getPushInstruction(index));
-      il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
-              "io/shiftleft/bctrace/runtime/Callback", "onStart",
-              "(Lio/shiftleft/bctrace/runtime/FrameData;I)V", false));
-
     }
-    mn.instructions.insert(il);
-    return mn.maxLocals - 1;
   }
 
-  /**
-   * Creates a the parameter object array reference on top of the operand stack
-   *
-   * @param il
-   * @param mn
-   */
-  private static void addMethodParametersVariable(InsnList il, MethodNode mn) {
-    Type[] methodArguments = Type.getArgumentTypes(mn.desc);
-    if (methodArguments.length == 0) {
+  private static InsnList getVoidReturnTraceInstructions(int frameDataVarIndex, ArrayList<Integer> hooksToUse) {
+    InsnList il = new InsnList();
+    for (int i = hooksToUse.size() - 1; i >= 0; i--) {
+      Integer index = hooksToUse.get(i);
       il.add(new InsnNode(Opcodes.ACONST_NULL));
-    } else {
-      il.add(ASMUtils.getPushInstruction(methodArguments.length));
-      il.add(new TypeInsnNode(Opcodes.ANEWARRAY, "java/lang/Object"));
-      int index = ASMUtils.isStatic(mn) ? 0 : 1;
-      for (int i = 0; i < methodArguments.length; i++) {
-        il.add(new InsnNode(Opcodes.DUP));
-        il.add(ASMUtils.getPushInstruction(i));
-        il.add(ASMUtils.getLoadInst(methodArguments[i], index));
-        MethodInsnNode mNode = ASMUtils.getWrapperContructionInst(methodArguments[i]);
-        if (mNode != null) {
-          il.add(mNode);
-        }
-        il.add(new InsnNode(Opcodes.AASTORE));
-        index += methodArguments[i].getSize();
-      }
+      il.add(new VarInsnNode(Opcodes.ALOAD, frameDataVarIndex));
+      il.add(ASMUtils.getPushInstruction(index));
+      il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
+              "io/shiftleft/bctrace/runtime/Callback", "onFinishedReturn",
+              "(Ljava/lang/Object;Lio/shiftleft/bctrace/runtime/FrameData;I)V", false));
     }
+    return il;
+  }
+
+  private static InsnList getReturnTraceInstructions(Type returnType, int frameDataVarIndex, ArrayList<Integer> hooksToUse) {
+    InsnList il = new InsnList();
+    for (int i = hooksToUse.size() - 1; i >= 0; i--) {
+      Integer index = hooksToUse.get(i);
+      if (returnType.getSize() == 1) {
+        il.add(new InsnNode(Opcodes.DUP));
+      } else {
+        il.add(new InsnNode(Opcodes.DUP2));
+      }
+      MethodInsnNode mNode = ASMUtils.getWrapperContructionInst(returnType);
+      if (mNode != null) {
+        il.add(mNode);
+      }
+      il.add(new VarInsnNode(Opcodes.ALOAD, frameDataVarIndex));
+      il.add(ASMUtils.getPushInstruction(index));
+      il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
+              "io/shiftleft/bctrace/runtime/Callback", "onFinishedReturn",
+              "(Ljava/lang/Object;Lio/shiftleft/bctrace/runtime/FrameData;I)V", false));
+    }
+    return il;
   }
 }

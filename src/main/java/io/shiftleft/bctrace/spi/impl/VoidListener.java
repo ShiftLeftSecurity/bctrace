@@ -36,7 +36,17 @@ public class VoidListener implements Listener {
 
   @Override
   public void onStart(FrameData fd) {
-    return;
   }
 
+  @Override
+  public void onFinishedReturn(Object ret, FrameData fd) {
+  }
+
+  @Override
+  public void onFinishedThrowable(Throwable th, FrameData fd) {
+  }
+
+  @Override
+  public void onBeforeThrown(Throwable th, FrameData fd) {
+  }
 }

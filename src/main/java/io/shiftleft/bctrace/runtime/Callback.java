@@ -32,10 +32,61 @@ import io.shiftleft.bctrace.spi.Hook;
  */
 public final class Callback {
 
+  private static final ThreadLocal<Boolean> NOTIFYING_FLAG = new ThreadLocal<Boolean>();
+
   public static Hook[] hooks;
 
   @SuppressWarnings("BoxedValueEquality")
-  public static void onStart(int fd, int i) {
-    hooks[i].getListener().onStart(new FrameData(fd));
+  public static void onStart(FrameData fd, int i) {
+    if (Boolean.TRUE == NOTIFYING_FLAG.get()) {
+      return;
+    }
+    try {
+      NOTIFYING_FLAG.set(Boolean.TRUE);
+      hooks[i].getListener().onStart(fd);
+    } finally {
+      NOTIFYING_FLAG.remove();
+    }
+  }
+
+  @SuppressWarnings("BoxedValueEquality")
+  public static void onFinishedReturn(Object ret, FrameData fd, int i) {
+    if (Boolean.TRUE == NOTIFYING_FLAG.get()) {
+      return;
+    }
+    try {
+      NOTIFYING_FLAG.set(Boolean.TRUE);
+      hooks[i].getListener().onFinishedReturn(ret, fd);
+    } finally {
+      NOTIFYING_FLAG.remove();
+      fd.dispose();
+    }
+  }
+
+  @SuppressWarnings("BoxedValueEquality")
+  public static void onFinishedThrowable(Throwable th, FrameData fd, int i) {
+    if (Boolean.TRUE == NOTIFYING_FLAG.get()) {
+      return;
+    }
+    try {
+      NOTIFYING_FLAG.set(Boolean.TRUE);
+      hooks[i].getListener().onFinishedThrowable(th, fd);
+    } finally {
+      NOTIFYING_FLAG.remove();
+      fd.dispose();
+    }
+  }
+
+  @SuppressWarnings("BoxedValueEquality")
+  public static void onBeforeThrown(Throwable th, FrameData fd, int i) {
+    if (Boolean.TRUE == NOTIFYING_FLAG.get()) {
+      return;
+    }
+    try {
+      NOTIFYING_FLAG.set(Boolean.TRUE);
+      hooks[i].getListener().onBeforeThrown(th, fd);
+    } finally {
+      NOTIFYING_FLAG.remove();
+    }
   }
 }

@@ -55,7 +55,7 @@ public final class Bctrace {
         this.addHook(initialHook);
       }
     }
-    javaInstrumentation.addTransformer(transformer, javaInstrumentation.isRetransformClassesSupported());
+    this.javaInstrumentation.addTransformer(transformer, javaInstrumentation.isRetransformClassesSupported());
   }
 
   public static Bctrace getInstance() {
@@ -72,7 +72,7 @@ public final class Bctrace {
   }
 
   public void removeHook(Hook hook) {
-    removeHook(hook, true);
+    this.removeHook(hook, true);
   }
 
   public void removeHook(Hook hook, boolean retransform) {
@@ -85,7 +85,7 @@ public final class Bctrace {
         throw new AssertionError();
       }
     }
-    updateCallback();
+    this.updateCallback();
   }
 
   private void updateCallback() {

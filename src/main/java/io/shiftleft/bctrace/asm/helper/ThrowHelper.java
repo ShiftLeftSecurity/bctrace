@@ -22,46 +22,50 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.runtime;
+package io.shiftleft.bctrace.asm.helper;
 
+import java.util.Iterator;
+import java.util.LinkedList;
+import io.shiftleft.bctrace.asm.utils.ASMUtils;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.tree.AbstractInsnNode;
+import org.objectweb.asm.tree.InsnList;
+import org.objectweb.asm.tree.InsnNode;
+import org.objectweb.asm.tree.MethodInsnNode;
+import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.VarInsnNode;
 
 /**
  *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public final class MethodRegistry {
+public class ThrowHelper {
 
-  private static final MethodRegistry INSTANCE = new MethodRegistry();
+  public static void addTraceThrow(MethodNode mn, int frameDataVarIndex, ArrayList<Integer> hooksToUse) {
+    InsnList il = mn.instructions;
+    Iterator<AbstractInsnNode> it = il.iterator();
+    while (it.hasNext()) {
+      AbstractInsnNode abstractInsnNode = it.next();
 
-  private final ArrayList<MethodInfo> methodArray = new ArrayList<MethodInfo>();
-  private final Map<MethodInfo, Integer> methodMap = new HashMap<MethodInfo, Integer>();
-
-  public static MethodRegistry getInstance() {
-    return INSTANCE;
-  }
-
-  private MethodRegistry() {
-  }
-
-  public synchronized MethodInfo getMethod(int id) {
-    return methodArray.get(id);
-  }
-
-  public synchronized int getMethodId(String binaryClassName, String methodName, String methodDescriptor) {
-    MethodInfo mi = new MethodInfo(binaryClassName, methodName, methodDescriptor);
-    Integer id = methodMap.get(mi);
-    if (id == null) {
-      methodArray.add(mi);
-      id = methodArray.size() - 1;
-      methodMap.put(mi, id);
+      switch (abstractInsnNode.getOpcode()) {
+        case Opcodes.ATHROW:
+          il.insertBefore(abstractInsnNode, getThrowTraceInstructions(frameDataVarIndex, hooksToUse));
+          break;
+      }
     }
-    return id;
   }
 
-  public synchronized int size() {
-    return methodArray.size();
+  private static InsnList getThrowTraceInstructions(int frameDataVarIndex, ArrayList<Integer> hooksToUse) {
+    InsnList il = new InsnList();
+    for (Integer index : hooksToUse) {
+      il.add(new InsnNode(Opcodes.DUP));
+      il.add(new VarInsnNode(Opcodes.ALOAD, frameDataVarIndex));
+      il.add(ASMUtils.getPushInstruction(index));
+      il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
+              "io/shiftleft/bctrace/runtime/Callback", "onBeforeThrown",
+              "(Ljava/lang/Throwable;Lio/shiftleft/bctrace/runtime/FrameData;I)V", false));
+    }
+    return il;
   }
 }
