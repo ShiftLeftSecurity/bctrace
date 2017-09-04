@@ -26,7 +26,6 @@ package io.shiftleft.bctrace;
 
 import java.lang.reflect.InvocationTargetException;
 import io.shiftleft.bctrace.TestClass.TestRuntimeException;
-import io.shiftleft.bctrace.runtime.FrameData;
 import io.shiftleft.bctrace.spi.Filter;
 import io.shiftleft.bctrace.spi.Hook;
 import io.shiftleft.bctrace.spi.impl.AllFilter;
