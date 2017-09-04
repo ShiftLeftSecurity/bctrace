@@ -78,7 +78,6 @@ public class CatchHelper extends Helper {
 
   private static InsnList getThrowableTraceInstructions(int methodId, MethodNode mn, ArrayList<Integer> hooksToUse) {
     InsnList il = new InsnList();
-    //il.add(new FrameNode(Opcodes.F_SAME1, 0, null, 1,  new Object[]{"java/lang/Throwable"}));
     for (int i = hooksToUse.size() - 1; i >= 0; i--) {
       Integer index = hooksToUse.get(i);
       il.add(new InsnNode(Opcodes.DUP)); // dup throwable
