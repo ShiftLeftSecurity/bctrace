@@ -22,73 +22,26 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.spi;
-
-import io.shiftleft.bctrace.spi.listener.Listener;
+package io.shiftleft.bctrace.spi.listener;
 
 /**
- * An <b>instrumentation hook</b> determines what methods to instrument and what
- * actions to perform at runtime under the events triggered by the instrumented
- * methods.
  *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public abstract class Hook {
-
-  protected Instrumentation instrumentation;
-
-  private final String jvmPackage;
-
-  public Hook() {
-    this.jvmPackage = getClass().getPackage().getName().replace('.', '/') + "/";
-  }
+public interface FinishReturnListener extends Listener {
 
   /**
-   * Initializes the plugin. Called once at startup before initial
-   * instrumentation is performed.
-   *
-   * @param instrumentation Intrumentation callback, allowing triggering
-   * retransformations
+   * Invoked by instrumented methods just before return (if multiple plugins are
+   * registered, listener notification is performed according to their
+   * respective plugin <b>reverse</b> registration order).
+   * 
+   * @param methodId method id (as defined by MethodRegistry)
+   * @param instance instance where the method belongs. Null if the method is
+   * @param ret Object being returned by the method. Wrapper type if the
+   * original return type is primitive. <code>null</code> if the method return
+   * type is <code>void</code>
    */
-  public final void init(Instrumentation instrumentation) {
-    this.instrumentation = instrumentation;
-    doInit();
-  }
+  
+  public void onFinishedReturn(int methodId, Object instance, Object ret);
 
-  /**
-   * Allows subclasses to implement initialization logic.
-   */
-  public void doInit() {
-  }
-
-  public final Instrumentation getInstrumentation() {
-    return instrumentation;
-  }
-
-  public final String getJvmPackage() {
-    return jvmPackage;
-  }
-
-  /**
-   * Returns the filter, deciding what methods to instrument.
-   *
-   * @return
-   */
-  public abstract Filter getFilter();
-
-  /**
-   * Returns the listener invoked by the instrumented method hooks.
-   *
-   * @return
-   */
-  public abstract Listener getListener();
-
-  /**
-   * Communicates an error to the hook implementation
-   *
-   * @param th
-   */
-  public void onError(Throwable th) {
-
-  }
 }

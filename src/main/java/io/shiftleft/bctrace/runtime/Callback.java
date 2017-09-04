@@ -25,6 +25,11 @@
 package io.shiftleft.bctrace.runtime;
 
 import io.shiftleft.bctrace.spi.Hook;
+import io.shiftleft.bctrace.spi.listener.BeforeThrownListener;
+import io.shiftleft.bctrace.spi.listener.FinishReturnListener;
+import io.shiftleft.bctrace.spi.listener.FinishThrowableListener;
+import io.shiftleft.bctrace.spi.listener.StartArgumentsListener;
+import io.shiftleft.bctrace.spi.listener.StartListener;
 
 /**
  *
@@ -37,54 +42,65 @@ public final class Callback {
   public static Hook[] hooks;
 
   @SuppressWarnings("BoxedValueEquality")
-  public static void onStart(FrameData fd, int i) {
+  public static void onStart(int methodId, Object instance, int i) {
     if (Boolean.TRUE == NOTIFYING_FLAG.get()) {
       return;
     }
     try {
       NOTIFYING_FLAG.set(Boolean.TRUE);
-      hooks[i].getListener().onStart(fd);
+      ((StartListener) hooks[i].getListener()).onStart(methodId, instance);
+    } finally {
+      NOTIFYING_FLAG.remove();
+    }
+  }
+  
+  @SuppressWarnings("BoxedValueEquality")
+  public static void onStart(Object[] args, int methodId, Object instance, int i) {
+    if (Boolean.TRUE == NOTIFYING_FLAG.get()) {
+      return;
+    }
+    try {
+      NOTIFYING_FLAG.set(Boolean.TRUE);
+      ((StartArgumentsListener) hooks[i].getListener()).onStart(methodId, instance, args);
     } finally {
       NOTIFYING_FLAG.remove();
     }
   }
 
   @SuppressWarnings("BoxedValueEquality")
-  public static void onFinishedReturn(Object ret, FrameData fd, int i) {
+  public static void onFinishedReturn(Object ret, int methodId, Object instance, int i) {
     if (Boolean.TRUE == NOTIFYING_FLAG.get()) {
       return;
     }
     try {
       NOTIFYING_FLAG.set(Boolean.TRUE);
-      hooks[i].getListener().onFinishedReturn(ret, fd);
+      ((FinishReturnListener) hooks[i].getListener()).onFinishedReturn(methodId, instance, ret);
     } finally {
       NOTIFYING_FLAG.remove();
-      fd.dispose();
     }
   }
 
   @SuppressWarnings("BoxedValueEquality")
-  public static void onFinishedThrowable(Throwable th, FrameData fd, int i) {
+  public static void onFinishedThrowable(Throwable th, int methodId, Object instance, int i) {
     if (Boolean.TRUE == NOTIFYING_FLAG.get()) {
       return;
     }
     try {
       NOTIFYING_FLAG.set(Boolean.TRUE);
-      hooks[i].getListener().onFinishedThrowable(th, fd);
+      ((FinishThrowableListener) hooks[i].getListener()).onFinishedThrowable(methodId, instance, th);
     } finally {
       NOTIFYING_FLAG.remove();
-      fd.dispose();
     }
   }
 
   @SuppressWarnings("BoxedValueEquality")
-  public static void onBeforeThrown(Throwable th, FrameData fd, int i) {
+  public static void onBeforeThrown(Throwable th, int methodId, Object instance, int i) {
     if (Boolean.TRUE == NOTIFYING_FLAG.get()) {
       return;
     }
     try {
       NOTIFYING_FLAG.set(Boolean.TRUE);
-      hooks[i].getListener().onBeforeThrown(th, fd);
+      ((BeforeThrownListener) hooks[i].getListener()).onBeforeThrown(methodId, instance, th);
     } finally {
       NOTIFYING_FLAG.remove();
     }

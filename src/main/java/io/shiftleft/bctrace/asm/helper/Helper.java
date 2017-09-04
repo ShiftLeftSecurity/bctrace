@@ -22,31 +22,20 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.spi.impl;
+package io.shiftleft.bctrace.asm.helper;
 
-import io.shiftleft.bctrace.spi.Listener;
-import io.shiftleft.bctrace.runtime.FrameData;
+import java.util.ArrayList;
 
 /**
- * A listener that hears but not listens. :)
  *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public class VoidListener implements Listener {
+public class Helper {
 
-  @Override
-  public void onStart(FrameData fd) {
-  }
-
-  @Override
-  public void onFinishedReturn(Object ret, FrameData fd) {
-  }
-
-  @Override
-  public void onFinishedThrowable(Throwable th, FrameData fd) {
-  }
-
-  @Override
-  public void onBeforeThrown(Throwable th, FrameData fd) {
+  protected static boolean isInstrumentationNeeded(ArrayList<Integer> hooksToUse) {
+    if (hooksToUse == null) {
+      return false;
+    }
+    return hooksToUse.size() > 0;
   }
 }

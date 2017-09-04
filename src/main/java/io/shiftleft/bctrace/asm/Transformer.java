@@ -28,15 +28,22 @@ import io.shiftleft.bctrace.runtime.InstrumentationImpl;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.security.ProtectionDomain;
-import java.util.LinkedList;
 import java.util.List;
 import io.shiftleft.bctrace.asm.helper.CatchHelper;
 import io.shiftleft.bctrace.asm.helper.ReturnHelper;
+import io.shiftleft.bctrace.asm.helper.StartArgumentsHelper;
 import io.shiftleft.bctrace.asm.helper.StartHelper;
 import io.shiftleft.bctrace.asm.helper.ThrowHelper;
 import io.shiftleft.bctrace.asm.utils.ASMUtils;
 import io.shiftleft.bctrace.runtime.Callback;
+import io.shiftleft.bctrace.runtime.MethodRegistry;
 import io.shiftleft.bctrace.spi.Hook;
+import io.shiftleft.bctrace.spi.listener.BeforeThrownListener;
+import io.shiftleft.bctrace.spi.listener.FinishReturnListener;
+import io.shiftleft.bctrace.spi.listener.FinishThrowableListener;
+import io.shiftleft.bctrace.spi.listener.Listener;
+import io.shiftleft.bctrace.spi.listener.StartArgumentsListener;
+import io.shiftleft.bctrace.spi.listener.StartListener;
 import java.util.ArrayList;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
@@ -155,11 +162,34 @@ public class Transformer implements ClassFileTransformer {
   }
 
   private void modifyMethod(ClassNode cn, MethodNode mn, ArrayList<Integer> hooksToUse) {
+    
+    int methodId = MethodRegistry.getInstance().getMethodId(cn.name, mn.name, mn.desc);
+    
+    ArrayList<Integer> startListenerHooks = getListenerHooks(hooksToUse, StartListener.class);
+    ArrayList<Integer> startArgumentsListenerHooks = getListenerHooks(hooksToUse, StartArgumentsListener.class);
+    ArrayList<Integer> finishReturnListenerHooks = getListenerHooks(hooksToUse, FinishReturnListener.class);
+    ArrayList<Integer> finishThrowableListenerHooks = getListenerHooks(hooksToUse, FinishThrowableListener.class);
+    ArrayList<Integer> beforeThrownListenerHooks = getListenerHooks(hooksToUse, BeforeThrownListener.class);
 
-    LabelNode startNode = CatchHelper.insertStartNode(mn);
-    int frameDataVarIndex = StartHelper.addTraceStart(cn, mn, hooksToUse);
-    ReturnHelper.addTraceReturn(mn, frameDataVarIndex, hooksToUse);
-    ThrowHelper.addTraceThrow(mn, frameDataVarIndex, hooksToUse);
-    CatchHelper.addTraceThrowableUncaught(mn, startNode, frameDataVarIndex, hooksToUse);
+    LabelNode startNode = CatchHelper.insertStartNode(mn, finishThrowableListenerHooks);
+    StartHelper.addTraceStart(methodId, cn, mn, startListenerHooks);
+    StartArgumentsHelper.addTraceStart(methodId, cn, mn, startArgumentsListenerHooks);
+    ReturnHelper.addTraceReturn(methodId, mn, finishReturnListenerHooks);
+    ThrowHelper.addTraceThrow(methodId, mn, beforeThrownListenerHooks);
+    CatchHelper.addTraceThrowableUncaught(methodId, mn, startNode, finishThrowableListenerHooks);
+  }
+
+  private static ArrayList<Integer> getListenerHooks(ArrayList<Integer> hooksToUse, Class<? extends Listener> clazz) {
+    ArrayList<Integer> ret = null;
+    for (Integer i : hooksToUse) {
+      Hook hook = Callback.hooks[i];
+      if (hook.getListener() != null && clazz.isAssignableFrom(hook.getListener().getClass())) {
+        if (ret == null) {
+          ret = new ArrayList<Integer>(hooksToUse.size());
+        }
+        ret.add(i);
+      }
+    }
+    return ret;
   }
 }

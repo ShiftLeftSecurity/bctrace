@@ -29,13 +29,16 @@ import io.shiftleft.bctrace.TestClass.TestRuntimeException;
 import io.shiftleft.bctrace.runtime.FrameData;
 import io.shiftleft.bctrace.spi.Filter;
 import io.shiftleft.bctrace.spi.Hook;
-import io.shiftleft.bctrace.spi.Listener;
 import io.shiftleft.bctrace.spi.impl.AllFilter;
-import io.shiftleft.bctrace.spi.impl.VoidListener;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
+import io.shiftleft.bctrace.spi.listener.BeforeThrownListener;
+import io.shiftleft.bctrace.spi.listener.FinishReturnListener;
+import io.shiftleft.bctrace.spi.listener.FinishThrowableListener;
+import io.shiftleft.bctrace.spi.listener.Listener;
+import io.shiftleft.bctrace.spi.listener.StartListener;
 
 /**
  *
@@ -55,10 +58,10 @@ public class FeatureTest extends BcTraceTest {
 
         @Override
         public Listener getListener() {
-          return new VoidListener() {
+          return new StartListener() {
             @Override
-            public void onStart(FrameData fd) {
-              assertNotNull(fd);
+            public void onStart(int methodId, Object instance) {
+              assertTrue(methodId > 0);
               steps.append("1");
             }
           };
@@ -72,10 +75,10 @@ public class FeatureTest extends BcTraceTest {
 
         @Override
         public Listener getListener() {
-          return new VoidListener() {
+          return new StartListener() {
             @Override
-            public void onStart(FrameData fd) {
-              assertNotNull(fd);
+            public void onStart(int methodId, Object instance) {
+              assertTrue(methodId > 0);
               steps.append("2");
             }
           };
@@ -97,7 +100,7 @@ public class FeatureTest extends BcTraceTest {
 
         @Override
         public Listener getListener() {
-          return new VoidListener();
+          return null;
         }
       }
     });
@@ -116,19 +119,30 @@ public class FeatureTest extends BcTraceTest {
 
         @Override
         public Listener getListener() {
-          return new VoidListener() {
+          return new FinishThrowableListener() {
             @Override
-            public void onBeforeThrown(Throwable th, FrameData fd) {
+            public void onFinishedThrowable(int methodId, Object instance, Throwable th) {
               assertTrue(th instanceof TestRuntimeException);
-              assertNotNull(fd);
-              steps.append("1");
-            }
-
-            @Override
-            public void onFinishedThrowable(Throwable th, FrameData fd) {
-              assertTrue(th instanceof TestRuntimeException);
-              assertNotNull(fd);
+              assertTrue(methodId > 0);
               steps.append("2");
+            }
+          };
+        }
+      },
+      new Hook() {
+        @Override
+        public Filter getFilter() {
+          return new AllFilter();
+        }
+
+        @Override
+        public Listener getListener() {
+          return new BeforeThrownListener() {
+            @Override
+            public void onBeforeThrown(int methodId, Object instance, Throwable th) {
+              assertTrue(th instanceof TestRuntimeException);
+              assertTrue(methodId > 0);
+              steps.append("1");
             }
           };
         }
@@ -158,11 +172,11 @@ public class FeatureTest extends BcTraceTest {
 
         @Override
         public Listener getListener() {
-          return new VoidListener() {
+          return new BeforeThrownListener() {
             @Override
-            public void onBeforeThrown(Throwable th, FrameData fd) {
+            public void onBeforeThrown(int methodId, Object instance, Throwable th) {
               assertTrue(th instanceof TestRuntimeException);
-              assertNotNull(fd);
+              assertTrue(methodId > 0);
               steps.append("1");
             }
           };
@@ -176,11 +190,11 @@ public class FeatureTest extends BcTraceTest {
 
         @Override
         public Listener getListener() {
-          return new VoidListener() {
+          return new BeforeThrownListener() {
             @Override
-            public void onBeforeThrown(Throwable th, FrameData fd) {
+            public void onBeforeThrown(int methodId, Object instance, Throwable th) {
               assertTrue(th instanceof TestRuntimeException);
-              assertNotNull(fd);
+              assertTrue(methodId > 0);
               steps.append("2");
             }
           };
@@ -211,16 +225,27 @@ public class FeatureTest extends BcTraceTest {
 
         @Override
         public Listener getListener() {
-          return new VoidListener() {
+          return new FinishReturnListener() {
             @Override
-            public void onFinishedReturn(Object ret, FrameData fd) {
+            public void onFinishedReturn(int methodId, Object instance, Object ret) {
               assertNull(ret);
-              assertNotNull(fd);
+              assertTrue(methodId > 0);
               steps.append("1");
             }
+          };
+        }
+      },
+      new Hook() {
+        @Override
+        public Filter getFilter() {
+          return new AllFilter();
+        }
 
+        @Override
+        public Listener getListener() {
+          return new FinishThrowableListener() {
             @Override
-            public void onFinishedThrowable(Throwable th, FrameData fd) {
+            public void onFinishedThrowable(int methodId, Object instance, Throwable th) {
               assertTrue("This should not called", false);
             }
           };
@@ -234,11 +259,11 @@ public class FeatureTest extends BcTraceTest {
 
         @Override
         public Listener getListener() {
-          return new VoidListener() {
+          return new FinishReturnListener() {
             @Override
-            public void onFinishedReturn(Object ret, FrameData fd) {
+            public void onFinishedReturn(int methodId, Object instance, Object ret) {
               assertNull(ret);
-              assertNotNull(fd);
+              assertTrue(methodId > 0);
               steps.append("2");
             }
           };
@@ -261,11 +286,11 @@ public class FeatureTest extends BcTraceTest {
 
         @Override
         public Listener getListener() {
-          return new VoidListener() {
+          return new FinishReturnListener() {
             @Override
-            public void onFinishedReturn(Object ret, FrameData fd) {
+            public void onFinishedReturn(int methodId, Object instance, Object ret) {
               assertNotNull(ret);
-              assertNotNull(fd);
+              assertTrue(methodId > 0);
               steps.append("1");
             }
           };
@@ -279,11 +304,11 @@ public class FeatureTest extends BcTraceTest {
 
         @Override
         public Listener getListener() {
-          return new VoidListener() {
+          return new FinishReturnListener() {
             @Override
-            public void onFinishedReturn(Object ret, FrameData fd) {
+            public void onFinishedReturn(int methodId, Object instance, Object ret) {
               assertNotNull(ret);
-              assertNotNull(fd);
+              assertTrue(methodId > 0);
               steps.append("2");
             }
           };
@@ -308,19 +333,30 @@ public class FeatureTest extends BcTraceTest {
 
         @Override
         public Listener getListener() {
-          return new VoidListener() {
+          return new FinishReturnListener() {
             @Override
-            public void onFinishedThrowable(Throwable th, FrameData fd) {
-              assertNotNull(th);
-              assertNotNull(fd);
-              steps.append("1t");
-            }
-
-            @Override
-            public void onFinishedReturn(Object ret, FrameData fd) {
+            public void onFinishedReturn(int methodId, Object instance, Object ret) {
               assertNotNull(ret);
-              assertNotNull(fd);
+              assertTrue(methodId > 0);
               steps.append("1r");
+            }
+          };
+        }
+      },
+      new Hook() {
+        @Override
+        public Filter getFilter() {
+          return new AllFilter();
+        }
+
+        @Override
+        public Listener getListener() {
+          return new FinishThrowableListener() {
+            @Override
+            public void onFinishedThrowable(int methodId, Object instance, Throwable th) {
+              assertNotNull(th);
+              assertTrue(methodId > 0);
+              steps.append("1t");
             }
           };
         }
@@ -338,18 +374,34 @@ public class FeatureTest extends BcTraceTest {
 
         @Override
         public Listener getListener() {
-          return new VoidListener() {
+          return new FinishThrowableListener() {
             @Override
-            public void onFinishedThrowable(Throwable th, FrameData fd) {
+            public void onFinishedThrowable(int methodId, Object instance, Throwable th) {
               assertNotNull(th);
-              assertNotNull(fd);
+              assertTrue(methodId > 0);
               steps.append("2t");
             }
-
+          };
+        }
+      },
+      new Hook() {
+        @Override
+        public Filter getFilter() {
+          return new AllFilter() {
             @Override
-            public void onFinishedReturn(Object ret, FrameData fd) {
+            public boolean instrumentMethod(ClassNode classNode, MethodNode mn) {
+              return mn.name.equals("getLongWithConditionalException");
+            }
+          };
+        }
+
+        @Override
+        public Listener getListener() {
+          return new FinishReturnListener() {
+            @Override
+            public void onFinishedReturn(int methodId, Object instance, Object ret) {
               assertNotNull(ret);
-              assertNotNull(fd);
+              assertTrue(methodId > 0);
               steps.append("2r");
             }
           };

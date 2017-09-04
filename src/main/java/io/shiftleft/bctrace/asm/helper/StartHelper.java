@@ -24,7 +24,6 @@
  */
 package io.shiftleft.bctrace.asm.helper;
 
-import java.util.LinkedList;
 import io.shiftleft.bctrace.runtime.MethodRegistry;
 import io.shiftleft.bctrace.asm.utils.ASMUtils;
 import java.util.ArrayList;
@@ -42,65 +41,25 @@ import org.objectweb.asm.tree.VarInsnNode;
  *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public class StartHelper {
+public class StartHelper extends Helper {
 
-  public static int addTraceStart(ClassNode cn, MethodNode mn, ArrayList<Integer> hooksToUse) {
-    int methodId = MethodRegistry.getInstance().getMethodId(cn.name, mn.name, mn.desc);
-    InsnList il = new InsnList();
-    if (ASMUtils.isStatic(mn) || mn.name.equals("<init>")) {
-      il.add(new InsnNode(Opcodes.ACONST_NULL));
-    } else {
-      il.add(new VarInsnNode(Opcodes.ALOAD, 0));
+  public static void addTraceStart(int methodId, ClassNode cn, MethodNode mn, ArrayList<Integer> hooksToUse) {
+    if (!isInstrumentationNeeded(hooksToUse)) {
+      return;
     }
-    il.add(ASMUtils.getPushInstruction(methodId));
-    addMethodParametersVariable(il, mn);
-    il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
-            "io/shiftleft/bctrace/runtime/FrameData", "getInstance",
-            "(Ljava/lang/Object;I[Ljava/lang/Object;)Lio/shiftleft/bctrace/runtime/FrameData;", false));
-
-    il.add(new InsnNode(Opcodes.DUP));
-    il.add(new VarInsnNode(Opcodes.ASTORE, mn.maxLocals));
-    mn.maxLocals++;
-    for (int i = 0; i < hooksToUse.size(); i++) {
-      Integer index = hooksToUse.get(i);
-      if (i < hooksToUse.size() - 1) {
-        il.add(new InsnNode(Opcodes.DUP));
+    InsnList il = new InsnList();
+    for (Integer index : hooksToUse) {
+      il.add(ASMUtils.getPushInstruction(methodId));
+      if (ASMUtils.isStatic(mn) || mn.name.equals("<init>")) {
+        il.add(new InsnNode(Opcodes.ACONST_NULL));
+      } else {
+        il.add(new VarInsnNode(Opcodes.ALOAD, 0));
       }
       il.add(ASMUtils.getPushInstruction(index));
       il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
               "io/shiftleft/bctrace/runtime/Callback", "onStart",
-              "(Lio/shiftleft/bctrace/runtime/FrameData;I)V", false));
-
+              "(ILjava/lang/Object;I)V", false));
     }
     mn.instructions.insert(il);
-    return mn.maxLocals - 1;
-  }
-
-  /**
-   * Creates a the parameter object array reference on top of the operand stack
-   *
-   * @param il
-   * @param mn
-   */
-  private static void addMethodParametersVariable(InsnList il, MethodNode mn) {
-    Type[] methodArguments = Type.getArgumentTypes(mn.desc);
-    if (methodArguments.length == 0) {
-      il.add(new InsnNode(Opcodes.ACONST_NULL));
-    } else {
-      il.add(ASMUtils.getPushInstruction(methodArguments.length));
-      il.add(new TypeInsnNode(Opcodes.ANEWARRAY, "java/lang/Object"));
-      int index = ASMUtils.isStatic(mn) ? 0 : 1;
-      for (int i = 0; i < methodArguments.length; i++) {
-        il.add(new InsnNode(Opcodes.DUP));
-        il.add(ASMUtils.getPushInstruction(i));
-        il.add(ASMUtils.getLoadInst(methodArguments[i], index));
-        MethodInsnNode mNode = ASMUtils.getWrapperContructionInst(methodArguments[i]);
-        if (mNode != null) {
-          il.add(mNode);
-        }
-        il.add(new InsnNode(Opcodes.AASTORE));
-        index += methodArguments[i].getSize();
-      }
-    }
   }
 }

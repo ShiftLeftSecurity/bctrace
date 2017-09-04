@@ -24,13 +24,12 @@
  */
 package io.shiftleft.bctrace;
 
-import io.shiftleft.bctrace.runtime.FrameData;
 import io.shiftleft.bctrace.spi.Filter;
 import io.shiftleft.bctrace.spi.Hook;
-import io.shiftleft.bctrace.spi.Listener;
 import io.shiftleft.bctrace.spi.impl.AllFilter;
-import io.shiftleft.bctrace.spi.impl.VoidListener;
 import org.junit.Test;
+import io.shiftleft.bctrace.spi.listener.Listener;
+import io.shiftleft.bctrace.spi.listener.StartArgumentsListener;
 
 /**
  *
@@ -38,68 +37,74 @@ import org.junit.Test;
  */
 public class PerformanceTest extends BcTraceTest {
 
-    private static final Hook[] HOOKS = new Hook[]{new Hook() {
+  private static final Hook[] HOOKS = new Hook[]{new Hook() {
 
-        @Override
-        public Filter getFilter() {
-            return new AllFilter();
-        }
-
-        @Override
-        public Listener getListener() {
-            return new VoidListener() {
-                @Override
-                public void onStart(FrameData fd) {
-                    if (((Long) fd.args[0]) % 2 == 0) {
-                        System.nanoTime();
-                    }
-                }
-            };
-        }
-    }};
-
-    @Test
-    public void testMinimimOverheadPrimitive() throws Exception {
-        int stackDepth = 2000;
-        int times = 10000;
-
-        long nano = System.nanoTime();
-        for (int i = 0; i < times; i++) {
-            TestClass.fact(stackDepth);
-        }
-        long normalElapse = (System.nanoTime() - nano) / times;
-
-        Class clazz = getInstrumentClass(TestClass.class, HOOKS);
-        nano = System.nanoTime();
-        for (int i = 0; i < times; i++) {
-            clazz.getMethod("fact", long.class).invoke(null, stackDepth);
-        }
-        long instrumentedElapse = (System.nanoTime() - nano) / times;
-
-        System.out.println("Normal (primitive): " + normalElapse / 1e6 + " ms");
-        System.out.println("Instrumented (primitive): " + instrumentedElapse / 1e6 + " ms");
+    @Override
+    public Filter getFilter() {
+      return new AllFilter();
     }
 
-    @Test
-    public void testMinimimOverheadWrapper() throws Exception {
-        long stackDepth = 2000;
-        int times = 10000;
-
-        long nano = System.nanoTime();
-        for (int i = 0; i < times; i++) {
-            TestClass.factWrapper(stackDepth);
+    @Override
+    public Listener getListener() {
+      return new StartArgumentsListener() {
+        @Override
+        public void onStart(int methodId, Object instance, Object[] args) {
+          if (((Long) args[0]) % 2 == 0) {
+            System.nanoTime();
+          }
         }
-        long normalElapse = (System.nanoTime() - nano) / times;
-
-        Class clazz = getInstrumentClass(TestClass.class, HOOKS);
-        nano = System.nanoTime();
-        for (int i = 0; i < times; i++) {
-            clazz.getMethod("factWrapper", Long.class).invoke(null, stackDepth);
-        }
-        long instrumentedElapse = (System.nanoTime() - nano) / times;
-
-        System.out.println("Normal (wrapper): " + normalElapse / 1e6 + " ms");
-        System.out.println("Instrumented (wrapper): " + instrumentedElapse / 1e6 + " ms");
-
+      };
     }
+
+    @Override
+    public void onError(Throwable th) {
+      th.printStackTrace();
+    }
+    
+  }};
+
+  @Test
+  public void testMinimimOverheadPrimitive() throws Exception {
+    int stackDepth = 2000;
+    int times = 10000;
+
+    long nano = System.nanoTime();
+    for (int i = 0; i < times; i++) {
+      TestClass.fact(stackDepth);
+    }
+    long normalElapse = (System.nanoTime() - nano) / times;
+
+    Class clazz = getInstrumentClass(TestClass.class, HOOKS);
+    nano = System.nanoTime();
+    for (int i = 0; i < times; i++) {
+      clazz.getMethod("fact", long.class).invoke(null, stackDepth);
+    }
+    long instrumentedElapse = (System.nanoTime() - nano) / times;
+
+    System.out.println("Normal (primitive): " + normalElapse / 1e6 + " ms");
+    System.out.println("Instrumented (primitive): " + instrumentedElapse / 1e6 + " ms");
+  }
+
+  @Test
+  public void testMinimimOverheadWrapper() throws Exception {
+    long stackDepth = 2000;
+    int times = 10000;
+
+    long nano = System.nanoTime();
+    for (int i = 0; i < times; i++) {
+      TestClass.factWrapper(stackDepth);
+    }
+    long normalElapse = (System.nanoTime() - nano) / times;
+
+    Class clazz = getInstrumentClass(TestClass.class, HOOKS);
+    nano = System.nanoTime();
+    for (int i = 0; i < times; i++) {
+      clazz.getMethod("factWrapper", Long.class).invoke(null, stackDepth);
+    }
+    long instrumentedElapse = (System.nanoTime() - nano) / times;
+
+    System.out.println("Normal (wrapper): " + normalElapse / 1e6 + " ms");
+    System.out.println("Instrumented (wrapper): " + instrumentedElapse / 1e6 + " ms");
+
+  }
 }
