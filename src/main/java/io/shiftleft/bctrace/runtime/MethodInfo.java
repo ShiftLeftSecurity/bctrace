@@ -28,24 +28,19 @@ package io.shiftleft.bctrace.runtime;
  *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public final class MethodInfo implements Comparable<MethodInfo> {
+public final class MethodInfo {
 
   private final String binaryClassName;
   private final String methodName;
   private final String methodDescriptor;
-  private String representation = null;
+
+  private String representation;
 
   public MethodInfo(String binaryClassName, String methodName, String methodDescriptor) {
     this.binaryClassName = binaryClassName;
     this.methodName = methodName;
     this.methodDescriptor = methodDescriptor;
-  }
-
-  public MethodInfo(int methodID) {
-    MethodInfo methodInfo = MethodRegistry.getInstance().getMethod(methodID);
-    this.binaryClassName = methodInfo.getBinaryClassName();
-    this.methodName = methodInfo.getMethodName();
-    this.methodDescriptor = methodInfo.getMethodDescriptor();
+    this.representation = binaryClassName + "." + methodName + methodDescriptor;
   }
 
   public String getBinaryClassName() {
@@ -60,61 +55,33 @@ public final class MethodInfo implements Comparable<MethodInfo> {
     return this.methodDescriptor;
   }
 
-  public String getRepresentation() {
-    if (this.representation == null) {
-      //only build this field on call
-      this.representation = this.binaryClassName + "." + this.methodName + this.methodDescriptor;
-    }
+  @Override
+  public String toString() {
     return this.representation;
   }
 
   @Override
-  public String toString() {
-    return this.getRepresentation();
+  public int hashCode() {
+    int hash = 3;
+    hash = 79 * hash + (this.representation != null ? this.representation.hashCode() : 0);
+    return hash;
   }
 
   @Override
   public boolean equals(Object obj) {
+    if (this == obj) {
+      return true;
+    }
     if (obj == null) {
       return false;
-    } else if (obj instanceof MethodInfo) {
-      MethodInfo info = (MethodInfo) obj;
-      return this.binaryClassName.equals(info.binaryClassName) &&
-          this.methodName.equals(info.methodName) &&
-          this.methodDescriptor.equals(info.methodDescriptor);
-    } else if (obj instanceof String) {
-      String representation = (String) obj;
-      return this.getRepresentation().equals(representation);
-    } else if (obj instanceof Integer) {
-      int methodID = (Integer) obj;
-      Integer var = MethodRegistry.getInstance().getMethodId(this);
-      if (var == null) {
-        return false;
-      } else {
-        return var == methodID;
-      }
-    } else if (obj instanceof FrameData) {
-      int methodID = ((FrameData) obj).methodId;
-      Integer var = MethodRegistry.getInstance().getMethodId(this);
-      if (var == null) {
-        return false;
-      } else {
-        return var == methodID;
-      }
     }
-    return false;
-  }
-
-  @Override
-  public int compareTo(MethodInfo methodInfo) {
-    int classCmp = this.binaryClassName.compareTo(methodInfo.binaryClassName);
-    if (classCmp != 0) {
-      return classCmp;
+    if (getClass() != obj.getClass()) {
+      return false;
     }
-    int nameCmp = this.methodName.compareTo(methodInfo.methodName);
-    if (classCmp != 0) {
-      return nameCmp;
+    final MethodInfo other = (MethodInfo) obj;
+    if ((this.representation == null) ? (other.representation != null) : !this.representation.equals(other.representation)) {
+      return false;
     }
-    return this.methodDescriptor.compareTo(methodInfo.methodDescriptor);
+    return true;
   }
 }

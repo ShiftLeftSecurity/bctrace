@@ -28,13 +28,25 @@ import io.shiftleft.bctrace.runtime.InstrumentationImpl;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.security.ProtectionDomain;
-import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
+import io.shiftleft.bctrace.asm.helper.CatchHelper;
+import io.shiftleft.bctrace.asm.helper.MinStartHelper;
+import io.shiftleft.bctrace.asm.helper.ReturnHelper;
+import io.shiftleft.bctrace.asm.helper.StartArgumentsHelper;
 import io.shiftleft.bctrace.asm.helper.StartHelper;
+import io.shiftleft.bctrace.asm.helper.ThrowHelper;
 import io.shiftleft.bctrace.asm.utils.ASMUtils;
 import io.shiftleft.bctrace.runtime.Callback;
+import io.shiftleft.bctrace.runtime.MethodRegistry;
 import io.shiftleft.bctrace.spi.Hook;
+import io.shiftleft.bctrace.spi.listener.info.BeforeThrownListener;
+import io.shiftleft.bctrace.spi.listener.info.FinishReturnListener;
+import io.shiftleft.bctrace.spi.listener.info.FinishThrowableListener;
+import io.shiftleft.bctrace.spi.listener.Listener;
+import io.shiftleft.bctrace.spi.listener.info.StartArgumentsListener;
+import io.shiftleft.bctrace.spi.listener.info.StartListener;
+import io.shiftleft.bctrace.spi.listener.min.MinStartListener;
+import java.util.ArrayList;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.ClassNode;
@@ -47,14 +59,13 @@ import org.objectweb.asm.tree.MethodNode;
  */
 public class Transformer implements ClassFileTransformer {
 
-  private static final String[] NO_MODIFICATION = new String[] {
-      "io/shiftleft/bctrace/",
-      "java/lang/",
-      "sun/",
-      "com/sun/",
-      "javafx/",
-      "io/shiftleft/agent",
-      "oracle/"
+  private static final String[] CLASSNAME_PREFIX_IGNORE_LIST = new String[]{
+    "io/shiftleft/bctrace/",
+    "java/lang/ThreadLocal",
+    "sun/",
+    "com/sun/",
+    "javafx/",
+    "oracle/"
   };
 
   @Override
@@ -72,8 +83,9 @@ public class Transformer implements ClassFileTransformer {
       if (className == null || classfileBuffer == null) {
         return null;
       }
-      for(String shouldNotChange: NO_MODIFICATION) {
-        if (className.startsWith(shouldNotChange)) {
+
+      for (String prefix : CLASSNAME_PREFIX_IGNORE_LIST) {
+        if (className.startsWith(prefix)) {
           return null;
         }
       }
@@ -91,8 +103,7 @@ public class Transformer implements ClassFileTransformer {
       if (!transformed) {
         return null;
       } else {
-        ClassWriter cw = new StaticClassWriter(cr,
-            ClassWriter.COMPUTE_FRAMES|ClassWriter.COMPUTE_MAXS, loader);
+        ClassWriter cw = new StaticClassWriter(cr, ClassWriter.COMPUTE_FRAMES, loader);
         cn.accept(cw);
         return cw.toByteArray();
       }
@@ -109,12 +120,10 @@ public class Transformer implements ClassFileTransformer {
     }
   }
 
-  private ArrayList<Integer> getMatchingHooks(String className, ProtectionDomain protectionDomain,
-      ClassLoader loader) {
-    ArrayList<Integer> ret = null;
+  private ArrayList<Integer> getMatchingHooks(String className, ProtectionDomain protectionDomain, ClassLoader loader) {
+    ArrayList<Integer> ret = new ArrayList<Integer>(Callback.hooks.length);
     Hook[] hooks = Callback.hooks;
     if (hooks != null) {
-      ret = new ArrayList<Integer>(Callback.hooks.length);
       for (int i = 0; i < hooks.length; i++) {
         if (className.startsWith(hooks[i].getJvmPackage())) {
           return null;
@@ -135,10 +144,10 @@ public class Transformer implements ClassFileTransformer {
       if (ASMUtils.isAbstract(mn) || ASMUtils.isNative(mn)) {
         continue;
       }
-      if (mn.name.equals("<init>") || mn.name.equals("<cinit>") || mn.name.equals("<linit>")) {
+      if (mn.name.equals("<init>") || mn.name.equals("<cinit>")) {
         continue;
       }
-      ArrayList<Integer> hooksToUse = new ArrayList<Integer>();
+      ArrayList<Integer> hooksToUse = new ArrayList<Integer>(matchingHooks.size());
       Hook[] hooks = Callback.hooks;
       for (Integer i : matchingHooks) {
         if (hooks[i] != null && hooks[i].getFilter().instrumentMethod(cn, mn)) {
@@ -155,6 +164,36 @@ public class Transformer implements ClassFileTransformer {
   }
 
   private void modifyMethod(ClassNode cn, MethodNode mn, ArrayList<Integer> hooksToUse) {
-    StartHelper.addTraceStart(cn, mn, hooksToUse);
+
+    int methodId = MethodRegistry.getInstance().getMethodId(cn.name, mn.name, mn.desc);
+
+    ArrayList<Integer> minStartListenerHooks = getListenerHooks(hooksToUse, MinStartListener.class);
+    ArrayList<Integer> startListenerHooks = getListenerHooks(hooksToUse, StartListener.class);
+    ArrayList<Integer> startArgumentsListenerHooks = getListenerHooks(hooksToUse, StartArgumentsListener.class);
+    ArrayList<Integer> finishReturnListenerHooks = getListenerHooks(hooksToUse, FinishReturnListener.class);
+    ArrayList<Integer> finishThrowableListenerHooks = getListenerHooks(hooksToUse, FinishThrowableListener.class);
+    ArrayList<Integer> beforeThrownListenerHooks = getListenerHooks(hooksToUse, BeforeThrownListener.class);
+
+    LabelNode startNode = CatchHelper.insertStartNode(mn, finishThrowableListenerHooks);
+    MinStartHelper.addTraceStart(methodId, cn, mn, minStartListenerHooks);
+    StartHelper.addTraceStart(methodId, cn, mn, startListenerHooks);
+    StartArgumentsHelper.addTraceStart(methodId, cn, mn, startArgumentsListenerHooks);
+    ReturnHelper.addTraceReturn(methodId, mn, finishReturnListenerHooks);
+    ThrowHelper.addTraceThrow(methodId, mn, beforeThrownListenerHooks);
+    CatchHelper.addTraceThrowableUncaught(methodId, mn, startNode, finishThrowableListenerHooks);
+  }
+
+  private static ArrayList<Integer> getListenerHooks(ArrayList<Integer> hooksToUse, Class<? extends Listener> clazz) {
+    ArrayList<Integer> ret = null;
+    for (Integer i : hooksToUse) {
+      Hook hook = Callback.hooks[i];
+      if (hook.getListener() != null && clazz.isAssignableFrom(hook.getListener().getClass())) {
+        if (ret == null) {
+          ret = new ArrayList<Integer>(hooksToUse.size());
+        }
+        ret.add(i);
+      }
+    }
+    return ret;
   }
 }

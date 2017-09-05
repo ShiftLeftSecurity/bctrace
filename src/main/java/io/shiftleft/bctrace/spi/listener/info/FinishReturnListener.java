@@ -22,21 +22,28 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.spi.impl;
+package io.shiftleft.bctrace.spi.listener.info;
 
-import io.shiftleft.bctrace.spi.Listener;
-import io.shiftleft.bctrace.runtime.FrameData;
+import io.shiftleft.bctrace.spi.listener.Listener;
 
 /**
- * A listener that hears but not listens. :)
  *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public class VoidListener implements Listener {
+public interface FinishReturnListener extends Listener {
 
-  @Override
-  public void onStart(FrameData fd) {
-    return;
-  }
+  /**
+   * Invoked by instrumented methods just before return (if multiple plugins are
+   * registered, listener notification is performed according to their
+   * respective plugin <b>reverse</b> registration order).
+   * 
+   * @param methodId method id (as defined by MethodRegistry)
+   * @param instance instance where the method belongs. Null if the method is
+   * @param ret Object being returned by the method. Wrapper type if the
+   * original return type is primitive. <code>null</code> if the method return
+   * type is <code>void</code>
+   */
+  
+  public void onFinishedReturn(int methodId, Object instance, Object ret);
 
 }

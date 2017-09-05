@@ -26,16 +26,18 @@ package io.shiftleft.bctrace;
 
 import java.lang.reflect.InvocationTargetException;
 import io.shiftleft.bctrace.TestClass.TestRuntimeException;
-import io.shiftleft.bctrace.runtime.FrameData;
 import io.shiftleft.bctrace.spi.Filter;
 import io.shiftleft.bctrace.spi.Hook;
-import io.shiftleft.bctrace.spi.Listener;
 import io.shiftleft.bctrace.spi.impl.AllFilter;
-import io.shiftleft.bctrace.spi.impl.VoidListener;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
+import io.shiftleft.bctrace.spi.listener.Listener;
+import io.shiftleft.bctrace.spi.listener.info.BeforeThrownListener;
+import io.shiftleft.bctrace.spi.listener.info.FinishReturnListener;
+import io.shiftleft.bctrace.spi.listener.info.FinishThrowableListener;
+import io.shiftleft.bctrace.spi.listener.info.StartListener;
 
 /**
  *
@@ -55,10 +57,10 @@ public class FeatureTest extends BcTraceTest {
 
         @Override
         public Listener getListener() {
-          return new VoidListener() {
+          return new StartListener() {
             @Override
-            public void onStart(FrameData fd) {
-              assertNotNull(fd);
+            public void onStart(int methodId, Object instance) {
+              assertTrue(methodId > 0);
               steps.append("1");
             }
           };
@@ -72,10 +74,10 @@ public class FeatureTest extends BcTraceTest {
 
         @Override
         public Listener getListener() {
-          return new VoidListener() {
+          return new StartListener() {
             @Override
-            public void onStart(FrameData fd) {
-              assertNotNull(fd);
+            public void onStart(int methodId, Object instance) {
+              assertTrue(methodId > 0);
               steps.append("2");
             }
           };
@@ -97,10 +99,328 @@ public class FeatureTest extends BcTraceTest {
 
         @Override
         public Listener getListener() {
-          return new VoidListener();
+          return null;
         }
       }
     });
     clazz.newInstance();
   }
+
+  //@Test
+  public void testConstructor2() throws Exception {
+    final StringBuilder steps = new StringBuilder();
+    Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
+      new Hook() {
+        @Override
+        public Filter getFilter() {
+          return new AllFilter();
+        }
+
+        @Override
+        public Listener getListener() {
+          return new FinishThrowableListener() {
+            @Override
+            public void onFinishedThrowable(int methodId, Object instance, Throwable th) {
+              assertTrue(th instanceof TestRuntimeException);
+              assertTrue(methodId > 0);
+              steps.append("2");
+            }
+          };
+        }
+      },
+      new Hook() {
+        @Override
+        public Filter getFilter() {
+          return new AllFilter();
+        }
+
+        @Override
+        public Listener getListener() {
+          return new BeforeThrownListener() {
+            @Override
+            public void onBeforeThrown(int methodId, Object instance, Throwable th) {
+              assertTrue(th instanceof TestRuntimeException);
+              assertTrue(methodId > 0);
+              steps.append("1");
+            }
+          };
+        }
+      }
+    });
+    boolean captured = false;
+    try {
+      clazz.getConstructor(int.class).newInstance(3);
+    } catch (InvocationTargetException ite) {
+      if (ite.getTargetException() instanceof TestRuntimeException) {
+        captured = true;
+        assertEquals("12", steps.toString());
+      }
+    }
+    assertTrue("Expected exception", captured);
+  }
+
+  @Test
+  public void testThrown() throws Exception {
+    final StringBuilder steps = new StringBuilder();
+    Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
+      new Hook() {
+        @Override
+        public Filter getFilter() {
+          return new AllFilter();
+        }
+
+        @Override
+        public Listener getListener() {
+          return new BeforeThrownListener() {
+            @Override
+            public void onBeforeThrown(int methodId, Object instance, Throwable th) {
+              assertTrue(th instanceof TestRuntimeException);
+              assertTrue(methodId > 0);
+              steps.append("1");
+            }
+          };
+        }
+      },
+      new Hook() {
+        @Override
+        public Filter getFilter() {
+          return new AllFilter();
+        }
+
+        @Override
+        public Listener getListener() {
+          return new BeforeThrownListener() {
+            @Override
+            public void onBeforeThrown(int methodId, Object instance, Throwable th) {
+              assertTrue(th instanceof TestRuntimeException);
+              assertTrue(methodId > 0);
+              steps.append("2");
+            }
+          };
+        }
+      }
+    });
+    boolean captured = false;
+    try {
+      clazz.getMethod("throwRuntimeException").invoke(null);
+    } catch (InvocationTargetException ite) {
+      if (ite.getTargetException() instanceof TestRuntimeException) {
+        captured = true;
+        assertEquals("12", steps.toString());
+      }
+    }
+    assertTrue("Expected exception", captured);
+  }
+
+  @Test
+  public void testVoidReturn() throws Exception {
+    final StringBuilder steps = new StringBuilder();
+    Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
+      new Hook() {
+        @Override
+        public Filter getFilter() {
+          return new AllFilter();
+        }
+
+        @Override
+        public Listener getListener() {
+          return new FinishReturnListener() {
+            @Override
+            public void onFinishedReturn(int methodId, Object instance, Object ret) {
+              assertNull(ret);
+              assertTrue(methodId > 0);
+              steps.append("1");
+            }
+          };
+        }
+      },
+      new Hook() {
+        @Override
+        public Filter getFilter() {
+          return new AllFilter();
+        }
+
+        @Override
+        public Listener getListener() {
+          return new FinishThrowableListener() {
+            @Override
+            public void onFinishedThrowable(int methodId, Object instance, Throwable th) {
+              assertTrue("This should not called", false);
+            }
+          };
+        }
+      },
+      new Hook() {
+        @Override
+        public Filter getFilter() {
+          return new AllFilter();
+        }
+
+        @Override
+        public Listener getListener() {
+          return new FinishReturnListener() {
+            @Override
+            public void onFinishedReturn(int methodId, Object instance, Object ret) {
+              assertNull(ret);
+              assertTrue(methodId > 0);
+              steps.append("2");
+            }
+          };
+        }
+      }
+    });
+    clazz.getMethod("execVoid").invoke(null);
+    assertEquals("21", steps.toString());
+  }
+
+  @Test
+  public void testReturn() throws Exception {
+    final StringBuilder steps = new StringBuilder();
+    Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
+      new Hook() {
+        @Override
+        public Filter getFilter() {
+          return new AllFilter();
+        }
+
+        @Override
+        public Listener getListener() {
+          return new FinishReturnListener() {
+            @Override
+            public void onFinishedReturn(int methodId, Object instance, Object ret) {
+              assertNotNull(ret);
+              assertTrue(methodId > 0);
+              steps.append("1");
+            }
+          };
+        }
+      },
+      new Hook() {
+        @Override
+        public Filter getFilter() {
+          return new AllFilter();
+        }
+
+        @Override
+        public Listener getListener() {
+          return new FinishReturnListener() {
+            @Override
+            public void onFinishedReturn(int methodId, Object instance, Object ret) {
+              assertNotNull(ret);
+              assertTrue(methodId > 0);
+              steps.append("2");
+            }
+          };
+        }
+      }
+    });
+    clazz.getMethod("getLong").invoke(null);
+    clazz.getMethod("getInt").invoke(null);
+    clazz.getMethod("getObject").invoke(null);
+    assertEquals(steps.toString(), "212121");
+  }
+
+  @Test
+  public void testUncaughtThrowable() throws Exception {
+    final StringBuilder steps = new StringBuilder();
+    Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
+      new Hook() {
+        @Override
+        public Filter getFilter() {
+          return new AllFilter();
+        }
+
+        @Override
+        public Listener getListener() {
+          return new FinishReturnListener() {
+            @Override
+            public void onFinishedReturn(int methodId, Object instance, Object ret) {
+              assertNotNull(ret);
+              assertTrue(methodId > 0);
+              steps.append("1r");
+            }
+          };
+        }
+      },
+      new Hook() {
+        @Override
+        public Filter getFilter() {
+          return new AllFilter();
+        }
+
+        @Override
+        public Listener getListener() {
+          return new FinishThrowableListener() {
+            @Override
+            public void onFinishedThrowable(int methodId, Object instance, Throwable th) {
+              assertNotNull(th);
+              assertTrue(methodId > 0);
+              steps.append("1t");
+            }
+          };
+        }
+      },
+      new Hook() {
+        @Override
+        public Filter getFilter() {
+          return new AllFilter() {
+            @Override
+            public boolean instrumentMethod(ClassNode classNode, MethodNode mn) {
+              return mn.name.equals("getLongWithConditionalException");
+            }
+          };
+        }
+
+        @Override
+        public Listener getListener() {
+          return new FinishThrowableListener() {
+            @Override
+            public void onFinishedThrowable(int methodId, Object instance, Throwable th) {
+              assertNotNull(th);
+              assertTrue(methodId > 0);
+              steps.append("2t");
+            }
+          };
+        }
+      },
+      new Hook() {
+        @Override
+        public Filter getFilter() {
+          return new AllFilter() {
+            @Override
+            public boolean instrumentMethod(ClassNode classNode, MethodNode mn) {
+              return mn.name.equals("getLongWithConditionalException");
+            }
+          };
+        }
+
+        @Override
+        public Listener getListener() {
+          return new FinishReturnListener() {
+            @Override
+            public void onFinishedReturn(int methodId, Object instance, Object ret) {
+              assertNotNull(ret);
+              assertTrue(methodId > 0);
+              steps.append("2r");
+            }
+          };
+        }
+      }
+    });
+    clazz.getMethod("getLongWithConditionalException", boolean.class).invoke(null, false);
+    assertEquals("2r1r", steps.toString());
+    steps.setLength(0);
+    boolean captured = false;
+    try {
+      clazz.getMethod("getLongWithConditionalException", boolean.class).invoke(null, true);
+      assertEquals(steps.toString(), "");
+    } catch (InvocationTargetException ite) {
+      if (ite.getTargetException() instanceof TestRuntimeException) {
+        captured = true;
+        assertEquals("1t2t1t", steps.toString());
+      }
+    }
+    assertTrue("Expected exception", captured);
+  }
+
 }

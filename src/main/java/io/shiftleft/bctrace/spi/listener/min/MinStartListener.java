@@ -22,73 +22,23 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.spi;
+package io.shiftleft.bctrace.spi.listener.min;
 
 import io.shiftleft.bctrace.spi.listener.Listener;
 
 /**
- * An <b>instrumentation hook</b> determines what methods to instrument and what
- * actions to perform at runtime under the events triggered by the instrumented
- * methods.
  *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public abstract class Hook {
-
-  protected Instrumentation instrumentation;
-
-  private final String jvmPackage;
-
-  public Hook() {
-    this.jvmPackage = getClass().getPackage().getName().replace('.', '/') + "/";
-  }
+public interface MinStartListener extends Listener {
 
   /**
-   * Initializes the plugin. Called once at startup before initial
-   * instrumentation is performed.
+   * Invoked by instrumented methods before any of its original instructions (if
+   * multiple plugins are registered, listener notification is performed
+   * according to their respective plugin registration order).
    *
-   * @param instrumentation Intrumentation callback, allowing triggering
-   * retransformations
+   * @param methodId method id (as defined by MethodRegistry)
    */
-  public final void init(Instrumentation instrumentation) {
-    this.instrumentation = instrumentation;
-    doInit();
-  }
+  public void onStart(int methodId);
 
-  /**
-   * Allows subclasses to implement initialization logic.
-   */
-  public void doInit() {
-  }
-
-  public final Instrumentation getInstrumentation() {
-    return instrumentation;
-  }
-
-  public final String getJvmPackage() {
-    return jvmPackage;
-  }
-
-  /**
-   * Returns the filter, deciding what methods to instrument.
-   *
-   * @return
-   */
-  public abstract Filter getFilter();
-
-  /**
-   * Returns the listener invoked by the instrumented method hooks.
-   *
-   * @return
-   */
-  public abstract Listener getListener();
-
-  /**
-   * Communicates an error to the hook implementation
-   *
-   * @param th
-   */
-  public void onError(Throwable th) {
-
-  }
 }

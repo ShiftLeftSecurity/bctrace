@@ -24,10 +24,11 @@
  */
 package io.shiftleft.bctrace.asm.helper;
 
+import java.util.Iterator;
 import io.shiftleft.bctrace.asm.utils.ASMUtils;
 import java.util.ArrayList;
 import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
@@ -38,25 +39,40 @@ import org.objectweb.asm.tree.VarInsnNode;
  *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public class StartHelper extends Helper {
+public class ThrowHelper extends Helper {
 
-  public static void addTraceStart(int methodId, ClassNode cn, MethodNode mn, ArrayList<Integer> hooksToUse) {
+  public static void addTraceThrow(int methodId, MethodNode mn, ArrayList<Integer> hooksToUse) {
     if (!isInstrumentationNeeded(hooksToUse)) {
       return;
     }
+    InsnList il = mn.instructions;
+    Iterator<AbstractInsnNode> it = il.iterator();
+    while (it.hasNext()) {
+      AbstractInsnNode abstractInsnNode = it.next();
+
+      switch (abstractInsnNode.getOpcode()) {
+        case Opcodes.ATHROW:
+          il.insertBefore(abstractInsnNode, getThrowTraceInstructions(methodId, mn, hooksToUse));
+          break;
+      }
+    }
+  }
+
+  private static InsnList getThrowTraceInstructions(int methodId, MethodNode mn, ArrayList<Integer> hooksToUse) {
     InsnList il = new InsnList();
     for (Integer index : hooksToUse) {
-      il.add(ASMUtils.getPushInstruction(methodId));
-      if (ASMUtils.isStatic(mn) || mn.name.equals("<init>")) {
+      il.add(new InsnNode(Opcodes.DUP)); // dup throwable
+      il.add(ASMUtils.getPushInstruction(methodId)); // method id
+      if (ASMUtils.isStatic(mn) || mn.name.equals("<init>")) { // current instance
         il.add(new InsnNode(Opcodes.ACONST_NULL));
       } else {
         il.add(new VarInsnNode(Opcodes.ALOAD, 0));
       }
-      il.add(ASMUtils.getPushInstruction(index));
+      il.add(ASMUtils.getPushInstruction(index)); // hook id
       il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
-              "io/shiftleft/bctrace/runtime/Callback", "onStart",
-              "(ILjava/lang/Object;I)V", false));
+              "io/shiftleft/bctrace/runtime/Callback", "onBeforeThrown",
+              "(Ljava/lang/Throwable;ILjava/lang/Object;I)V", false));
     }
-    mn.instructions.insert(il);
+    return il;
   }
 }

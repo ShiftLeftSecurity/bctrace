@@ -27,36 +27,71 @@ package io.shiftleft.bctrace.asm.helper;
 import io.shiftleft.bctrace.asm.utils.ASMUtils;
 import java.util.ArrayList;
 import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
+import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.TryCatchBlockNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
 /**
  *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public class StartHelper extends Helper {
+public class CatchHelper extends Helper {
 
-  public static void addTraceStart(int methodId, ClassNode cn, MethodNode mn, ArrayList<Integer> hooksToUse) {
+  public static LabelNode insertStartNode(MethodNode mn, ArrayList<Integer> hooksToUse) {
+    if (!isInstrumentationNeeded(hooksToUse)) {
+      return null;
+    }
+    LabelNode ret = new LabelNode();
+    mn.instructions.insert(ret);
+    return ret;
+  }
+
+  public static void addTraceThrowableUncaught(int methodId, MethodNode mn, LabelNode startNode, ArrayList<Integer> hooksToUse) {
     if (!isInstrumentationNeeded(hooksToUse)) {
       return;
     }
+
+    InsnList il = mn.instructions;
+
+    LabelNode endNode = new LabelNode();
+    il.add(endNode);
+
+    addCatchBlock(methodId, mn, startNode, endNode, hooksToUse);
+  }
+
+  private static void addCatchBlock(int methodId, MethodNode mn, LabelNode startNode, LabelNode endNode, ArrayList<Integer> hooksToUse) {
+
     InsnList il = new InsnList();
-    for (Integer index : hooksToUse) {
-      il.add(ASMUtils.getPushInstruction(methodId));
-      if (ASMUtils.isStatic(mn) || mn.name.equals("<init>")) {
+    LabelNode handlerNode = new LabelNode();
+    il.add(handlerNode);
+    il.add(getThrowableTraceInstructions(methodId, mn, hooksToUse));
+    il.add(new InsnNode(Opcodes.ATHROW));
+
+    TryCatchBlockNode blockNode = new TryCatchBlockNode(startNode, endNode, handlerNode, "java/lang/Throwable");
+    mn.tryCatchBlocks.add(blockNode);
+    mn.instructions.add(il);
+  }
+
+  private static InsnList getThrowableTraceInstructions(int methodId, MethodNode mn, ArrayList<Integer> hooksToUse) {
+    InsnList il = new InsnList();
+    for (int i = hooksToUse.size() - 1; i >= 0; i--) {
+      Integer index = hooksToUse.get(i);
+      il.add(new InsnNode(Opcodes.DUP)); // dup throwable
+      il.add(ASMUtils.getPushInstruction(methodId)); // method id
+      if (ASMUtils.isStatic(mn) || mn.name.equals("<init>")) { // instance
         il.add(new InsnNode(Opcodes.ACONST_NULL));
       } else {
         il.add(new VarInsnNode(Opcodes.ALOAD, 0));
       }
-      il.add(ASMUtils.getPushInstruction(index));
+      il.add(ASMUtils.getPushInstruction(index)); // hook id
       il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
-              "io/shiftleft/bctrace/runtime/Callback", "onStart",
-              "(ILjava/lang/Object;I)V", false));
+              "io/shiftleft/bctrace/runtime/Callback", "onFinishedThrowable",
+              "(Ljava/lang/Throwable;ILjava/lang/Object;I)V", false));
     }
-    mn.instructions.insert(il);
+    return il;
   }
 }

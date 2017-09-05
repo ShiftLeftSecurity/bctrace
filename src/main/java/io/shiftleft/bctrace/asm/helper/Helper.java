@@ -22,73 +22,20 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.spi;
+package io.shiftleft.bctrace.asm.helper;
 
-import io.shiftleft.bctrace.spi.listener.Listener;
+import java.util.ArrayList;
 
 /**
- * An <b>instrumentation hook</b> determines what methods to instrument and what
- * actions to perform at runtime under the events triggered by the instrumented
- * methods.
  *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public abstract class Hook {
+public class Helper {
 
-  protected Instrumentation instrumentation;
-
-  private final String jvmPackage;
-
-  public Hook() {
-    this.jvmPackage = getClass().getPackage().getName().replace('.', '/') + "/";
-  }
-
-  /**
-   * Initializes the plugin. Called once at startup before initial
-   * instrumentation is performed.
-   *
-   * @param instrumentation Intrumentation callback, allowing triggering
-   * retransformations
-   */
-  public final void init(Instrumentation instrumentation) {
-    this.instrumentation = instrumentation;
-    doInit();
-  }
-
-  /**
-   * Allows subclasses to implement initialization logic.
-   */
-  public void doInit() {
-  }
-
-  public final Instrumentation getInstrumentation() {
-    return instrumentation;
-  }
-
-  public final String getJvmPackage() {
-    return jvmPackage;
-  }
-
-  /**
-   * Returns the filter, deciding what methods to instrument.
-   *
-   * @return
-   */
-  public abstract Filter getFilter();
-
-  /**
-   * Returns the listener invoked by the instrumented method hooks.
-   *
-   * @return
-   */
-  public abstract Listener getListener();
-
-  /**
-   * Communicates an error to the hook implementation
-   *
-   * @param th
-   */
-  public void onError(Throwable th) {
-
+  protected static boolean isInstrumentationNeeded(ArrayList<Integer> hooksToUse) {
+    if (hooksToUse == null) {
+      return false;
+    }
+    return hooksToUse.size() > 0;
   }
 }

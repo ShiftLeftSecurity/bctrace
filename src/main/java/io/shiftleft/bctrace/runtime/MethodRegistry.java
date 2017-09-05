@@ -27,9 +27,6 @@ package io.shiftleft.bctrace.runtime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentSkipListMap;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  *
@@ -39,9 +36,8 @@ public final class MethodRegistry {
 
   private static final MethodRegistry INSTANCE = new MethodRegistry();
 
-  private AtomicInteger counter = new AtomicInteger(0);
-  private ConcurrentSkipListMap<MethodInfo,Integer> methodInfoToInt = new ConcurrentSkipListMap<MethodInfo,Integer>();
-  private ConcurrentSkipListMap<Integer,MethodInfo> methodIdToInt = new ConcurrentSkipListMap<Integer, MethodInfo>();
+  private final ArrayList<MethodInfo> methodArray = new ArrayList<MethodInfo>();
+  private final Map<MethodInfo, Integer> methodMap = new HashMap<MethodInfo, Integer>();
 
   public static MethodRegistry getInstance() {
     return INSTANCE;
@@ -50,34 +46,22 @@ public final class MethodRegistry {
   private MethodRegistry() {
   }
 
-  public void reset() {
-    this.counter.set(0);
-    this.methodInfoToInt.clear();
-    this.methodIdToInt.clear();
+  public synchronized MethodInfo getMethod(int id) {
+    return methodArray.get(id);
   }
 
-  public int size() {
-    return this.counter.get();
-  }
-
-  public MethodInfo getMethod(int id) {
-    return this.methodIdToInt.get(id);
-  }
-
-  public int getMethodId(String binaryClassName, String methodName, String methodDescriptor) {
-    MethodInfo methodInfo = new MethodInfo(binaryClassName, methodName, methodDescriptor);
-    return this.getMethodId(methodInfo);
-  }
-
-  public int getMethodId(MethodInfo methodInfo) {
-    Integer arg = this.methodInfoToInt.get(methodInfo);
-    if (arg == null) {
-      int id = this.counter.getAndAdd(1);
-      this.methodInfoToInt.put(methodInfo, id);
-      this.methodIdToInt.put(id, methodInfo);
-      return id;
-    } else {
-      return arg;
+  public synchronized int getMethodId(String binaryClassName, String methodName, String methodDescriptor) {
+    MethodInfo mi = new MethodInfo(binaryClassName, methodName, methodDescriptor);
+    Integer id = methodMap.get(mi);
+    if (id == null) {
+      methodArray.add(mi);
+      id = methodArray.size() - 1;
+      methodMap.put(mi, id);
     }
+    return id;
+  }
+
+  public synchronized int size() {
+    return methodArray.size();
   }
 }
