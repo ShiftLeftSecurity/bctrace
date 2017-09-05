@@ -22,15 +22,16 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.spi.listener;
+package io.shiftleft.bctrace.spi.listener.info;
+
+import io.shiftleft.bctrace.spi.listener.Listener;
 
 /**
- *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public interface StartListener extends Listener{
-  
-  /**
+public interface StartArgumentsListener extends Listener {
+
+/**
    * Invoked by instrumented methods before any of its original instructions (if
    * multiple plugins are registered, listener notification is performed
    * according to their respective plugin registration order).
@@ -38,7 +39,8 @@ public interface StartListener extends Listener{
    * @param methodId method id (as defined by MethodRegistry)
    * @param instance instance where the method belongs. Null if the method is
    * static
+   * @param args arguments passed to the method. 
+   * returns false;
    */
-  public void onStart(int methodId, Object instance);
-
+  public void onStart(int methodId, Object instance, Object[] args);
 }

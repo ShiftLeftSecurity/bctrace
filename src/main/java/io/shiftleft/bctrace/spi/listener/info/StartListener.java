@@ -22,41 +22,25 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.asm.helper;
+package io.shiftleft.bctrace.spi.listener.info;
 
-import io.shiftleft.bctrace.asm.utils.ASMUtils;
-import java.util.ArrayList;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.InsnList;
-import org.objectweb.asm.tree.InsnNode;
-import org.objectweb.asm.tree.MethodInsnNode;
-import org.objectweb.asm.tree.MethodNode;
-import org.objectweb.asm.tree.VarInsnNode;
+import io.shiftleft.bctrace.spi.listener.Listener;
 
 /**
  *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public class StartHelper extends Helper {
+public interface StartListener extends Listener{
+  
+  /**
+   * Invoked by instrumented methods before any of its original instructions (if
+   * multiple plugins are registered, listener notification is performed
+   * according to their respective plugin registration order).
+   *
+   * @param methodId method id (as defined by MethodRegistry)
+   * @param instance instance where the method belongs. Null if the method is
+   * static
+   */
+  public void onStart(int methodId, Object instance);
 
-  public static void addTraceStart(int methodId, ClassNode cn, MethodNode mn, ArrayList<Integer> hooksToUse) {
-    if (!isInstrumentationNeeded(hooksToUse)) {
-      return;
-    }
-    InsnList il = new InsnList();
-    for (Integer index : hooksToUse) {
-      il.add(ASMUtils.getPushInstruction(methodId));
-      if (ASMUtils.isStatic(mn) || mn.name.equals("<init>")) {
-        il.add(new InsnNode(Opcodes.ACONST_NULL));
-      } else {
-        il.add(new VarInsnNode(Opcodes.ALOAD, 0));
-      }
-      il.add(ASMUtils.getPushInstruction(index));
-      il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
-              "io/shiftleft/bctrace/runtime/Callback", "onStart",
-              "(ILjava/lang/Object;I)V", false));
-    }
-    mn.instructions.insert(il);
-  }
 }

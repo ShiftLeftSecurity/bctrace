@@ -33,11 +33,11 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
-import io.shiftleft.bctrace.spi.listener.BeforeThrownListener;
-import io.shiftleft.bctrace.spi.listener.FinishReturnListener;
-import io.shiftleft.bctrace.spi.listener.FinishThrowableListener;
 import io.shiftleft.bctrace.spi.listener.Listener;
-import io.shiftleft.bctrace.spi.listener.StartListener;
+import io.shiftleft.bctrace.spi.listener.info.BeforeThrownListener;
+import io.shiftleft.bctrace.spi.listener.info.FinishReturnListener;
+import io.shiftleft.bctrace.spi.listener.info.FinishThrowableListener;
+import io.shiftleft.bctrace.spi.listener.info.StartListener;
 
 /**
  *

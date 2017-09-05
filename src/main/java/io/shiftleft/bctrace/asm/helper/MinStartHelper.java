@@ -22,22 +22,34 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.spi.listener;
+package io.shiftleft.bctrace.asm.helper;
+
+import io.shiftleft.bctrace.asm.utils.ASMUtils;
+import java.util.ArrayList;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.InsnList;
+import org.objectweb.asm.tree.MethodInsnNode;
+import org.objectweb.asm.tree.MethodNode;
 
 /**
  *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public interface BeforeThrownListener extends Listener {
+public class MinStartHelper extends Helper {
 
-  /**
-   * Invoked by instrumented methods just before the actual method throws a
-   * throwable.
-   *
-   * @param methodId method id (as defined by MethodRegistry)
-   * @param instance instance where the method belongs. Null if the method is
-   * @param th throwable to be thrown
-   */
-  public void onBeforeThrown(int methodId, Object instance, Throwable th);
-
+  public static void addTraceStart(int methodId, ClassNode cn, MethodNode mn, ArrayList<Integer> hooksToUse) {
+    if (!isInstrumentationNeeded(hooksToUse)) {
+      return;
+    }
+    InsnList il = new InsnList();
+    for (Integer index : hooksToUse) {
+      il.add(ASMUtils.getPushInstruction(methodId));
+      il.add(ASMUtils.getPushInstruction(index));
+      il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
+              "io/shiftleft/bctrace/runtime/Callback", "onStart",
+              "(II)V", false));
+    }
+    mn.instructions.insert(il);
+  }
 }

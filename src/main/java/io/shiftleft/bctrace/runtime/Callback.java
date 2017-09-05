@@ -25,11 +25,12 @@
 package io.shiftleft.bctrace.runtime;
 
 import io.shiftleft.bctrace.spi.Hook;
-import io.shiftleft.bctrace.spi.listener.BeforeThrownListener;
-import io.shiftleft.bctrace.spi.listener.FinishReturnListener;
-import io.shiftleft.bctrace.spi.listener.FinishThrowableListener;
-import io.shiftleft.bctrace.spi.listener.StartArgumentsListener;
-import io.shiftleft.bctrace.spi.listener.StartListener;
+import io.shiftleft.bctrace.spi.listener.info.BeforeThrownListener;
+import io.shiftleft.bctrace.spi.listener.info.FinishReturnListener;
+import io.shiftleft.bctrace.spi.listener.info.FinishThrowableListener;
+import io.shiftleft.bctrace.spi.listener.info.StartArgumentsListener;
+import io.shiftleft.bctrace.spi.listener.info.StartListener;
+import io.shiftleft.bctrace.spi.listener.min.MinStartListener;
 
 /**
  *
@@ -40,6 +41,19 @@ public final class Callback {
   private static final ThreadLocal<Boolean> NOTIFYING_FLAG = new ThreadLocal<Boolean>();
 
   public static Hook[] hooks;
+
+  @SuppressWarnings("BoxedValueEquality")
+  public static void onStart(int methodId, int i) {
+    if (Boolean.TRUE == NOTIFYING_FLAG.get()) {
+      return;
+    }
+    try {
+      NOTIFYING_FLAG.set(Boolean.TRUE);
+      ((MinStartListener) hooks[i].getListener()).onStart(methodId);
+    } finally {
+      NOTIFYING_FLAG.remove();
+    }
+  }
 
   @SuppressWarnings("BoxedValueEquality")
   public static void onStart(int methodId, Object instance, int i) {
@@ -53,7 +67,7 @@ public final class Callback {
       NOTIFYING_FLAG.remove();
     }
   }
-  
+
   @SuppressWarnings("BoxedValueEquality")
   public static void onStart(Object[] args, int methodId, Object instance, int i) {
     if (Boolean.TRUE == NOTIFYING_FLAG.get()) {
