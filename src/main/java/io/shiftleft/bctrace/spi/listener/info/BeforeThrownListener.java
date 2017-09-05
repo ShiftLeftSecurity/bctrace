@@ -22,58 +22,24 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.spi;
+package io.shiftleft.bctrace.spi.listener.info;
 
-import io.shiftleft.bctrace.runtime.FrameData;
+import io.shiftleft.bctrace.spi.listener.Listener;
 
 /**
- * Listener instances define the actions to be performed when a instrumented
- * method is invoked.
  *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public interface Listener {
-
-  /**
-   * Invoked by instrumented methods before any of its original instructions (if
-   * multiple plugins are registered, listener notification is performed
-   * according to their respective plugin registration order).
-   *
-   * @param fd Current stack frame data
-   * @return
-   */
-  public Object onStart(FrameData fd);
-
-  /**
-   * Invoked by instrumented methods just before return (if multiple plugins are
-   * registered, listener notification is performed according to their
-   * respective plugin <b>reverse</b> registration order).
-   *
-   * @param ret Object being returned by the method. Wrapper type if the
-   * original return type is primitive. <code>null</code> if the method return
-   * type is <code>void</code>
-   * @param fd Current stack frame data
-   */
-  public void onFinishedReturn(Object ret, FrameData fd);
-
-  /**
-   * Invoked by instrumented methods just before rising a throwable to the
-   * caller (if multiple plugins are registered, listener notification is
-   * performed according to their respective plugin <b>reverse</b>
-   * registration order).
-   *
-   * @param th thowable to be raised
-   * @param fd Current stack frame data
-   */
-  public void onFinishedThrowable(Throwable th, FrameData fd);
+public interface BeforeThrownListener extends Listener {
 
   /**
    * Invoked by instrumented methods just before the actual method throws a
    * throwable.
    *
-   * @param th thowable to be thrown
-   * @param fd Current stack frame data
+   * @param methodId method id (as defined by MethodRegistry)
+   * @param instance instance where the method belongs. Null if the method is
+   * @param th throwable to be thrown
    */
-  public void onBeforeThrown(Throwable th, FrameData fd);
+  public void onBeforeThrown(int methodId, Object instance, Throwable th);
 
 }

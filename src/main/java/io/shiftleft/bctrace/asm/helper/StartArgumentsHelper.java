@@ -27,25 +27,33 @@ package io.shiftleft.bctrace.asm.helper;
 import io.shiftleft.bctrace.asm.utils.ASMUtils;
 import java.util.ArrayList;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
 /**
  *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public class StartHelper extends Helper {
+public class StartArgumentsHelper extends Helper {
 
   public static void addTraceStart(int methodId, ClassNode cn, MethodNode mn, ArrayList<Integer> hooksToUse) {
     if (!isInstrumentationNeeded(hooksToUse)) {
       return;
     }
     InsnList il = new InsnList();
-    for (Integer index : hooksToUse) {
+    addMethodParametersVariable(il, mn);
+
+    for (int i = 0; i < hooksToUse.size(); i++) {
+      Integer index = hooksToUse.get(i);
+      if (i < hooksToUse.size() - 1) {
+        il.add(new InsnNode(Opcodes.DUP));
+      }
       il.add(ASMUtils.getPushInstruction(methodId));
       if (ASMUtils.isStatic(mn) || mn.name.equals("<init>")) {
         il.add(new InsnNode(Opcodes.ACONST_NULL));
@@ -55,8 +63,36 @@ public class StartHelper extends Helper {
       il.add(ASMUtils.getPushInstruction(index));
       il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
               "io/shiftleft/bctrace/runtime/Callback", "onStart",
-              "(ILjava/lang/Object;I)V", false));
+              "([Ljava/lang/Object;ILjava/lang/Object;I)V", false));
     }
     mn.instructions.insert(il);
+  }
+
+  /**
+   * Creates a the parameter object array reference on top of the operand stack
+   *
+   * @param il
+   * @param mn
+   */
+  private static void addMethodParametersVariable(InsnList il, MethodNode mn) {
+    Type[] methodArguments = Type.getArgumentTypes(mn.desc);
+    if (methodArguments.length == 0) {
+      il.add(new InsnNode(Opcodes.ACONST_NULL));
+    } else {
+      il.add(ASMUtils.getPushInstruction(methodArguments.length));
+      il.add(new TypeInsnNode(Opcodes.ANEWARRAY, "java/lang/Object"));
+      int index = ASMUtils.isStatic(mn) ? 0 : 1;
+      for (int i = 0; i < methodArguments.length; i++) {
+        il.add(new InsnNode(Opcodes.DUP));
+        il.add(ASMUtils.getPushInstruction(i));
+        il.add(ASMUtils.getLoadInst(methodArguments[i], index));
+        MethodInsnNode mNode = ASMUtils.getWrapperContructionInst(methodArguments[i]);
+        if (mNode != null) {
+          il.add(mNode);
+        }
+        il.add(new InsnNode(Opcodes.AASTORE));
+        index += methodArguments[i].getSize();
+      }
+    }
   }
 }

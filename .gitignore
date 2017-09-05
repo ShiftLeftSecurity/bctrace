@@ -12,3 +12,11 @@
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 target/
+
+# idea intelij files for IDE state
+.idea/
+*.iml
+
+# files being edited while vim crashed
+.*.swp
+

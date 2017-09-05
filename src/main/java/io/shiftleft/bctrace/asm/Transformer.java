@@ -28,15 +28,25 @@ import io.shiftleft.bctrace.runtime.InstrumentationImpl;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.security.ProtectionDomain;
-import java.util.LinkedList;
 import java.util.List;
 import io.shiftleft.bctrace.asm.helper.CatchHelper;
+import io.shiftleft.bctrace.asm.helper.MinStartHelper;
 import io.shiftleft.bctrace.asm.helper.ReturnHelper;
+import io.shiftleft.bctrace.asm.helper.StartArgumentsHelper;
 import io.shiftleft.bctrace.asm.helper.StartHelper;
 import io.shiftleft.bctrace.asm.helper.ThrowHelper;
 import io.shiftleft.bctrace.asm.utils.ASMUtils;
 import io.shiftleft.bctrace.runtime.Callback;
+import io.shiftleft.bctrace.runtime.MethodRegistry;
 import io.shiftleft.bctrace.spi.Hook;
+import io.shiftleft.bctrace.spi.listener.info.BeforeThrownListener;
+import io.shiftleft.bctrace.spi.listener.info.FinishReturnListener;
+import io.shiftleft.bctrace.spi.listener.info.FinishThrowableListener;
+import io.shiftleft.bctrace.spi.listener.Listener;
+import io.shiftleft.bctrace.spi.listener.info.StartArgumentsListener;
+import io.shiftleft.bctrace.spi.listener.info.StartListener;
+import io.shiftleft.bctrace.spi.listener.min.MinStartListener;
+import java.util.ArrayList;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.ClassNode;
@@ -48,6 +58,15 @@ import org.objectweb.asm.tree.MethodNode;
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
 public class Transformer implements ClassFileTransformer {
+
+  private static final String[] CLASSNAME_PREFIX_IGNORE_LIST = new String[]{
+    "io/shiftleft/bctrace/",
+    "java/lang/ThreadLocal",
+    "sun/",
+    "com/sun/",
+    "javafx/",
+    "oracle/"
+  };
 
   @Override
   public byte[] transform(final ClassLoader loader,
@@ -64,20 +83,14 @@ public class Transformer implements ClassFileTransformer {
       if (className == null || classfileBuffer == null) {
         return null;
       }
-      if (className.startsWith("io/shiftleft/bctrace/")) {
-        return null;
-      }
-      if (className.startsWith("sun/") || className.startsWith("com/sun/") || className.startsWith("javafx/")) {
-        return null;
-      }
-//      if (className.startsWith("org/springframework/boot/")) {
-//        return null;
-//      }
-      if (className.startsWith("java/lang/ThreadLocal")) {
-        return null;
+
+      for (String prefix : CLASSNAME_PREFIX_IGNORE_LIST) {
+        if (className.startsWith(prefix)) {
+          return null;
+        }
       }
 
-      LinkedList<Integer> matchingHooks = getMatchingHooks(className, protectionDomain, loader);
+      ArrayList<Integer> matchingHooks = getMatchingHooks(className, protectionDomain, loader);
       if (matchingHooks == null || matchingHooks.isEmpty()) {
         return null;
       }
@@ -107,8 +120,8 @@ public class Transformer implements ClassFileTransformer {
     }
   }
 
-  private LinkedList<Integer> getMatchingHooks(String className, ProtectionDomain protectionDomain, ClassLoader loader) {
-    LinkedList<Integer> ret = new LinkedList<Integer>();
+  private ArrayList<Integer> getMatchingHooks(String className, ProtectionDomain protectionDomain, ClassLoader loader) {
+    ArrayList<Integer> ret = new ArrayList<Integer>(Callback.hooks.length);
     Hook[] hooks = Callback.hooks;
     if (hooks != null) {
       for (int i = 0; i < hooks.length; i++) {
@@ -124,17 +137,17 @@ public class Transformer implements ClassFileTransformer {
     return ret;
   }
 
-  private boolean transformMethods(ClassNode cn, LinkedList<Integer> matchingHooks) {
+  private boolean transformMethods(ClassNode cn, ArrayList<Integer> matchingHooks) {
     List<MethodNode> methods = cn.methods;
     boolean transformed = false;
     for (MethodNode mn : methods) {
       if (ASMUtils.isAbstract(mn) || ASMUtils.isNative(mn)) {
         continue;
       }
-      if (mn.name.contains("init")) {
+      if (mn.name.equals("<init>") || mn.name.equals("<cinit>")) {
         continue;
       }
-      LinkedList<Integer> hooksToUse = new LinkedList<Integer>();
+      ArrayList<Integer> hooksToUse = new ArrayList<Integer>(matchingHooks.size());
       Hook[] hooks = Callback.hooks;
       for (Integer i : matchingHooks) {
         if (hooks[i] != null && hooks[i].getFilter().instrumentMethod(cn, mn)) {
@@ -150,12 +163,37 @@ public class Transformer implements ClassFileTransformer {
     return transformed;
   }
 
-  private void modifyMethod(ClassNode cn, MethodNode mn, LinkedList<Integer> hooksToUse) {
+  private void modifyMethod(ClassNode cn, MethodNode mn, ArrayList<Integer> hooksToUse) {
 
-    LabelNode startNode = CatchHelper.insertStartNode(mn);
-    int frameDataVarIndex = StartHelper.addTraceStart(cn, mn, hooksToUse);
-    ReturnHelper.addTraceReturn(mn, frameDataVarIndex, hooksToUse);
-    ThrowHelper.addTraceThrow(mn, frameDataVarIndex, hooksToUse);
-    CatchHelper.addTraceThrowableUncaught(mn, startNode, frameDataVarIndex, hooksToUse);
+    int methodId = MethodRegistry.getInstance().getMethodId(cn.name, mn.name, mn.desc);
+
+    ArrayList<Integer> minStartListenerHooks = getListenerHooks(hooksToUse, MinStartListener.class);
+    ArrayList<Integer> startListenerHooks = getListenerHooks(hooksToUse, StartListener.class);
+    ArrayList<Integer> startArgumentsListenerHooks = getListenerHooks(hooksToUse, StartArgumentsListener.class);
+    ArrayList<Integer> finishReturnListenerHooks = getListenerHooks(hooksToUse, FinishReturnListener.class);
+    ArrayList<Integer> finishThrowableListenerHooks = getListenerHooks(hooksToUse, FinishThrowableListener.class);
+    ArrayList<Integer> beforeThrownListenerHooks = getListenerHooks(hooksToUse, BeforeThrownListener.class);
+
+    LabelNode startNode = CatchHelper.insertStartNode(mn, finishThrowableListenerHooks);
+    MinStartHelper.addTraceStart(methodId, cn, mn, minStartListenerHooks);
+    StartHelper.addTraceStart(methodId, cn, mn, startListenerHooks);
+    StartArgumentsHelper.addTraceStart(methodId, cn, mn, startArgumentsListenerHooks);
+    ReturnHelper.addTraceReturn(methodId, mn, finishReturnListenerHooks);
+    ThrowHelper.addTraceThrow(methodId, mn, beforeThrownListenerHooks);
+    CatchHelper.addTraceThrowableUncaught(methodId, mn, startNode, finishThrowableListenerHooks);
+  }
+
+  private static ArrayList<Integer> getListenerHooks(ArrayList<Integer> hooksToUse, Class<? extends Listener> clazz) {
+    ArrayList<Integer> ret = null;
+    for (Integer i : hooksToUse) {
+      Hook hook = Callback.hooks[i];
+      if (hook.getListener() != null && clazz.isAssignableFrom(hook.getListener().getClass())) {
+        if (ret == null) {
+          ret = new ArrayList<Integer>(hooksToUse.size());
+        }
+        ret.add(i);
+      }
+    }
+    return ret;
   }
 }

@@ -25,8 +25,8 @@
 package io.shiftleft.bctrace.asm.helper;
 
 import java.util.Iterator;
-import java.util.LinkedList;
 import io.shiftleft.bctrace.asm.utils.ASMUtils;
+import java.util.ArrayList;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
@@ -40,9 +40,12 @@ import org.objectweb.asm.tree.VarInsnNode;
  *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public class ReturnHelper {
+public class ReturnHelper extends Helper {
 
-  public static void addTraceReturn(MethodNode mn, int frameDataVarIndex, LinkedList<Integer> hooksToUse) {
+  public static void addTraceReturn(int methodId, MethodNode mn, ArrayList<Integer> hooksToUse) {
+    if (!isInstrumentationNeeded(hooksToUse)) {
+      return;
+    }
     InsnList il = mn.instructions;
     Iterator<AbstractInsnNode> it = il.iterator();
     Type returnType = Type.getReturnType(mn.desc);
@@ -52,38 +55,41 @@ public class ReturnHelper {
 
       switch (abstractInsnNode.getOpcode()) {
         case Opcodes.RETURN:
-          il.insertBefore(abstractInsnNode, getVoidReturnTraceInstructions(frameDataVarIndex, hooksToUse));
+          il.insertBefore(abstractInsnNode, getVoidReturnTraceInstructions(methodId, mn, hooksToUse));
           break;
         case Opcodes.IRETURN:
         case Opcodes.LRETURN:
         case Opcodes.FRETURN:
         case Opcodes.ARETURN:
         case Opcodes.DRETURN:
-          il.insertBefore(abstractInsnNode, getReturnTraceInstructions(returnType, frameDataVarIndex, hooksToUse));
+          il.insertBefore(abstractInsnNode, getReturnTraceInstructions(methodId, mn, returnType, hooksToUse));
       }
     }
   }
 
-  private static InsnList getVoidReturnTraceInstructions(int frameDataVarIndex, LinkedList<Integer> hooksToUse) {
+  private static InsnList getVoidReturnTraceInstructions(int methodId, MethodNode mn, ArrayList<Integer> hooksToUse) {
     InsnList il = new InsnList();
-    Iterator<Integer> descendingIterator = hooksToUse.descendingIterator();
-    while (descendingIterator.hasNext()) {
-      Integer index = descendingIterator.next();
-      il.add(new InsnNode(Opcodes.ACONST_NULL));
-      il.add(new VarInsnNode(Opcodes.ALOAD, frameDataVarIndex));
-      il.add(ASMUtils.getPushInstruction(index));
+    for (int i = hooksToUse.size() - 1; i >= 0; i--) {
+      Integer index = hooksToUse.get(i);
+      il.add(new InsnNode(Opcodes.ACONST_NULL)); // return value
+      il.add(ASMUtils.getPushInstruction(methodId)); // method id
+      if (ASMUtils.isStatic(mn) || mn.name.equals("<init>")) { // current instance
+        il.add(new InsnNode(Opcodes.ACONST_NULL));
+      } else {
+        il.add(new VarInsnNode(Opcodes.ALOAD, 0));
+      }
+      il.add(ASMUtils.getPushInstruction(index)); // hook id
       il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
               "io/shiftleft/bctrace/runtime/Callback", "onFinishedReturn",
-              "(Ljava/lang/Object;Lio/shiftleft/bctrace/runtime/FrameData;I)V", false));
+              "(Ljava/lang/Object;ILjava/lang/Object;I)V", false));
     }
     return il;
   }
 
-  private static InsnList getReturnTraceInstructions(Type returnType, int frameDataVarIndex, LinkedList<Integer> hooksToUse) {
+  private static InsnList getReturnTraceInstructions(int methodId, MethodNode mn, Type returnType, ArrayList<Integer> hooksToUse) {
     InsnList il = new InsnList();
-    Iterator<Integer> descendingIterator = hooksToUse.descendingIterator();
-    while (descendingIterator.hasNext()) {
-      Integer index = descendingIterator.next();
+    for (int i = hooksToUse.size() - 1; i >= 0; i--) {
+      Integer index = hooksToUse.get(i);
       if (returnType.getSize() == 1) {
         il.add(new InsnNode(Opcodes.DUP));
       } else {
@@ -93,11 +99,16 @@ public class ReturnHelper {
       if (mNode != null) {
         il.add(mNode);
       }
-      il.add(new VarInsnNode(Opcodes.ALOAD, frameDataVarIndex));
-      il.add(ASMUtils.getPushInstruction(index));
+      il.add(ASMUtils.getPushInstruction(methodId)); // method id
+      if (ASMUtils.isStatic(mn) || mn.name.equals("<init>")) { // current instance
+        il.add(new InsnNode(Opcodes.ACONST_NULL));
+      } else {
+        il.add(new VarInsnNode(Opcodes.ALOAD, 0));
+      }
+      il.add(ASMUtils.getPushInstruction(index)); // hook id
       il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
               "io/shiftleft/bctrace/runtime/Callback", "onFinishedReturn",
-              "(Ljava/lang/Object;Lio/shiftleft/bctrace/runtime/FrameData;I)V", false));
+              "(Ljava/lang/Object;ILjava/lang/Object;I)V", false));
     }
     return il;
   }

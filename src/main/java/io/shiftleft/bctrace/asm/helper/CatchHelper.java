@@ -24,9 +24,8 @@
  */
 package io.shiftleft.bctrace.asm.helper;
 
-import java.util.Iterator;
-import java.util.LinkedList;
 import io.shiftleft.bctrace.asm.utils.ASMUtils;
+import java.util.ArrayList;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
@@ -40,29 +39,36 @@ import org.objectweb.asm.tree.VarInsnNode;
  *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public class CatchHelper {
+public class CatchHelper extends Helper {
 
-  public static LabelNode insertStartNode(MethodNode mn) {
+  public static LabelNode insertStartNode(MethodNode mn, ArrayList<Integer> hooksToUse) {
+    if (!isInstrumentationNeeded(hooksToUse)) {
+      return null;
+    }
     LabelNode ret = new LabelNode();
     mn.instructions.insert(ret);
     return ret;
   }
 
-  public static void addTraceThrowableUncaught(MethodNode mn, LabelNode startNode, int frameDataVarIndex, LinkedList<Integer> hooksToUse) {
+  public static void addTraceThrowableUncaught(int methodId, MethodNode mn, LabelNode startNode, ArrayList<Integer> hooksToUse) {
+    if (!isInstrumentationNeeded(hooksToUse)) {
+      return;
+    }
+
     InsnList il = mn.instructions;
 
     LabelNode endNode = new LabelNode();
     il.add(endNode);
 
-    addCatchBlock(mn, startNode, endNode, frameDataVarIndex, hooksToUse);
+    addCatchBlock(methodId, mn, startNode, endNode, hooksToUse);
   }
 
-  private static void addCatchBlock(MethodNode mn, LabelNode startNode, LabelNode endNode, int frameDataVarIndex, LinkedList<Integer> hooksToUse) {
+  private static void addCatchBlock(int methodId, MethodNode mn, LabelNode startNode, LabelNode endNode, ArrayList<Integer> hooksToUse) {
 
     InsnList il = new InsnList();
     LabelNode handlerNode = new LabelNode();
     il.add(handlerNode);
-    il.add(getThrowableTraceInstructions(frameDataVarIndex, hooksToUse));
+    il.add(getThrowableTraceInstructions(methodId, mn, hooksToUse));
     il.add(new InsnNode(Opcodes.ATHROW));
 
     TryCatchBlockNode blockNode = new TryCatchBlockNode(startNode, endNode, handlerNode, "java/lang/Throwable");
@@ -70,18 +76,21 @@ public class CatchHelper {
     mn.instructions.add(il);
   }
 
-  private static InsnList getThrowableTraceInstructions(int frameDataVarIndex, LinkedList<Integer> hooksToUse) {
+  private static InsnList getThrowableTraceInstructions(int methodId, MethodNode mn, ArrayList<Integer> hooksToUse) {
     InsnList il = new InsnList();
-    //il.add(new FrameNode(Opcodes.F_SAME1, 0, null, 1,  new Object[]{"java/lang/Throwable"}));
-    Iterator<Integer> descendingIterator = hooksToUse.descendingIterator();
-    while (descendingIterator.hasNext()) {
-      Integer index = descendingIterator.next();
-      il.add(new InsnNode(Opcodes.DUP));
-      il.add(new VarInsnNode(Opcodes.ALOAD, frameDataVarIndex));
-      il.add(ASMUtils.getPushInstruction(index));
+    for (int i = hooksToUse.size() - 1; i >= 0; i--) {
+      Integer index = hooksToUse.get(i);
+      il.add(new InsnNode(Opcodes.DUP)); // dup throwable
+      il.add(ASMUtils.getPushInstruction(methodId)); // method id
+      if (ASMUtils.isStatic(mn) || mn.name.equals("<init>")) { // instance
+        il.add(new InsnNode(Opcodes.ACONST_NULL));
+      } else {
+        il.add(new VarInsnNode(Opcodes.ALOAD, 0));
+      }
+      il.add(ASMUtils.getPushInstruction(index)); // hook id
       il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
               "io/shiftleft/bctrace/runtime/Callback", "onFinishedThrowable",
-              "(Ljava/lang/Throwable;Lio/shiftleft/bctrace/runtime/FrameData;I)V", false));
+              "(Ljava/lang/Throwable;ILjava/lang/Object;I)V", false));
     }
     return il;
   }

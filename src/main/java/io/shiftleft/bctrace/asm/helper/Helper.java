@@ -22,39 +22,20 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.runtime;
+package io.shiftleft.bctrace.asm.helper;
+
+import java.util.ArrayList;
 
 /**
- * Holds the information of a stack frame.
  *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public final class FrameData {
+public class Helper {
 
-  public int methodId;
-  public Object instance;
-  public Object[] args;
-
-  private FrameData() {
-  }
-
-  public static FrameData getInstance(Object instance, int methodId, Object[] args) {
-    FrameData ret = new FrameData();
-    ret.instance = instance;
-    ret.args = args;
-    ret.methodId = methodId;
-    return ret;
-  }
-
-  public FrameData copy() {
-    FrameData fd = new FrameData();
-    fd.args = args;
-    fd.methodId = methodId;
-    fd.instance = instance;
-    return fd;
-  }
-
-  void dispose() {
-    // have in mind copies instances no in the pool
+  protected static boolean isInstrumentationNeeded(ArrayList<Integer> hooksToUse) {
+    if (hooksToUse == null) {
+      return false;
+    }
+    return hooksToUse.size() > 0;
   }
 }
