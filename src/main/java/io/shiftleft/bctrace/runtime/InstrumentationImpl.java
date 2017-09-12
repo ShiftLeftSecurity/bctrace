@@ -77,7 +77,7 @@ public final class InstrumentationImpl implements Instrumentation {
 
   @Override
   public void retransformClasses(Class<?>... classes) throws UnmodifiableClassException {
-    if (classes != null) {
+    if (classes != null && classes.length > 0) {
       javaInstrumentation.retransformClasses(classes);
     }
   }

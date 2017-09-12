@@ -63,7 +63,7 @@ public class ThrowHelper extends Helper {
     for (Integer index : hooksToUse) {
       il.add(new InsnNode(Opcodes.DUP)); // dup throwable
       il.add(ASMUtils.getPushInstruction(methodId)); // method id
-      if (ASMUtils.isStatic(mn) || mn.name.equals("<init>")) { // current instance
+      if (ASMUtils.isStatic(mn.access) || mn.name.equals("<init>")) { // current instance
         il.add(new InsnNode(Opcodes.ACONST_NULL));
       } else {
         il.add(new VarInsnNode(Opcodes.ALOAD, 0));

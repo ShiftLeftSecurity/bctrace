@@ -55,7 +55,7 @@ public class StartArgumentsHelper extends Helper {
         il.add(new InsnNode(Opcodes.DUP));
       }
       il.add(ASMUtils.getPushInstruction(methodId));
-      if (ASMUtils.isStatic(mn) || mn.name.equals("<init>")) {
+      if (ASMUtils.isStatic(mn.access) || mn.name.equals("<init>")) {
         il.add(new InsnNode(Opcodes.ACONST_NULL));
       } else {
         il.add(new VarInsnNode(Opcodes.ALOAD, 0));
@@ -81,7 +81,7 @@ public class StartArgumentsHelper extends Helper {
     } else {
       il.add(ASMUtils.getPushInstruction(methodArguments.length));
       il.add(new TypeInsnNode(Opcodes.ANEWARRAY, "java/lang/Object"));
-      int index = ASMUtils.isStatic(mn) ? 0 : 1;
+      int index = ASMUtils.isStatic(mn.access) ? 0 : 1;
       for (int i = 0; i < methodArguments.length; i++) {
         il.add(new InsnNode(Opcodes.DUP));
         il.add(ASMUtils.getPushInstruction(i));

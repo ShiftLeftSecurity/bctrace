@@ -73,7 +73,7 @@ public class ReturnHelper extends Helper {
       Integer index = hooksToUse.get(i);
       il.add(new InsnNode(Opcodes.ACONST_NULL)); // return value
       il.add(ASMUtils.getPushInstruction(methodId)); // method id
-      if (ASMUtils.isStatic(mn) || mn.name.equals("<init>")) { // current instance
+      if (ASMUtils.isStatic(mn.access) || mn.name.equals("<init>")) { // current instance
         il.add(new InsnNode(Opcodes.ACONST_NULL));
       } else {
         il.add(new VarInsnNode(Opcodes.ALOAD, 0));
@@ -100,7 +100,7 @@ public class ReturnHelper extends Helper {
         il.add(mNode);
       }
       il.add(ASMUtils.getPushInstruction(methodId)); // method id
-      if (ASMUtils.isStatic(mn) || mn.name.equals("<init>")) { // current instance
+      if (ASMUtils.isStatic(mn.access) || mn.name.equals("<init>")) { // current instance
         il.add(new InsnNode(Opcodes.ACONST_NULL));
       } else {
         il.add(new VarInsnNode(Opcodes.ALOAD, 0));

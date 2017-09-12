@@ -85,6 +85,7 @@ public class FeatureTest extends BcTraceTest {
       }
     });
     clazz.getMethod("execVoid").invoke(null);
+    System.out.println(clazz.getClassLoader());
     assertEquals("12", steps.toString());
   }
 

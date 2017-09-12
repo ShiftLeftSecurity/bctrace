@@ -82,7 +82,7 @@ public class CatchHelper extends Helper {
       Integer index = hooksToUse.get(i);
       il.add(new InsnNode(Opcodes.DUP)); // dup throwable
       il.add(ASMUtils.getPushInstruction(methodId)); // method id
-      if (ASMUtils.isStatic(mn) || mn.name.equals("<init>")) { // instance
+      if (ASMUtils.isStatic(mn.access) || mn.name.equals("<init>")) { // instance
         il.add(new InsnNode(Opcodes.ACONST_NULL));
       } else {
         il.add(new VarInsnNode(Opcodes.ALOAD, 0));

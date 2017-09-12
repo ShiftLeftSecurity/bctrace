@@ -37,6 +37,7 @@ import io.shiftleft.bctrace.asm.helper.StartHelper;
 import io.shiftleft.bctrace.asm.helper.ThrowHelper;
 import io.shiftleft.bctrace.asm.utils.ASMUtils;
 import io.shiftleft.bctrace.runtime.Callback;
+import io.shiftleft.bctrace.runtime.MethodInfo;
 import io.shiftleft.bctrace.runtime.MethodRegistry;
 import io.shiftleft.bctrace.spi.Hook;
 import io.shiftleft.bctrace.spi.listener.info.BeforeThrownListener;
@@ -141,7 +142,7 @@ public class Transformer implements ClassFileTransformer {
     List<MethodNode> methods = cn.methods;
     boolean transformed = false;
     for (MethodNode mn : methods) {
-      if (ASMUtils.isAbstract(mn) || ASMUtils.isNative(mn)) {
+      if (ASMUtils.isAbstract(mn.access) || ASMUtils.isNative(mn.access)) {
         continue;
       }
       if (mn.name.equals("<init>") || mn.name.equals("<cinit>")) {
@@ -165,7 +166,7 @@ public class Transformer implements ClassFileTransformer {
 
   private void modifyMethod(ClassNode cn, MethodNode mn, ArrayList<Integer> hooksToUse) {
 
-    int methodId = MethodRegistry.getInstance().getMethodId(cn.name, mn.name, mn.desc);
+    int methodId = MethodRegistry.getInstance().registerMethodId(MethodInfo.from(cn, mn));
 
     ArrayList<Integer> minStartListenerHooks = getListenerHooks(hooksToUse, MinStartListener.class);
     ArrayList<Integer> startListenerHooks = getListenerHooks(hooksToUse, StartListener.class);

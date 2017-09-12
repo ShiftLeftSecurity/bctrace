@@ -47,7 +47,7 @@ public class StartHelper extends Helper {
     InsnList il = new InsnList();
     for (Integer index : hooksToUse) {
       il.add(ASMUtils.getPushInstruction(methodId));
-      if (ASMUtils.isStatic(mn) || mn.name.equals("<init>")) {
+      if (ASMUtils.isStatic(mn.access) || mn.name.equals("<init>")) {
         il.add(new InsnNode(Opcodes.ACONST_NULL));
       } else {
         il.add(new VarInsnNode(Opcodes.ALOAD, 0));
