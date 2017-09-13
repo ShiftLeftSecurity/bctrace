@@ -24,6 +24,10 @@
  */
 package io.shiftleft.bctrace.runtime;
 
+import io.shiftleft.bctrace.asm.utils.ASMUtils;
+import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.MethodNode;
+
 /**
  *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
@@ -33,13 +37,18 @@ public final class MethodInfo {
   private final String binaryClassName;
   private final String methodName;
   private final String methodDescriptor;
+  private final int modifiers;
+  private final String representation;
 
-  private String representation;
+  public static MethodInfo from(ClassNode cn, MethodNode mn) {
+    return new MethodInfo(cn.name, mn.name, mn.desc, mn.access);
+  }
 
-  public MethodInfo(String binaryClassName, String methodName, String methodDescriptor) {
+  public MethodInfo(String binaryClassName, String methodName, String methodDescriptor, int modifiers) {
     this.binaryClassName = binaryClassName;
     this.methodName = methodName;
     this.methodDescriptor = methodDescriptor;
+    this.modifiers = modifiers;
     this.representation = binaryClassName + "." + methodName + methodDescriptor;
   }
 
@@ -53,6 +62,34 @@ public final class MethodInfo {
 
   public String getMethodDescriptor() {
     return this.methodDescriptor;
+  }
+
+  public int getModifiers() {
+    return modifiers;
+  }
+
+  public boolean isAbstract() {
+    return ASMUtils.isAbstract(this.modifiers);
+  }
+
+  public boolean isNative() {
+    return ASMUtils.isNative(this.modifiers);
+  }
+
+  public boolean isStatic() {
+    return ASMUtils.isStatic(this.modifiers);
+  }
+
+  public boolean isPublic() {
+    return ASMUtils.isPublic(this.modifiers);
+  }
+
+  public boolean isProtected() {
+    return ASMUtils.isProtected(this.modifiers);
+  }
+
+  public boolean isPrivate() {
+    return ASMUtils.isPrivate(this.modifiers);
   }
 
   @Override

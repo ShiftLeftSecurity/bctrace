@@ -24,6 +24,7 @@
  */
 package io.shiftleft.bctrace.runtime;
 
+import io.shiftleft.bctrace.asm.TransformationSupport;
 import io.shiftleft.bctrace.spi.Instrumentation;
 import java.lang.instrument.UnmodifiableClassException;
 import java.util.HashSet;
@@ -56,7 +57,7 @@ public final class InstrumentationImpl implements Instrumentation {
 
   @Override
   public boolean isModifiableClass(Class<?> clazz) {
-    return javaInstrumentation.isModifiableClass(clazz);
+    return isRetransformClassesSupported() && TransformationSupport.isRetransformable(clazz) && javaInstrumentation.isModifiableClass(clazz);
   }
 
   @Override
@@ -77,7 +78,12 @@ public final class InstrumentationImpl implements Instrumentation {
 
   @Override
   public void retransformClasses(Class<?>... classes) throws UnmodifiableClassException {
-    if (classes != null) {
+    if (classes != null && classes.length > 0) {
+      for (Class<?> clazz : classes) {
+        if (!isModifiableClass(clazz)) {
+          throw new UnmodifiableClassException(clazz.getName());
+        }
+      }
       javaInstrumentation.retransformClasses(classes);
     }
   }

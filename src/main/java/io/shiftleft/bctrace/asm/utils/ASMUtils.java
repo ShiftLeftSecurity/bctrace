@@ -36,7 +36,6 @@ import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.IntInsnNode;
 import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
-import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
 /**
@@ -45,20 +44,28 @@ import org.objectweb.asm.tree.VarInsnNode;
  */
 public class ASMUtils {
 
-  public static boolean isAbstract(MethodNode m) {
-    return (m.access & Opcodes.ACC_ABSTRACT) != 0;
+  public static boolean isAbstract(int modifiers) {
+    return (modifiers & Opcodes.ACC_ABSTRACT) != 0;
   }
 
-  public static boolean isNative(MethodNode m) {
-    return (m.access & Opcodes.ACC_NATIVE) != 0;
+  public static boolean isNative(int modifiers) {
+    return (modifiers & Opcodes.ACC_NATIVE) != 0;
   }
 
-  public static boolean isStatic(MethodNode m) {
-    return (m.access & Opcodes.ACC_STATIC) != 0;
+  public static boolean isStatic(int modifiers) {
+    return (modifiers & Opcodes.ACC_STATIC) != 0;
   }
-
-  public static boolean isPublic(MethodNode m) {
-    return (m.access & Opcodes.ACC_PUBLIC) != 0;
+ 
+  public static boolean isPublic(int modifiers) {
+    return (modifiers & Opcodes.ACC_PUBLIC) != 0;
+  }
+  
+  public static boolean isProtected(int modifiers) {
+    return (modifiers & Opcodes.ACC_PROTECTED) != 0;
+  }
+  
+  public static boolean isPrivate(int modifiers) {
+    return (modifiers & Opcodes.ACC_PRIVATE) != 0;
   }
 
   public static VarInsnNode getLoadInst(Type type, int position) {

@@ -22,41 +22,41 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.asm.helper;
-
-import io.shiftleft.bctrace.asm.utils.ASMUtils;
-import java.util.ArrayList;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.InsnList;
-import org.objectweb.asm.tree.InsnNode;
-import org.objectweb.asm.tree.MethodInsnNode;
-import org.objectweb.asm.tree.MethodNode;
-import org.objectweb.asm.tree.VarInsnNode;
+package io.shiftleft.bctrace.asm;
 
 /**
  *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public class StartHelper extends Helper {
+public class TransformationSupport {
 
-  public static void addTraceStart(int methodId, ClassNode cn, MethodNode mn, ArrayList<Integer> hooksToUse) {
-    if (!isInstrumentationNeeded(hooksToUse)) {
-      return;
+  private static final String[] CLASSNAME_PREFIX_IGNORE_LIST = new String[]{
+    "io/shiftleft/bctrace/",
+    "java/lang/",
+    "org/springframework/boot/",
+    "java/security/",
+    "sun/",
+    "com/sun/",
+    "javafx/",
+    "oracle/"
+  };
+
+  public static boolean isTransformable(String jvmClassName) {
+    if (jvmClassName == null) {
+      return false;
     }
-    InsnList il = new InsnList();
-    for (Integer index : hooksToUse) {
-      il.add(ASMUtils.getPushInstruction(methodId));
-      if (ASMUtils.isStatic(mn.access) || mn.name.equals("<init>")) {
-        il.add(new InsnNode(Opcodes.ACONST_NULL));
-      } else {
-        il.add(new VarInsnNode(Opcodes.ALOAD, 0));
+    if (jvmClassName.contains("$$Lambda$")) {
+      return false;
+    }
+    for (String prefix : CLASSNAME_PREFIX_IGNORE_LIST) {
+      if (jvmClassName.startsWith(prefix)) {
+        return false;
       }
-      il.add(ASMUtils.getPushInstruction(index));
-      il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
-              "io/shiftleft/bctrace/runtime/Callback", "onStart",
-              "(ILjava/lang/Object;I)V", false));
     }
-    mn.instructions.insert(il);
+    return true;
+  }
+
+  public static boolean isRetransformable(Class clazz) {
+    return isTransformable(clazz.getName().replace('.', '/'));
   }
 }

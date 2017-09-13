@@ -46,12 +46,11 @@ public final class MethodRegistry {
   private MethodRegistry() {
   }
 
-  public synchronized MethodInfo getMethod(int id) {
+  public synchronized MethodInfo getMethod(Integer id) {
     return methodArray.get(id);
   }
 
-  public synchronized int getMethodId(String binaryClassName, String methodName, String methodDescriptor) {
-    MethodInfo mi = new MethodInfo(binaryClassName, methodName, methodDescriptor);
+  public synchronized Integer registerMethodId(MethodInfo mi) {
     Integer id = methodMap.get(mi);
     if (id == null) {
       methodArray.add(mi);
@@ -59,6 +58,11 @@ public final class MethodRegistry {
       methodMap.put(mi, id);
     }
     return id;
+  }
+
+  public synchronized Integer getMethodId(String binaryClassName, String methodName, String methodDescriptor) {
+    MethodInfo mi = new MethodInfo(binaryClassName, methodName, methodDescriptor, 0);
+    return methodMap.get(mi);
   }
 
   public synchronized int size() {
