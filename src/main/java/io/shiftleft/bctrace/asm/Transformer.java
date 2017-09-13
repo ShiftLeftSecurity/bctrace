@@ -60,15 +60,6 @@ import org.objectweb.asm.tree.MethodNode;
  */
 public class Transformer implements ClassFileTransformer {
 
-  private static final String[] CLASSNAME_PREFIX_IGNORE_LIST = new String[]{
-    "io/shiftleft/bctrace/",
-    "java/lang/ThreadLocal",
-    "sun/",
-    "com/sun/",
-    "javafx/",
-    "oracle/"
-  };
-
   @Override
   public byte[] transform(final ClassLoader loader,
           final String className, final Class<?> classBeingRedefined,
@@ -85,10 +76,8 @@ public class Transformer implements ClassFileTransformer {
         return null;
       }
 
-      for (String prefix : CLASSNAME_PREFIX_IGNORE_LIST) {
-        if (className.startsWith(prefix)) {
-          return null;
-        }
+      if (!TransformationSupport.isTransformable(className)) {
+        return null;
       }
 
       ArrayList<Integer> matchingHooks = getMatchingHooks(className, protectionDomain, loader);
