@@ -40,6 +40,7 @@ import io.shiftleft.bctrace.runtime.Callback;
 import io.shiftleft.bctrace.runtime.MethodInfo;
 import io.shiftleft.bctrace.runtime.MethodRegistry;
 import io.shiftleft.bctrace.spi.Hook;
+import io.shiftleft.bctrace.spi.SystemProperties;
 import io.shiftleft.bctrace.spi.listener.info.BeforeThrownListener;
 import io.shiftleft.bctrace.spi.listener.info.FinishReturnListener;
 import io.shiftleft.bctrace.spi.listener.info.FinishThrowableListener;
@@ -47,7 +48,10 @@ import io.shiftleft.bctrace.spi.listener.Listener;
 import io.shiftleft.bctrace.spi.listener.info.StartArgumentsListener;
 import io.shiftleft.bctrace.spi.listener.info.StartListener;
 import io.shiftleft.bctrace.spi.listener.min.MinStartListener;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.util.ArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.ClassNode;
@@ -60,6 +64,24 @@ import org.objectweb.asm.tree.MethodNode;
  */
 public class Transformer implements ClassFileTransformer {
 
+  private static final File DUMP_FOLDER;
+  private static final AtomicInteger TRANSFORMATION_COUNTER = new AtomicInteger();
+
+  static {
+    if (System.getProperty(SystemProperties.DUMP_FOLDER) != null) {
+      File file = new File(System.getProperty(SystemProperties.DUMP_FOLDER));
+      if (file.exists() && file.isFile()) {
+        file = null;
+      }
+      DUMP_FOLDER = file;
+    } else {
+      DUMP_FOLDER = null;
+    }
+    if (DUMP_FOLDER != null) {
+      DUMP_FOLDER.mkdirs();
+    }
+  }
+
   @Override
   public byte[] transform(final ClassLoader loader,
           final String className, final Class<?> classBeingRedefined,
@@ -67,22 +89,26 @@ public class Transformer implements ClassFileTransformer {
           final byte[] classfileBuffer)
           throws IllegalClassFormatException {
 
+    if (className == null) {
+      return null;
+    }
+    int counter = TRANSFORMATION_COUNTER.incrementAndGet();
+
+    byte[] ret = null;
     try {
-      // Do not instrument agent classes
+      // Do not instrument agent classes (non bootstrap classloader only)
       if (protectionDomain != null && protectionDomain.equals(getClass().getProtectionDomain())) {
-        return null;
+        return ret;
       }
-      if (className == null || classfileBuffer == null) {
-        return null;
+      if (classfileBuffer == null) {
+        return ret;
       }
-
       if (!TransformationSupport.isTransformable(className)) {
-        return null;
+        return ret;
       }
-
       ArrayList<Integer> matchingHooks = getMatchingHooks(className, protectionDomain, loader);
       if (matchingHooks == null || matchingHooks.isEmpty()) {
-        return null;
+        return ret;
       }
 
       ClassReader cr = new ClassReader(classfileBuffer);
@@ -91,22 +117,51 @@ public class Transformer implements ClassFileTransformer {
 
       boolean transformed = transformMethods(cn, matchingHooks);
       if (!transformed) {
-        return null;
+        return ret;
       } else {
         ClassWriter cw = new StaticClassWriter(cr, ClassWriter.COMPUTE_FRAMES, loader);
         cn.accept(cw);
-        return cw.toByteArray();
+        ret = cw.toByteArray();
+        return ret;
       }
     } catch (Throwable th) {
-      Hook[] hooks = Callback.hooks;
-      if (hooks != null) {
-        for (Hook hook : hooks) {
-          if (hook != null) {
-            hook.onError(th);
-          }
+      handle(th);
+      return ret;
+    } finally {
+      if (DUMP_FOLDER != null) {
+        dump(counter, className, classfileBuffer, ret);
+      }
+    }
+  }
+
+  private static void handle(Throwable th) {
+    Hook[] hooks = Callback.hooks;
+    if (hooks != null) {
+      for (Hook hook : hooks) {
+        if (hook != null) {
+          hook.onError(th);
         }
       }
-      return null;
+    }
+  }
+
+  private static void dump(int counter, String className, byte[] original, byte[] transformed) {
+    try {
+      if (transformed != null) {
+        FileOutputStream fos = new FileOutputStream(new File(DUMP_FOLDER, counter + "#" + className.replace('/', '.') + "(input).class"));
+        fos.write(original);
+        fos.close();
+        fos = new FileOutputStream(new File(DUMP_FOLDER, counter + "#" + className.replace('/', '.') + "(output).class"));
+        fos.write(transformed);
+        fos.close();
+      } else {
+        FileOutputStream fos = new FileOutputStream(new File(DUMP_FOLDER, "noop.txt"), true);
+        fos.write((counter + "#" + className).getBytes());
+        fos.write("\n".getBytes());
+        fos.close();
+      }
+    } catch (Exception ex) {
+      handle(ex);
     }
   }
 
