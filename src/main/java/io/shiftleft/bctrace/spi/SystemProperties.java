@@ -22,53 +22,13 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.asm;
+package io.shiftleft.bctrace.spi;
 
 /**
  *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public class TransformationSupport {
+public interface SystemProperties {
 
-  private static final String[] CLASSNAME_PREFIX_IGNORE_LIST = new String[]{
-    "io/shiftleft/bctrace/",
-    "java/lang/Object",
-    "java/lang/String",
-    "java/lang/ThreadLocal",
-    "java/lang/VerifyError",
-    "java/lang/instrument",
-    "java/lang/invoke",
-    "java/lang/ref",
-    "java/lang/concurrent",
-    "java/security/",
-    "java/util/",
-    "sun/",
-    "com/sun/",
-    "javafx/",
-    "oracle/",
-    "org/springframework/boot/autoconfigure/cache/RedisCacheConfiguration"
-  };
-
-  public static boolean isTransformable(String jvmClassName) {
-
-    if (jvmClassName == null) {
-      return false;
-    }
-    if (jvmClassName.contains("$$Lambda$")) {
-      return false;
-    }
-    for (String prefix : CLASSNAME_PREFIX_IGNORE_LIST) {
-      if (jvmClassName.startsWith(prefix)) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  public static boolean isRetransformable(Class clazz) {
-    if (clazz.isInterface() || clazz.isPrimitive() || clazz.isArray()) {
-      return false;
-    }
-    return isTransformable(clazz.getName().replace('.', '/'));
-  }
+  public static final String DUMP_FOLDER = "bctrace.dump.path";
 }

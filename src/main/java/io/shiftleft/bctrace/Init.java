@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.Scanner;
 import io.shiftleft.bctrace.spi.Hook;
+import java.lang.management.ManagementFactory;
 
 /**
  * Framework entry point.
@@ -50,6 +51,7 @@ public class Init {
   }
 
   private static void bootstrap(String agentArgs, Instrumentation inst) throws Exception {
+    System.out.println(ManagementFactory.getRuntimeMXBean().getInputArguments());
 
     String[] hookClassNames = readHookClassNamesFromDescriptors();
     Hook[] hooks = new Hook[hookClassNames.length];

@@ -40,6 +40,8 @@ import io.shiftleft.bctrace.spi.Hook;
  */
 public final class Bctrace {
 
+  private static final ThreadLocal<Boolean> NOTIFYING_DISABLED_FLAG = new ThreadLocal<Boolean>();
+
   static Bctrace instance;
 
   private final Transformer transformer;
@@ -63,6 +65,21 @@ public final class Bctrace {
       throw new Error("Instrumentation is not properly configured. Please verify agent manifest attributes");
     }
     return instance;
+  }
+
+  @SuppressWarnings("BoxedValueEquality")
+  public static boolean isThreadNotificationEnabled() {
+    return NOTIFYING_DISABLED_FLAG.get() != Boolean.TRUE;
+  }
+
+  @SuppressWarnings("BoxedValueEquality")
+  public static void enableThreadNotification() {
+    NOTIFYING_DISABLED_FLAG.remove();
+  }
+
+  @SuppressWarnings("BoxedValueEquality")
+  public static void disableThreadNotification() {
+    NOTIFYING_DISABLED_FLAG.set(Boolean.TRUE);
   }
 
   public void addHook(Hook hook) {
