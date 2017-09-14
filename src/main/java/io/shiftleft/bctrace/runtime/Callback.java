@@ -24,6 +24,7 @@
  */
 package io.shiftleft.bctrace.runtime;
 
+import io.shiftleft.bctrace.Bctrace;
 import io.shiftleft.bctrace.spi.Hook;
 import io.shiftleft.bctrace.spi.listener.info.BeforeThrownListener;
 import io.shiftleft.bctrace.spi.listener.info.FinishReturnListener;
@@ -44,6 +45,9 @@ public final class Callback {
 
   @SuppressWarnings("BoxedValueEquality")
   public static void onStart(int methodId, int i) {
+    if (!Bctrace.isThreadNotificationEnabled()) {
+      return;
+    }
     if (Boolean.TRUE == NOTIFYING_FLAG.get()) {
       return;
     }
@@ -57,6 +61,9 @@ public final class Callback {
 
   @SuppressWarnings("BoxedValueEquality")
   public static void onStart(int methodId, Object instance, int i) {
+    if (!Bctrace.isThreadNotificationEnabled()) {
+      return;
+    }
     if (Boolean.TRUE == NOTIFYING_FLAG.get()) {
       return;
     }
@@ -70,6 +77,9 @@ public final class Callback {
 
   @SuppressWarnings("BoxedValueEquality")
   public static void onStart(Object[] args, int methodId, Object instance, int i) {
+    if (!Bctrace.isThreadNotificationEnabled()) {
+      return;
+    }
     if (Boolean.TRUE == NOTIFYING_FLAG.get()) {
       return;
     }
@@ -83,6 +93,9 @@ public final class Callback {
 
   @SuppressWarnings("BoxedValueEquality")
   public static void onFinishedReturn(Object ret, int methodId, Object instance, int i) {
+    if (!Bctrace.isThreadNotificationEnabled()) {
+      return;
+    }
     if (Boolean.TRUE == NOTIFYING_FLAG.get()) {
       return;
     }
@@ -96,6 +109,9 @@ public final class Callback {
 
   @SuppressWarnings("BoxedValueEquality")
   public static void onFinishedThrowable(Throwable th, int methodId, Object instance, int i) {
+    if (!Bctrace.isThreadNotificationEnabled()) {
+      return;
+    }
     if (Boolean.TRUE == NOTIFYING_FLAG.get()) {
       return;
     }
@@ -109,6 +125,9 @@ public final class Callback {
 
   @SuppressWarnings("BoxedValueEquality")
   public static void onBeforeThrown(Throwable th, int methodId, Object instance, int i) {
+    if (!Bctrace.isThreadNotificationEnabled()) {
+      return;
+    }
     if (Boolean.TRUE == NOTIFYING_FLAG.get()) {
       return;
     }
