@@ -41,12 +41,10 @@ public class TransformationSupport {
     "java/lang/ref",
     "java/lang/concurrent",
     "java/security/",
-    "java/util/",
     "sun/",
     "com/sun/",
     "javafx/",
     "oracle/",
-    "org/springframework/boot/autoconfigure/cache/RedisCacheConfiguration"
   };
 
   public static boolean isTransformable(String jvmClassName) {
