@@ -82,11 +82,12 @@ Hooks offer two main functionalities:
 ### Instrumentation
 On hook initialization, the framework passes a unique instance of [`Instrumentation`](src/main/java/io/shiftleft/bctrace/spi/Instrumentation.java) to the hook instances, to provide them retransformation capabilities, as well as accounting of all the classes they are instrumenting.
 
-### FrameData
-[`FrameData`](src/main/java/io/shiftleft/bctrace/runtime/FrameData.java) objects contain all the information about a execution frame, method, arguments and target object. This object are passed by the framework to the listeners for every execution event.
-
 ### MethodRegistry
 [`MethodRegistry`](src/main/java/io/shiftleft/bctrace/runtime/MethodRegistry.java) offers a singleton instance that provides O(1) mappings: id ([`int:FrameData.methodId`](https://github.com/ShiftLeftSecurity/bctrace/blob/master/src/main/java/io/shiftleft/bctrace/runtime/FrameData.java)) <> method ([`MethodInfo`](src/main/java/io/shiftleft/bctrace/runtime/MethodInfo.java)).
+
+## System properties
+- `-Dbctrace.dump.path`: Dump instrumented class byte code to the specified folder
+- `-Dbctrace.debug.server`: Track call statistics and start debug http server. Value in the form `hostname:port` 
 
 ## Maven dependency 
 
