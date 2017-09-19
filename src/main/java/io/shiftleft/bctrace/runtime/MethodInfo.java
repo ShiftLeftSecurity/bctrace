@@ -24,7 +24,7 @@
  */
 package io.shiftleft.bctrace.runtime;
 
-import io.shiftleft.bctrace.asm.utils.ASMUtils;
+import io.shiftleft.bctrace.asm.util.ASMUtils;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 

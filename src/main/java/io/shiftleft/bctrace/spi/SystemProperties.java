@@ -31,4 +31,5 @@ package io.shiftleft.bctrace.spi;
 public interface SystemProperties {
 
   public static final String DUMP_FOLDER = "bctrace.dump.path";
+  public static final String DEBUG_SERVER = "bctrace.debug.server";
 }
