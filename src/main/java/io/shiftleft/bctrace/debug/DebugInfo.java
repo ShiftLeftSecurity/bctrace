@@ -22,41 +22,64 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.asm.helper;
+package io.shiftleft.bctrace.debug;
 
-import io.shiftleft.bctrace.asm.util.ASMUtils;
-import java.util.ArrayList;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.InsnList;
-import org.objectweb.asm.tree.InsnNode;
-import org.objectweb.asm.tree.MethodInsnNode;
-import org.objectweb.asm.tree.MethodNode;
-import org.objectweb.asm.tree.VarInsnNode;
+import io.shiftleft.bctrace.spi.SystemProperties;
+import java.io.IOException;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public class StartHelper extends Helper {
+public class DebugInfo {
 
-  public static void addTraceStart(int methodId, ClassNode cn, MethodNode mn, ArrayList<Integer> hooksToUse) {
-    if (!isInstrumentationNeeded(hooksToUse)) {
-      return;
-    }
-    InsnList il = new InsnList();
-    for (Integer index : hooksToUse) {
-      il.add(ASMUtils.getPushInstruction(methodId));
-      if (ASMUtils.isStatic(mn.access) || mn.name.equals("<init>")) {
-        il.add(new InsnNode(Opcodes.ACONST_NULL));
-      } else {
-        il.add(new VarInsnNode(Opcodes.ALOAD, 0));
+  private static final DebugInfo INSTANCE;
+
+  static {
+    String debugServer = System.getProperty(SystemProperties.DEBUG_SERVER);
+    if (debugServer != null) {
+      try {
+        String[] tokens = debugServer.split(":");
+        if (tokens.length != 2) {
+          throw new Error("Invalid system property " + SystemProperties.DEBUG_SERVER + ". Value has to be in the form 'hostname:port'");
+        }
+        new HttpServer(tokens[0], Integer.valueOf(tokens[1]));
+        INSTANCE = new DebugInfo();
+      } catch (IOException ex) {
+        throw new RuntimeException(ex);
       }
-      il.add(ASMUtils.getPushInstruction(index));
-      il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
-              "io/shiftleft/bctrace/runtime/Callback", "onStart",
-              "(ILjava/lang/Object;I)V", false));
+    } else {
+      INSTANCE = null;
     }
-    mn.instructions.insert(il);
+  }
+
+  private final Map<Integer, AtomicInteger> instrumentedMethods = Collections.synchronizedMap(new HashMap<Integer, AtomicInteger>());
+
+  public static DebugInfo getInstance() {
+    return INSTANCE;
+  }
+
+  public void setInstrumented(Integer methodId, boolean instrumented) {
+    if (instrumented) {
+      instrumentedMethods.put(methodId, new AtomicInteger());
+    } else {
+      instrumentedMethods.remove(methodId);
+    }
+  }
+
+  public void increaseCallCounter(Integer methodId) {
+    instrumentedMethods.get(methodId).incrementAndGet();
+  }
+
+  public Integer getCallCounter(Integer methodId) {
+    AtomicInteger counter = instrumentedMethods.get(methodId);
+    if (counter == null) {
+      return null;
+    }
+    return counter.get();
   }
 }

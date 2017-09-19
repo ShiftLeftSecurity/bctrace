@@ -25,7 +25,7 @@
 package io.shiftleft.bctrace;
 
 import io.shiftleft.bctrace.asm.Transformer;
-import io.shiftleft.bctrace.asm.utils.ASMUtils;
+import io.shiftleft.bctrace.asm.util.ASMUtils;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;

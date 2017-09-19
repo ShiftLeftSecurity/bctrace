@@ -25,6 +25,7 @@
 package io.shiftleft.bctrace.runtime;
 
 import io.shiftleft.bctrace.Bctrace;
+import io.shiftleft.bctrace.debug.DebugInfo;
 import io.shiftleft.bctrace.spi.Hook;
 import io.shiftleft.bctrace.spi.listener.info.BeforeThrownListener;
 import io.shiftleft.bctrace.spi.listener.info.FinishReturnListener;
@@ -51,6 +52,9 @@ public final class Callback {
     if (Boolean.TRUE == NOTIFYING_FLAG.get()) {
       return;
     }
+    if (DebugInfo.getInstance() != null) {
+      DebugInfo.getInstance().increaseCallCounter(methodId);
+    }
     try {
       NOTIFYING_FLAG.set(Boolean.TRUE);
       ((MinStartListener) hooks[i].getListener()).onStart(methodId);
@@ -67,6 +71,9 @@ public final class Callback {
     if (Boolean.TRUE == NOTIFYING_FLAG.get()) {
       return;
     }
+    if (DebugInfo.getInstance() != null) {
+      DebugInfo.getInstance().increaseCallCounter(methodId);
+    }
     try {
       NOTIFYING_FLAG.set(Boolean.TRUE);
       ((StartListener) hooks[i].getListener()).onStart(methodId, instance);
@@ -82,6 +89,9 @@ public final class Callback {
     }
     if (Boolean.TRUE == NOTIFYING_FLAG.get()) {
       return;
+    }
+    if (DebugInfo.getInstance() != null) {
+      DebugInfo.getInstance().increaseCallCounter(methodId);
     }
     try {
       NOTIFYING_FLAG.set(Boolean.TRUE);

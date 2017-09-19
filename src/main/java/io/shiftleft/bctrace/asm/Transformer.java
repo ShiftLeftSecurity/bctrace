@@ -35,7 +35,8 @@ import io.shiftleft.bctrace.asm.helper.ReturnHelper;
 import io.shiftleft.bctrace.asm.helper.StartArgumentsHelper;
 import io.shiftleft.bctrace.asm.helper.StartHelper;
 import io.shiftleft.bctrace.asm.helper.ThrowHelper;
-import io.shiftleft.bctrace.asm.utils.ASMUtils;
+import io.shiftleft.bctrace.asm.util.ASMUtils;
+import io.shiftleft.bctrace.debug.DebugInfo;
 import io.shiftleft.bctrace.runtime.Callback;
 import io.shiftleft.bctrace.runtime.MethodInfo;
 import io.shiftleft.bctrace.runtime.MethodRegistry;
@@ -203,6 +204,15 @@ public class Transformer implements ClassFileTransformer {
       if (!hooksToUse.isEmpty()) {
         modifyMethod(cn, mn, hooksToUse);
         transformed = true;
+        if (DebugInfo.getInstance() != null) {
+          Integer methodId = MethodRegistry.getInstance().getMethodId(cn.name, mn.name, mn.desc);
+          DebugInfo.getInstance().setInstrumented(methodId, true);
+        }
+      } else {
+        if (DebugInfo.getInstance() != null) {
+          Integer methodId = MethodRegistry.getInstance().getMethodId(cn.name, mn.name, mn.desc);
+          DebugInfo.getInstance().setInstrumented(methodId, false);
+        }
       }
     }
     return transformed;
@@ -210,7 +220,11 @@ public class Transformer implements ClassFileTransformer {
 
   private void modifyMethod(ClassNode cn, MethodNode mn, ArrayList<Integer> hooksToUse) {
 
-    int methodId = MethodRegistry.getInstance().registerMethodId(MethodInfo.from(cn, mn));
+    Integer methodId = MethodRegistry.getInstance().registerMethodId(MethodInfo.from(cn, mn));
+
+    if (DebugInfo.getInstance() != null) {
+      DebugInfo.getInstance().setInstrumented(methodId, true);
+    }
 
     ArrayList<Integer> minStartListenerHooks = getListenerHooks(hooksToUse, MinStartListener.class);
     ArrayList<Integer> startListenerHooks = getListenerHooks(hooksToUse, StartListener.class);

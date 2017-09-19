@@ -24,7 +24,7 @@
  */
 package io.shiftleft.bctrace.asm.helper;
 
-import io.shiftleft.bctrace.asm.utils.ASMUtils;
+import io.shiftleft.bctrace.asm.util.ASMUtils;
 import java.util.ArrayList;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.ClassNode;
