@@ -40,6 +40,8 @@ public final class MethodInfo {
   private final int modifiers;
   private final String representation;
 
+  private String packageName;
+
   public static MethodInfo from(ClassNode cn, MethodNode mn) {
     return new MethodInfo(cn.name, mn.name, mn.desc, mn.access);
   }
@@ -68,6 +70,13 @@ public final class MethodInfo {
     return modifiers;
   }
 
+  public String getPackageName() {
+    if (packageName == null) {
+      packageName = this.binaryClassName.substring(0, this.binaryClassName.lastIndexOf("/")).replace('/', '.');
+    }
+    return this.packageName;
+  }
+
   public boolean isAbstract() {
     return ASMUtils.isAbstract(this.modifiers);
   }
@@ -86,6 +95,10 @@ public final class MethodInfo {
 
   public boolean isProtected() {
     return ASMUtils.isProtected(this.modifiers);
+  }
+
+  public boolean isDefault() {
+    return !isPublic() && !isProtected() && !isPrivate();
   }
 
   public boolean isPrivate() {

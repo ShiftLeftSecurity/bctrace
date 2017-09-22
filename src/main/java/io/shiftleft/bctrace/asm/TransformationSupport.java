@@ -44,7 +44,7 @@ public class TransformationSupport {
     "sun/",
     "com/sun/",
     "javafx/",
-    "oracle/",
+    "oracle/"
   };
 
   public static boolean isTransformable(String jvmClassName) {
