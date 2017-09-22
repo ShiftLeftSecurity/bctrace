@@ -25,7 +25,6 @@
 package io.shiftleft.bctrace;
 
 import io.shiftleft.bctrace.debug.DebugInfo;
-import io.shiftleft.bctrace.debug.HttpServer;
 import java.io.IOException;
 import java.lang.instrument.Instrumentation;
 import java.net.URL;
@@ -53,8 +52,6 @@ public class Init {
   }
 
   private static void bootstrap(String agentArgs, Instrumentation inst) throws Exception {
-    System.out.println(ManagementFactory.getRuntimeMXBean().getInputArguments());
-
     String[] hookClassNames = readHookClassNamesFromDescriptors();
     Hook[] hooks = new Hook[hookClassNames.length];
     for (int i = 0; i < hooks.length; i++) {
