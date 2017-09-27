@@ -4,6 +4,7 @@
   <groupId>io.shiftleft</groupId>
   <artifactId>bctrace</artifactId>
   <version>0.0.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
   <name>${project.groupId}:${project.artifactId}</name>
   <description>Extensible java agent framework to instrument programs running on the JVM</description>
   <developers>
@@ -38,43 +39,8 @@
       <url>https://shiftleft.jfrog.io/shiftleft/libs-snapshot-local</url>
     </snapshotRepository>
   </distributionManagement>
-  <dependencies>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>4.12</version>
-      <scope>test</scope>   
-    </dependency>
-    <dependency>
-      <groupId>org.ow2.asm</groupId>
-      <artifactId>asm-all</artifactId>
-      <version>5.2</version>
-    </dependency>
-  </dependencies>
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.6.1</version>
-        <configuration>
-          <source>${compileJavaVersion}</source>
-          <target>${compileJavaVersion}</target>
-        </configuration>
-        <executions>
-          <execution>
-            <id>test-compile</id>
-            <phase>test-compile</phase>
-            <goals>
-              <goal>testCompile</goal>
-            </goals>
-            <configuration>
-              <source>${compileTestJavaVersion}</source>
-              <target>${compileTestJavaVersion}</target>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build> 
+  <modules>
+    <module>core</module>
+    <module>runtime</module>
+  </modules>
 </project>
