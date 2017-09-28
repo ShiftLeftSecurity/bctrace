@@ -43,7 +43,7 @@ node {
  		}
             }
             stage('archiveBuild') {
-                archiveArtifacts 'target/*.jar'
+                archiveArtifacts '/**/target/*.jar'
             }
 	    stage('runTests') {
 	    }
