@@ -99,14 +99,10 @@ public class Transformer implements ClassFileTransformer {
 
     byte[] ret = null;
     try {
-      // Do not instrument agent classes (non bootstrap classloader only)
-      if (protectionDomain != null && protectionDomain.equals(getClass().getProtectionDomain())) {
-        return ret;
-      }
       if (classfileBuffer == null) {
         return ret;
       }
-      if (!TransformationSupport.isTransformable(className)) {
+      if (!TransformationSupport.isTransformable(className, loader)) {
         return ret;
       }
       ArrayList<Integer> matchingHooks = getMatchingHooks(className, protectionDomain, loader);

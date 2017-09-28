@@ -24,6 +24,8 @@
  */
 package io.shiftleft.bctrace.asm;
 
+import io.shiftleft.bctrace.Bctrace;
+
 /**
  *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
@@ -47,7 +49,7 @@ public class TransformationSupport {
     "oracle/"
   };
 
-  public static boolean isTransformable(String jvmClassName) {
+  public static boolean isTransformable(String jvmClassName, ClassLoader loader) {
 
     if (jvmClassName == null) {
       return false;
@@ -60,6 +62,9 @@ public class TransformationSupport {
         return false;
       }
     }
+    if (loader != null && loader == Bctrace.class.getClassLoader()) {
+      return false;
+    }
     return true;
   }
 
@@ -67,6 +72,6 @@ public class TransformationSupport {
     if (clazz.isInterface() || clazz.isPrimitive() || clazz.isArray()) {
       return false;
     }
-    return isTransformable(clazz.getName().replace('.', '/'));
+    return isTransformable(clazz.getName().replace('.', '/'), clazz.getClassLoader());
   }
 }
