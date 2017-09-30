@@ -40,8 +40,8 @@ import java.net.InetSocketAddress;
  */
 public class DebugHttpServer {
 
-  static {
-    String debugServer = System.getProperty(SystemProperties.DEBUG_SERVER);
+  public static void init(){
+     String debugServer = System.getProperty(SystemProperties.DEBUG_SERVER);
     if (debugServer != null) {
       try {
         String[] tokens = debugServer.split(":");

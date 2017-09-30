@@ -24,6 +24,7 @@
  */
 package io.shiftleft.bctrace;
 
+import io.shiftleft.bctrace.debug.DebugHttpServer;
 import io.shiftleft.bctrace.runtime.DebugInfo;
 import java.io.IOException;
 import java.lang.instrument.Instrumentation;
@@ -63,7 +64,7 @@ public class Init {
       hooks[i] = (Hook) Class.forName(hookClassNames[i]).newInstance();
     }
     Bctrace.instance = new Bctrace(inst, hooks);
-    DebugInfo.getInstance();
+    DebugHttpServer.init();
   }
 
   private static String[] readHookClassNamesFromDescriptors() throws IOException {
