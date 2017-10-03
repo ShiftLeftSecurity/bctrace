@@ -38,7 +38,6 @@ import io.shiftleft.bctrace.asm.helper.StartHelper;
 import io.shiftleft.bctrace.asm.helper.ThrowHelper;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
 import io.shiftleft.bctrace.runtime.DebugInfo;
-import io.shiftleft.bctrace.runtime.Callback;
 import io.shiftleft.bctrace.spi.MethodInfo;
 import io.shiftleft.bctrace.spi.MethodRegistry;
 import io.shiftleft.bctrace.spi.Hook;
@@ -53,7 +52,6 @@ import io.shiftleft.bctrace.runtime.listener.min.MinStartListener;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
@@ -187,9 +185,6 @@ public class Transformer implements ClassFileTransformer {
     boolean transformed = false;
     for (MethodNode mn : methods) {
       if (ASMUtils.isAbstract(mn.access) || ASMUtils.isNative(mn.access)) {
-        continue;
-      }
-      if (mn.name.equals("<init>") || mn.name.equals("<cinit>")) {
         continue;
       }
       ArrayList<Integer> hooksToUse = new ArrayList<Integer>(matchingHooks.size());
