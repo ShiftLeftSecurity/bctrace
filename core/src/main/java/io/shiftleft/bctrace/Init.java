@@ -64,6 +64,7 @@ public class Init {
       hooks[i] = (Hook) Class.forName(hookClassNames[i]).newInstance();
     }
     Bctrace.instance = new Bctrace(inst, hooks);
+    Bctrace.instance.init();
     DebugHttpServer.init();
   }
 
