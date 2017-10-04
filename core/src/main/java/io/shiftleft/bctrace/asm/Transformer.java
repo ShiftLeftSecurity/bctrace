@@ -36,6 +36,7 @@ import io.shiftleft.bctrace.asm.helper.ReturnHelper;
 import io.shiftleft.bctrace.asm.helper.StartArgumentsHelper;
 import io.shiftleft.bctrace.asm.helper.StartHelper;
 import io.shiftleft.bctrace.asm.helper.ThrowHelper;
+import io.shiftleft.bctrace.asm.tree.HierarchyClassInfo;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
 import io.shiftleft.bctrace.runtime.DebugInfo;
 import io.shiftleft.bctrace.spi.MethodInfo;
@@ -112,7 +113,9 @@ public class Transformer implements ClassFileTransformer {
       ClassNode cn = new ClassNode();
       cr.accept(cn, 0);
 
-      boolean transformed = transformMethods(cn, matchingHooks);
+      HierarchyClassInfo ci = new HierarchyClassInfo(cn, loader);
+
+      boolean transformed = transformMethods(ci, matchingHooks);
       if (!transformed) {
         return ret;
       } else {
@@ -180,7 +183,8 @@ public class Transformer implements ClassFileTransformer {
     return null;
   }
 
-  private boolean transformMethods(ClassNode cn, ArrayList<Integer> matchingHooks) {
+  private boolean transformMethods(HierarchyClassInfo ci, ArrayList<Integer> matchingHooks) {
+    ClassNode cn = ci.getRawClassNode();
     List<MethodNode> methods = cn.methods;
     boolean transformed = false;
     for (MethodNode mn : methods) {
@@ -190,7 +194,7 @@ public class Transformer implements ClassFileTransformer {
       ArrayList<Integer> hooksToUse = new ArrayList<Integer>(matchingHooks.size());
       Hook[] hooks = Bctrace.getInstance().getHooks();
       for (Integer i : matchingHooks) {
-        if (hooks[i] != null && hooks[i].getFilter().instrumentMethod(cn, mn)) {
+        if (hooks[i] != null && hooks[i].getFilter().instrumentMethod(ci, mn)) {
           hooksToUse.add(i);
           ((InstrumentationImpl) hooks[i].getInstrumentation()).addTransformedClass(cn.name.replace('/', '.'));
         }

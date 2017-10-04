@@ -24,9 +24,9 @@
  */
 package io.shiftleft.bctrace.impl;
 
+import io.shiftleft.bctrace.asm.tree.HierarchyClassInfo;
 import io.shiftleft.bctrace.spi.Filter;
 import java.security.ProtectionDomain;
-import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 
 /**
@@ -42,7 +42,7 @@ public class NoneFilterImpl implements Filter {
   }
 
   @Override
-  public boolean instrumentMethod(ClassNode classNode, MethodNode mn) {
+  public boolean instrumentMethod(HierarchyClassInfo classInfo, MethodNode mn) {
     return false;
   }
 }

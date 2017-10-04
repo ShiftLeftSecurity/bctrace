@@ -22,27 +22,53 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.impl;
+package io.shiftleft.bctrace.asm.tree;
 
-import io.shiftleft.bctrace.asm.tree.HierarchyClassInfo;
-import io.shiftleft.bctrace.spi.Filter;
-import java.security.ProtectionDomain;
-import org.objectweb.asm.tree.MethodNode;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
- * A filter that accepts all classes and methods.
  *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public class AllFilter implements Filter {
+public class ClassInfoCache {
 
-  @Override
-  public boolean instrumentClass(String className, ProtectionDomain protectionDomain, ClassLoader cl) {
-    return true;
+  private static final ClassInfoCache INSTANCE = new ClassInfoCache();
+
+  private final Map<ClassLoader, Map<String, HierarchyClassInfo>> maps = new HashMap<ClassLoader, Map<String, HierarchyClassInfo>>();
+  private final Map<String, HierarchyClassInfo> bootstrapMap = new HashMap<String, HierarchyClassInfo>();
+
+  private ClassInfoCache() {
   }
 
-  @Override
-  public boolean instrumentMethod(HierarchyClassInfo classInfo, MethodNode mn) {
-    return true;
+  public static ClassInfoCache getInstance() {
+    return INSTANCE;
+  }
+
+  public synchronized void add(String className, ClassLoader cl, HierarchyClassInfo cn) {
+    Map<String, HierarchyClassInfo> map;
+    if (cl == null) {
+      map = bootstrapMap;
+    } else {
+      map = maps.get(cl);
+      if (map == null) {
+        map = new HashMap<String, HierarchyClassInfo>();
+        maps.put(cl, map);
+      }
+    }
+    map.put(className, cn);
+  }
+
+  public synchronized HierarchyClassInfo get(String className, ClassLoader cl) {
+    Map<String, HierarchyClassInfo> map;
+    if (cl == null) {
+      map = bootstrapMap;
+    } else {
+      map = maps.get(cl);
+      if (map == null) {
+        return null;
+      }
+    }
+    return map.get(className);
   }
 }
