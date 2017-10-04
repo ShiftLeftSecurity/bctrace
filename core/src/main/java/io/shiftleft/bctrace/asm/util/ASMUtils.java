@@ -55,15 +55,15 @@ public class ASMUtils {
   public static boolean isStatic(int modifiers) {
     return (modifiers & Opcodes.ACC_STATIC) != 0;
   }
- 
+
   public static boolean isPublic(int modifiers) {
     return (modifiers & Opcodes.ACC_PUBLIC) != 0;
   }
-  
+
   public static boolean isProtected(int modifiers) {
     return (modifiers & Opcodes.ACC_PROTECTED) != 0;
   }
-  
+
   public static boolean isPrivate(int modifiers) {
     return (modifiers & Opcodes.ACC_PRIVATE) != 0;
   }
@@ -106,49 +106,6 @@ public class ASMUtils {
                 + type.getDescriptor());
     }
     return new VarInsnNode(opCode, position);
-  }
-
-  public static InsnList getClassReferenceInstruction(Type type, int majorVersion) {
-
-    InsnList list = new InsnList();
-    char charType = type.getDescriptor().charAt(0);
-    String wrapper;
-    switch (charType) {
-      case 'B':
-        wrapper = "java/lang/Byte";
-        break;
-      case 'C':
-        wrapper = "java/lang/Character";
-        break;
-      case 'D':
-        wrapper = "java/lang/Double";
-        break;
-      case 'F':
-        wrapper = "java/lang/Float";
-        break;
-      case 'I':
-        wrapper = "java/lang/Integer";
-        break;
-      case 'J':
-        wrapper = "java/lang/Long";
-        break;
-      case 'L':
-      case '[':
-        return getClassConstantReference(type, majorVersion);
-      case 'Z':
-        wrapper = "java/lang/Boolean";
-        break;
-      case 'S':
-        wrapper = "java/lang/Short";
-        break;
-      default:
-        throw new ClassFormatError("Invalid method signature: "
-                + type.getDescriptor());
-    }
-
-    list.add(new FieldInsnNode(Opcodes.GETSTATIC, wrapper, "TYPE", "Ljava/lang/Class;"));
-    return list;
-
   }
 
   public static MethodInsnNode getWrapperContructionInst(Type type) {
@@ -257,22 +214,6 @@ public class ASMUtils {
     } else {
       return new LdcInsnNode(value);
     }
-  }
-
-  public static InsnList getClassConstantReference(Type type, int majorVersion) {
-    InsnList il = new InsnList();
-
-    if (majorVersion >= Opcodes.V1_5) {
-      il.add(new LdcInsnNode(type));
-
-    } else {
-      String fullyQualifiedName = type.getInternalName().replaceAll("/", ".");
-      il.add(new LdcInsnNode(fullyQualifiedName));
-      il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
-              "java/lang/Class", "forName",
-              "(Ljava/lang/String;)Ljava/lang/Class;", false));
-    }
-    return il;
   }
 
   public static byte[] toByteArray(InputStream is) throws IOException {
