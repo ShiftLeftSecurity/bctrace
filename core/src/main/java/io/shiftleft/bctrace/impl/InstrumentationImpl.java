@@ -59,7 +59,16 @@ public final class InstrumentationImpl implements Instrumentation {
   public boolean isModifiableClass(Class<?> clazz) {
     return isRetransformClassesSupported() && TransformationSupport.isRetransformable(clazz) && javaInstrumentation.isModifiableClass(clazz);
   }
+  
+  @Override
+  public boolean isModifiableClass(String jvmClassName) {
+    return isRetransformClassesSupported() && TransformationSupport.isTransformable(jvmClassName, null);
+  }
 
+  public java.lang.instrument.Instrumentation getJavaInstrumentation() {
+    return javaInstrumentation;
+  }
+  
   @Override
   public Class[] getTransformedClasses() {
     if (stale) {

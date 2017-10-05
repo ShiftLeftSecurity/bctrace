@@ -43,6 +43,7 @@ public class TransformationSupport {
     "java/lang/ref",
     "java/lang/concurrent",
     "java/security/",
+    "java/io/ByteArrayInputStream",
     "sun/",
     "com/sun/",
     "javafx/",

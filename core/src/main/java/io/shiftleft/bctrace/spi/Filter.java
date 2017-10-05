@@ -24,6 +24,7 @@
  */
 package io.shiftleft.bctrace.spi;
 
+import io.shiftleft.bctrace.asm.tree.HierarchyClassInfo;
 import java.security.ProtectionDomain;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
@@ -56,9 +57,9 @@ public interface Filter {
   /**
    * Whether or not instrument the specified method.
    *
-   * @param classNode
+   * @param classInfo
    * @param mn
    * @return
    */
-  public boolean instrumentMethod(ClassNode classNode, MethodNode mn);
+  public boolean instrumentMethod(HierarchyClassInfo classInfo, MethodNode mn);
 }

@@ -29,6 +29,7 @@ import io.shiftleft.bctrace.runtime.Callback;
 import io.shiftleft.bctrace.impl.InstrumentationImpl;
 import io.shiftleft.bctrace.runtime.listener.Listener;
 import io.shiftleft.bctrace.spi.Hook;
+import io.shiftleft.bctrace.spi.Instrumentation;
 
 /**
  * Framework entry point.
@@ -40,32 +41,35 @@ public final class Bctrace {
   static Bctrace instance;
 
   private final Transformer transformer;
-  private final java.lang.instrument.Instrumentation javaInstrumentation;
-  private Hook[] hooks;
+  private final InstrumentationImpl instrumentation;
+  private final Hook[] hooks;
 
   Bctrace(java.lang.instrument.Instrumentation javaInstrumentation, Hook[] hooks) {
-    this.javaInstrumentation = javaInstrumentation;
+    this.instrumentation = new InstrumentationImpl(javaInstrumentation);
     this.transformer = new Transformer();
     this.hooks = hooks;
+  }
 
+  void init() {
     if (hooks != null) {
       Listener[] listeners = new Listener[this.hooks.length];
       for (int i = 0; i < hooks.length; i++) {
-        hooks[i].init(new InstrumentationImpl(javaInstrumentation));
+        hooks[i].init(this.instrumentation);
         listeners[i] = this.hooks[i].getListener();
       }
       Callback.listeners = listeners;
     }
-    if (javaInstrumentation != null) {
-      this.javaInstrumentation.addTransformer(transformer, javaInstrumentation.isRetransformClassesSupported());
+    if (instrumentation != null) {
+      instrumentation.getJavaInstrumentation().addTransformer(transformer, instrumentation.isRetransformClassesSupported());
     }
   }
 
   public static Bctrace getInstance() {
-    if (instance == null) {
-      throw new Error("Instrumentation is not properly configured. Please verify agent manifest attributes");
-    }
     return instance;
+  }
+
+  public Instrumentation getInstrumentation() {
+    return this.instrumentation;
   }
 
   public static boolean isThreadNotificationEnabled() {

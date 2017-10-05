@@ -40,10 +40,11 @@ import java.net.InetSocketAddress;
  */
 public class DebugHttpServer {
 
-  static {
+  public static void init(){
     String debugServer = System.getProperty(SystemProperties.DEBUG_SERVER);
     if (debugServer != null) {
       try {
+        System.err.println("Starting debug server at " + debugServer);
         String[] tokens = debugServer.split(":");
         if (tokens.length != 2) {
           throw new Error("Invalid system property " + SystemProperties.DEBUG_SERVER + ". Value has to be in the form 'hostname:port'");

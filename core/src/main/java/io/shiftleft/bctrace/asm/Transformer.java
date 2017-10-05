@@ -36,9 +36,9 @@ import io.shiftleft.bctrace.asm.helper.ReturnHelper;
 import io.shiftleft.bctrace.asm.helper.StartArgumentsHelper;
 import io.shiftleft.bctrace.asm.helper.StartHelper;
 import io.shiftleft.bctrace.asm.helper.ThrowHelper;
+import io.shiftleft.bctrace.asm.tree.HierarchyClassInfo;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
 import io.shiftleft.bctrace.runtime.DebugInfo;
-import io.shiftleft.bctrace.runtime.Callback;
 import io.shiftleft.bctrace.spi.MethodInfo;
 import io.shiftleft.bctrace.spi.MethodRegistry;
 import io.shiftleft.bctrace.spi.Hook;
@@ -53,7 +53,6 @@ import io.shiftleft.bctrace.runtime.listener.min.MinStartListener;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
@@ -114,7 +113,9 @@ public class Transformer implements ClassFileTransformer {
       ClassNode cn = new ClassNode();
       cr.accept(cn, 0);
 
-      boolean transformed = transformMethods(cn, matchingHooks);
+      HierarchyClassInfo ci = new HierarchyClassInfo(cn, loader);
+
+      boolean transformed = transformMethods(ci, matchingHooks);
       if (!transformed) {
         return ret;
       } else {
@@ -182,20 +183,18 @@ public class Transformer implements ClassFileTransformer {
     return null;
   }
 
-  private boolean transformMethods(ClassNode cn, ArrayList<Integer> matchingHooks) {
+  private boolean transformMethods(HierarchyClassInfo ci, ArrayList<Integer> matchingHooks) {
+    ClassNode cn = ci.getRawClassNode();
     List<MethodNode> methods = cn.methods;
     boolean transformed = false;
     for (MethodNode mn : methods) {
       if (ASMUtils.isAbstract(mn.access) || ASMUtils.isNative(mn.access)) {
         continue;
       }
-      if (mn.name.equals("<init>") || mn.name.equals("<cinit>")) {
-        continue;
-      }
       ArrayList<Integer> hooksToUse = new ArrayList<Integer>(matchingHooks.size());
       Hook[] hooks = Bctrace.getInstance().getHooks();
       for (Integer i : matchingHooks) {
-        if (hooks[i] != null && hooks[i].getFilter().instrumentMethod(cn, mn)) {
+        if (hooks[i] != null && hooks[i].getFilter().instrumentMethod(ci, mn)) {
           hooksToUse.add(i);
           ((InstrumentationImpl) hooks[i].getInstrumentation()).addTransformedClass(cn.name.replace('/', '.'));
         }

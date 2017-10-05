@@ -52,6 +52,15 @@ public interface Instrumentation {
   boolean isModifiableClass(Class<?> clazz);
 
   /**
+   * Whether or not this class can be retransformed.
+   *
+   * @param jvmClassName class name according to the JVM spec (packages
+   * separated by '/')
+   * @return
+   */
+  boolean isModifiableClass(String jvmClassName);
+
+  /**
    * Returns an array of all classes currently loaded by the JVM.
    *
    * @return
