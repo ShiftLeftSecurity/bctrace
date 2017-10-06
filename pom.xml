@@ -27,6 +27,18 @@
     <compileJavaVersion>1.6</compileJavaVersion>
     <compileTestJavaVersion>1.7</compileTestJavaVersion>
   </properties>
+  <distributionManagement>
+    <repository>
+      <id>shiftleft-artifactory</id>
+      <name>shiftleft releases</name>
+      <url>https://shiftleft.jfrog.io/shiftleft/libs-release-local</url>
+    </repository>
+    <snapshotRepository>
+      <id>shiftleft-artifactory</id>
+      <name>shiftleft releases</name>
+      <url>https://shiftleft.jfrog.io/shiftleft/libs-snapshot-local</url>
+    </snapshotRepository>
+  </distributionManagement>
   <scm>
     <url>https://github.com/ShiftLeftSecurity/bctrace</url>
     <connection>scm:git:https://github.com/ShiftLeftSecurity/bctrace.git</connection>
