@@ -27,6 +27,12 @@
     <compileJavaVersion>1.6</compileJavaVersion>
     <compileTestJavaVersion>1.7</compileTestJavaVersion>
   </properties>
+  <scm>
+        <url>https://github.com/ShiftLeftSecurity/bctrace</url>
+        <connection>scm:git:https://github.com/ShiftLeftSecurity/bctrace.git</connection>
+        <developerConnection>scm:git:https://github.com/ShiftLeftSecurity/bctrace.git</developerConnection>
+        <tag>HEAD</tag>
+    </scm>
   <distributionManagement>
     <repository>
       <id>shiftleft-artifactory</id>
