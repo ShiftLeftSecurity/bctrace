@@ -40,7 +40,11 @@ import java.net.InetSocketAddress;
  */
 public class DebugHttpServer {
 
-  public static void init(){
+  static {
+    DebugInfo.enabled = System.getProperty(SystemProperties.DEBUG_SERVER) != null;
+  }
+
+  public static void init() {
     String debugServer = System.getProperty(SystemProperties.DEBUG_SERVER);
     if (debugServer != null) {
       try {
@@ -50,7 +54,6 @@ public class DebugHttpServer {
           throw new Error("Invalid system property " + SystemProperties.DEBUG_SERVER + ". Value has to be in the form 'hostname:port'");
         }
         new DebugHttpServer(tokens[0], Integer.valueOf(tokens[1]));
-        DebugInfo.enabled = true;
       } catch (IOException ex) {
         throw new RuntimeException(ex);
       }
@@ -62,7 +65,71 @@ public class DebugHttpServer {
     server.createContext("/", new RootHandler());
     server.createContext("/methods", new MethodRegistryHandler());
     server.createContext("/methods/instrumented", new InstrumentedMethodsHandler());
+    server.createContext("/classes/instrumented", new InstrumentedClassesHandler());
+    server.createContext("/classes/requested", new RequestedToInstrumentClassesHandler());
     server.start();
+  }
+
+  private static class RequestedToInstrumentClassesHandler implements HttpHandler {
+
+    @Override
+    public void handle(HttpExchange t) throws IOException {
+      StringBuilder sb = new StringBuilder();
+      sb.append("[");
+      boolean first = true;
+      DebugInfo.ClassInfo[] instrumented = DebugInfo.getInstance().getRequestedToInstrumentation();
+      for (DebugInfo.ClassInfo ci : instrumented) {
+        if (!first) {
+          sb.append(",");
+        }
+        first = false;
+        sb.append("\n");
+        sb.append("{");
+        sb.append("\"className\":").append("\"").append(ci.getClassName()).append("\"").append(",");
+        sb.append("\"classLoader\":").append("\"").append(ci.getClassLoader()).append("\"").append(",");
+        sb.append("}");
+      }
+      sb.append("\n");
+      sb.append("]");
+      MethodRegistry.getInstance().size();
+      byte[] bytes = sb.toString().getBytes();
+      t.getResponseHeaders().add("Content-Type", "application/json");
+      t.sendResponseHeaders(200, bytes.length);
+      OutputStream os = t.getResponseBody();
+      os.write(bytes);
+      os.close();
+    }
+  }
+
+  private static class InstrumentedClassesHandler implements HttpHandler {
+
+    @Override
+    public void handle(HttpExchange t) throws IOException {
+      StringBuilder sb = new StringBuilder();
+      sb.append("[");
+      boolean first = true;
+      DebugInfo.ClassInfo[] instrumented = DebugInfo.getInstance().getInstrumented();
+      for (DebugInfo.ClassInfo ci : instrumented) {
+        if (!first) {
+          sb.append(",");
+        }
+        first = false;
+        sb.append("\n");
+        sb.append("{");
+        sb.append("\"className\":").append("\"").append(ci.getClassName()).append("\"").append(",");
+        sb.append("\"classLoader\":").append("\"").append(ci.getClassLoader()).append("\"");
+        sb.append("}");
+      }
+      sb.append("\n");
+      sb.append("]");
+      MethodRegistry.getInstance().size();
+      byte[] bytes = sb.toString().getBytes();
+      t.getResponseHeaders().add("Content-Type", "application/json");
+      t.sendResponseHeaders(200, bytes.length);
+      OutputStream os = t.getResponseBody();
+      os.write(bytes);
+      os.close();
+    }
   }
 
   private static class InstrumentedMethodsHandler implements HttpHandler {
@@ -84,7 +151,7 @@ public class DebugHttpServer {
           sb.append("{");
           sb.append("\"id\":").append(i).append(",");
           sb.append("\"className\":").append("\"").append(mi.getBinaryClassName()).append("\"").append(",");
-          sb.append("\"method\":").append("\"").append(mi.getMethodName()).append(mi.getMethodDescriptor()).append("\"").append(",");
+          sb.append("\"method\":").append("\"").append(mi.getMethodName()).append(mi.getMethodDescriptor()).append("\"");
           sb.append("\"callCounter\":").append(callCounter);
           sb.append("}");
         }
@@ -140,6 +207,8 @@ public class DebugHttpServer {
       sb.append("<ul>");
       sb.append("<li><a href=\"/methods\">All methods</a></li>");
       sb.append("<li><a href=\"/methods/instrumented\">Instrumented methods</a></li>");
+      sb.append("<li><a href=\"/classes/instrumented\">Instrumented classes</a></li>");
+      sb.append("<li><a href=\"/classes/requested\">Classes requested to instrument (via API)</a></li>");
       sb.append("</ul>");
       byte[] bytes = sb.toString().getBytes();
       t.sendResponseHeaders(200, bytes.length);

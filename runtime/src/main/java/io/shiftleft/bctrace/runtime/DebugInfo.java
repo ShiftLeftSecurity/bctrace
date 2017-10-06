@@ -26,7 +26,9 @@ package io.shiftleft.bctrace.runtime;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -36,13 +38,23 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class DebugInfo {
 
   private static final DebugInfo INSTANCE = new DebugInfo();
-  
+
   public static boolean enabled;
 
+  private final Set<ClassInfo> requestedToInstrument = Collections.synchronizedSet(new LinkedHashSet<ClassInfo>());
+  private final Set<ClassInfo> instrumented = Collections.synchronizedSet(new LinkedHashSet<ClassInfo>());
   private final Map<Integer, AtomicInteger> instrumentedMethods = Collections.synchronizedMap(new HashMap<Integer, AtomicInteger>());
 
   public static DebugInfo getInstance() {
     return INSTANCE;
+  }
+
+  public void addRequestedToInstrument(Class clazz) {
+    this.requestedToInstrument.add(new ClassInfo(clazz));
+  }
+
+  public void addInstrumented(String className, ClassLoader cl) {
+    this.instrumented.add(new ClassInfo(className, String.valueOf(cl)));
   }
 
   public void setInstrumented(Integer methodId, boolean instrumented) {
@@ -67,5 +79,66 @@ public class DebugInfo {
 
   public static boolean isEnabled() {
     return enabled;
+  }
+
+  public ClassInfo[] getInstrumented() {
+    synchronized (instrumented) {
+      return instrumented.toArray(new ClassInfo[instrumented.size()]);
+    }
+  }
+
+  public ClassInfo[] getRequestedToInstrumentation() {
+    synchronized (requestedToInstrument) {
+      return requestedToInstrument.toArray(new ClassInfo[requestedToInstrument.size()]);
+    }
+  }
+
+  public static class ClassInfo {
+
+    private final String className;
+    private final String classLoader;
+
+    private ClassInfo(Class clazz) {
+      this(clazz.getName(), String.valueOf(clazz.getClassLoader()));
+    }
+
+    public ClassInfo(String className, String classLoader) {
+      this.className = className;
+      this.classLoader = classLoader;
+    }
+
+    public String getClassName() {
+      return className;
+    }
+
+    public String getClassLoader() {
+      return classLoader;
+    }
+
+    @Override
+    public int hashCode() {
+      return className.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (this == obj) {
+        return true;
+      }
+      if (obj == null) {
+        return false;
+      }
+      if (getClass() != obj.getClass()) {
+        return false;
+      }
+      final ClassInfo other = (ClassInfo) obj;
+      if ((this.className == null) ? (other.className != null) : !this.className.equals(other.className)) {
+        return false;
+      }
+      if ((this.classLoader == null) ? (other.classLoader != null) : !this.classLoader.equals(other.classLoader)) {
+        return false;
+      }
+      return true;
+    }
   }
 }

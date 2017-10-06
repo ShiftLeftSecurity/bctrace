@@ -94,6 +94,9 @@ public class Transformer implements ClassFileTransformer {
     if (className == null) {
       return null;
     }
+    if(DebugInfo.isEnabled()){
+      DebugInfo.getInstance().addInstrumented(className, loader);
+    }
     int counter = TRANSFORMATION_COUNTER.incrementAndGet();
 
     byte[] ret = null;
