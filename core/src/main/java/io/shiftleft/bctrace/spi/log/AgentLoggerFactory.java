@@ -22,14 +22,64 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.spi;
+package io.shiftleft.bctrace.spi.log;
+
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.ServiceLoader;
+import java.util.logging.ConsoleHandler;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public interface SystemProperties {
+public abstract class AgentLoggerFactory {
 
-  public static final String DUMP_FOLDER = "bctrace.dump.path";
-  public static final String DEBUG_SERVER = "bctrace.debug.server";
+  private static AgentLoggerFactory instance;
+
+  static {
+    ServiceLoader<AgentLoggerFactory> sl = ServiceLoader.load(AgentLoggerFactory.class, AgentLoggerFactory.class.getClassLoader());
+    Iterator<AgentLoggerFactory> it = sl.iterator();
+    List<AgentLoggerFactory> instances = new ArrayList<AgentLoggerFactory>();
+    while (it.hasNext()) {
+      instances.add(it.next());
+    }
+    if (instances.isEmpty()) {
+      instance = new DefaultLoggerFactory();
+    } else if (instances.size() > 1) {
+      throw new Error(
+              "Multiple '" + AgentLoggerFactory.class.getSimpleName() + "' service providers found: "
+              + instances);
+    } else {
+      instance = instances.get(0);
+    }
+  }
+
+  public static AgentLoggerFactory getInstance() {
+    return instance;
+  }
+
+  public abstract Logger getLogger();
+
+  private static class DefaultLoggerFactory extends AgentLoggerFactory {
+
+    private static final Logger LOGGER = createLogger();
+
+    private static Logger createLogger() {
+      Logger logger = Logger.getAnonymousLogger();
+      logger.setLevel(Level.ALL);
+      logger.addHandler(new ConsoleHandler());
+      logger.setUseParentHandlers(false);
+      logger.info("Starting bctrace agent");
+      return logger;
+    }
+
+    @Override
+    public Logger getLogger() {
+      return LOGGER;
+    }
+  }
 }

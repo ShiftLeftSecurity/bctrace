@@ -27,12 +27,13 @@ package io.shiftleft.bctrace.debug;
 import io.shiftleft.bctrace.runtime.DebugInfo;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
+import io.shiftleft.bctrace.Bctrace;
 import io.shiftleft.bctrace.spi.MethodInfo;
 import io.shiftleft.bctrace.spi.MethodRegistry;
-import io.shiftleft.bctrace.spi.SystemProperties;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
+import io.shiftleft.bctrace.spi.SystemProperty;
 
 /**
  *
@@ -41,17 +42,17 @@ import java.net.InetSocketAddress;
 public class DebugHttpServer {
 
   static {
-    DebugInfo.enabled = System.getProperty(SystemProperties.DEBUG_SERVER) != null;
+    DebugInfo.enabled = System.getProperty(SystemProperty.DEBUG_SERVER) != null;
   }
 
   public static void init() {
-    String debugServer = System.getProperty(SystemProperties.DEBUG_SERVER);
+    String debugServer = System.getProperty(SystemProperty.DEBUG_SERVER);
     if (debugServer != null) {
       try {
-        System.err.println("Starting debug server at " + debugServer);
+        Bctrace.getInstance().getAgentLogger().severe("Starting debug server at " + debugServer);
         String[] tokens = debugServer.split(":");
         if (tokens.length != 2) {
-          throw new Error("Invalid system property " + SystemProperties.DEBUG_SERVER + ". Value has to be in the form 'hostname:port'");
+          throw new Error("Invalid system property " + SystemProperty.DEBUG_SERVER + ". Value has to be in the form 'hostname:port'");
         }
         new DebugHttpServer(tokens[0], Integer.valueOf(tokens[1]));
       } catch (IOException ex) {

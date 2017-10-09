@@ -24,63 +24,13 @@
  */
 package io.shiftleft.bctrace.spi;
 
-import io.shiftleft.bctrace.runtime.listener.Listener;
-import java.util.logging.Level;
-
 /**
- * An <b>instrumentation hook</b> determines what methods to instrument and what
- * actions to perform at runtime under the events triggered by the instrumented
- * methods.
  *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public abstract class Hook {
+public interface SystemProperty {
 
-  protected Instrumentation instrumentation;
-
-  private final String jvmPackage;
-
-  public Hook() {
-    this.jvmPackage = getClass().getPackage().getName().replace('.', '/') + "/";
-  }
-
-  /**
-   * Initializes the plugin. Called once at startup before initial
-   * instrumentation is performed.
-   *
-   * @param instrumentation Intrumentation callback, allowing triggering
-   * retransformations
-   */
-  public final void init(Instrumentation instrumentation) {
-    this.instrumentation = instrumentation;
-    doInit();
-  }
-
-  /**
-   * Allows subclasses to implement initialization logic.
-   */
-  public void doInit() {
-  }
-
-  public final Instrumentation getInstrumentation() {
-    return instrumentation;
-  }
-
-  public final String getJvmPackage() {
-    return jvmPackage;
-  }
-
-  /**
-   * Returns the filter, deciding what methods to instrument.
-   *
-   * @return
-   */
-  public abstract Filter getFilter();
-
-  /**
-   * Returns the listener invoked by the instrumented method hooks.
-   *
-   * @return
-   */
-  public abstract Listener getListener();
+  public static final String DUMP_FOLDER = "bctrace.dump.path";
+  public static final String DEBUG_SERVER = "bctrace.debug.server";
+  public static final String LOG_LEVEL = "bctrace.log.level";
 }

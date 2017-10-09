@@ -25,7 +25,6 @@
 package io.shiftleft.bctrace;
 
 import io.shiftleft.bctrace.debug.DebugHttpServer;
-import io.shiftleft.bctrace.runtime.DebugInfo;
 import java.io.IOException;
 import java.lang.instrument.Instrumentation;
 import java.net.URL;

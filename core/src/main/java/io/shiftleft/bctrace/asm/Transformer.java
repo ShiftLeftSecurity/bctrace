@@ -42,7 +42,6 @@ import io.shiftleft.bctrace.runtime.DebugInfo;
 import io.shiftleft.bctrace.spi.MethodInfo;
 import io.shiftleft.bctrace.spi.MethodRegistry;
 import io.shiftleft.bctrace.spi.Hook;
-import io.shiftleft.bctrace.spi.SystemProperties;
 import io.shiftleft.bctrace.runtime.listener.info.BeforeThrownListener;
 import io.shiftleft.bctrace.runtime.listener.info.FinishReturnListener;
 import io.shiftleft.bctrace.runtime.listener.info.FinishThrowableListener;
@@ -54,11 +53,13 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Level;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.MethodNode;
+import io.shiftleft.bctrace.spi.SystemProperty;
 
 /**
  *
@@ -70,8 +71,8 @@ public class Transformer implements ClassFileTransformer {
   private static final AtomicInteger TRANSFORMATION_COUNTER = new AtomicInteger();
 
   static {
-    if (System.getProperty(SystemProperties.DUMP_FOLDER) != null) {
-      File file = new File(System.getProperty(SystemProperties.DUMP_FOLDER));
+    if (System.getProperty(SystemProperty.DUMP_FOLDER) != null) {
+      File file = new File(System.getProperty(SystemProperty.DUMP_FOLDER));
       if (file.exists() && file.isFile()) {
         file = null;
       }
@@ -94,7 +95,7 @@ public class Transformer implements ClassFileTransformer {
     if (className == null) {
       return null;
     }
-    if(DebugInfo.isEnabled()){
+    if (DebugInfo.isEnabled()) {
       DebugInfo.getInstance().addInstrumented(className, loader);
     }
     int counter = TRANSFORMATION_COUNTER.incrementAndGet();
@@ -128,22 +129,11 @@ public class Transformer implements ClassFileTransformer {
         return ret;
       }
     } catch (Throwable th) {
-      handle(th);
+      Bctrace.getInstance().getAgentLogger().log(Level.SEVERE, "Error found instrumenting class " + className, th);
       return ret;
     } finally {
       if (DUMP_FOLDER != null) {
         dump(counter, className, classfileBuffer, ret);
-      }
-    }
-  }
-
-  private static void handle(Throwable th) {
-    Hook[] hooks = Bctrace.getInstance().getHooks();
-    if (hooks != null) {
-      for (Hook hook : hooks) {
-        if (hook != null) {
-          hook.onError(th);
-        }
       }
     }
   }
@@ -164,7 +154,7 @@ public class Transformer implements ClassFileTransformer {
         fos.close();
       }
     } catch (Exception ex) {
-      handle(ex);
+      Bctrace.getInstance().getAgentLogger().log(Level.SEVERE, "Error dumping to disk instrumenting class " + className, ex);
     }
   }
 
