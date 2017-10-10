@@ -25,7 +25,6 @@
 package io.shiftleft.bctrace.spi;
 
 import io.shiftleft.bctrace.runtime.listener.Listener;
-import java.util.logging.Level;
 
 /**
  * An <b>instrumentation hook</b> determines what methods to instrument and what

@@ -31,7 +31,7 @@ import io.shiftleft.bctrace.runtime.listener.Listener;
 import io.shiftleft.bctrace.spi.Hook;
 import io.shiftleft.bctrace.spi.Instrumentation;
 import io.shiftleft.bctrace.spi.SystemProperty;
-import io.shiftleft.bctrace.spi.log.AgentLoggerFactory;
+import io.shiftleft.bctrace.spi.AgentLoggerFactory;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;

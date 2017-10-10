@@ -22,64 +22,54 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.spi.log;
+package io.shiftleft.bctrace.asm.util;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.ServiceLoader;
-import java.util.logging.ConsoleHandler;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import io.shiftleft.bctrace.spi.HierarchyClassInfo;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public abstract class AgentLoggerFactory {
+public class ClassInfoCache {
 
-  private static AgentLoggerFactory instance;
+  private static final ClassInfoCache INSTANCE = new ClassInfoCache();
 
-  static {
-    ServiceLoader<AgentLoggerFactory> sl = ServiceLoader.load(AgentLoggerFactory.class, AgentLoggerFactory.class.getClassLoader());
-    Iterator<AgentLoggerFactory> it = sl.iterator();
-    List<AgentLoggerFactory> instances = new ArrayList<AgentLoggerFactory>();
-    while (it.hasNext()) {
-      instances.add(it.next());
-    }
-    if (instances.isEmpty()) {
-      instance = new DefaultLoggerFactory();
-    } else if (instances.size() > 1) {
-      throw new Error(
-              "Multiple '" + AgentLoggerFactory.class.getSimpleName() + "' service providers found: "
-              + instances);
+  private final Map<ClassLoader, Map<String, HierarchyClassInfo>> maps = new HashMap<ClassLoader, Map<String, HierarchyClassInfo>>();
+  private final Map<String, HierarchyClassInfo> bootstrapMap = new HashMap<String, HierarchyClassInfo>();
+
+  private ClassInfoCache() {
+  }
+
+  public static ClassInfoCache getInstance() {
+    return INSTANCE;
+  }
+
+  public synchronized void add(String className, ClassLoader cl, HierarchyClassInfo cn) {
+    Map<String, HierarchyClassInfo> map;
+    if (cl == null) {
+      map = bootstrapMap;
     } else {
-      instance = instances.get(0);
+      map = maps.get(cl);
+      if (map == null) {
+        map = new HashMap<String, HierarchyClassInfo>();
+        maps.put(cl, map);
+      }
     }
+    map.put(className, cn);
   }
 
-  public static AgentLoggerFactory getInstance() {
-    return instance;
-  }
-
-  public abstract Logger getLogger();
-
-  private static class DefaultLoggerFactory extends AgentLoggerFactory {
-
-    private static final Logger LOGGER = createLogger();
-
-    private static Logger createLogger() {
-      Logger logger = Logger.getAnonymousLogger();
-      logger.setLevel(Level.ALL);
-      logger.addHandler(new ConsoleHandler());
-      logger.setUseParentHandlers(false);
-      logger.info("Starting bctrace agent");
-      return logger;
+  public synchronized HierarchyClassInfo get(String className, ClassLoader cl) {
+    Map<String, HierarchyClassInfo> map;
+    if (cl == null) {
+      map = bootstrapMap;
+    } else {
+      map = maps.get(cl);
+      if (map == null) {
+        return null;
+      }
     }
-
-    @Override
-    public Logger getLogger() {
-      return LOGGER;
-    }
+    return map.get(className);
   }
 }

@@ -36,7 +36,7 @@ import io.shiftleft.bctrace.asm.helper.ReturnHelper;
 import io.shiftleft.bctrace.asm.helper.StartArgumentsHelper;
 import io.shiftleft.bctrace.asm.helper.StartHelper;
 import io.shiftleft.bctrace.asm.helper.ThrowHelper;
-import io.shiftleft.bctrace.asm.tree.HierarchyClassInfo;
+import io.shiftleft.bctrace.spi.HierarchyClassInfo;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
 import io.shiftleft.bctrace.runtime.DebugInfo;
 import io.shiftleft.bctrace.spi.MethodInfo;

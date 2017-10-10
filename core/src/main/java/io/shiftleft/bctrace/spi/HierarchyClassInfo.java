@@ -22,8 +22,9 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.asm.tree;
+package io.shiftleft.bctrace.spi;
 
+import io.shiftleft.bctrace.asm.util.ClassInfoCache;
 import java.io.IOException;
 import java.io.InputStream; 
 import java.util.List;
