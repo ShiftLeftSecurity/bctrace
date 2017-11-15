@@ -71,7 +71,7 @@ public final class HierarchyClassInfo {
     ClassLoaderEntry entry = readClassResource(name + ".class", cl);
     if (entry == null) {
       Bctrace.getInstance().getAgentLogger()
-          .warning("Could not get class bytecode from hierarchy inspection for class " + name);
+          .warning("Could not get bytecode for hierarchy inspection of class " + name);
       return null;
     }
     HierarchyClassInfo ci = ClassInfoCache.getInstance().get(name, entry.cl);
