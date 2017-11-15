@@ -24,15 +24,15 @@
  */
 package io.shiftleft.bctrace.spi;
 
+import io.shiftleft.bctrace.Bctrace;
 import io.shiftleft.bctrace.asm.util.ClassInfoCache;
 import java.io.IOException;
-import java.io.InputStream; 
+import java.io.InputStream;
 import java.util.List;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.ClassNode;
 
 /**
- *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
 public final class HierarchyClassInfo {
@@ -69,6 +69,11 @@ public final class HierarchyClassInfo {
       return null;
     }
     ClassLoaderEntry entry = readClassResource(name + ".class", cl);
+    if (entry == null) {
+      Bctrace.getInstance().getAgentLogger()
+          .warning("Could not get class bytecode from hierarchy inspection for class " + name);
+      return null;
+    }
     HierarchyClassInfo ci = ClassInfoCache.getInstance().get(name, entry.cl);
     if (ci == null) {
       ci = new HierarchyClassInfo(createClassNode(entry.is), entry.cl);
