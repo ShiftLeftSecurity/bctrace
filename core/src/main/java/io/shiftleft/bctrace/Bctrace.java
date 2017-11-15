@@ -25,13 +25,13 @@
 package io.shiftleft.bctrace;
 
 import io.shiftleft.bctrace.asm.Transformer;
-import io.shiftleft.bctrace.runtime.Callback;
 import io.shiftleft.bctrace.impl.InstrumentationImpl;
+import io.shiftleft.bctrace.runtime.Callback;
 import io.shiftleft.bctrace.runtime.listener.Listener;
+import io.shiftleft.bctrace.spi.AgentLoggerFactory;
 import io.shiftleft.bctrace.spi.Hook;
 import io.shiftleft.bctrace.spi.Instrumentation;
 import io.shiftleft.bctrace.spi.SystemProperty;
-import io.shiftleft.bctrace.spi.AgentLoggerFactory;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -42,21 +42,21 @@ import java.util.logging.Logger;
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
 public final class Bctrace {
-  
+
   static Bctrace instance;
-  
+
   private static final Logger LOGGER = createLogger();
-  
+
   private final Transformer transformer;
   private final InstrumentationImpl instrumentation;
   private final Hook[] hooks;
-  
+
   Bctrace(java.lang.instrument.Instrumentation javaInstrumentation, Hook[] hooks) {
     this.instrumentation = new InstrumentationImpl(javaInstrumentation);
     this.transformer = new Transformer();
     this.hooks = hooks;
   }
-  
+
   void init() {
     if (hooks != null) {
       Listener[] listeners = new Listener[this.hooks.length];
@@ -67,10 +67,11 @@ public final class Bctrace {
       Callback.listeners = listeners;
     }
     if (instrumentation != null) {
-      instrumentation.getJavaInstrumentation().addTransformer(transformer, instrumentation.isRetransformClassesSupported());
+      instrumentation.getJavaInstrumentation()
+          .addTransformer(transformer, instrumentation.isRetransformClassesSupported());
     }
   }
-  
+
   private static Logger createLogger() {
     Logger logger = AgentLoggerFactory.getInstance().getLogger();
     String logLevel = System.getProperty(SystemProperty.LOG_LEVEL);
@@ -86,31 +87,41 @@ public final class Bctrace {
     }
     return logger;
   }
-  
+
   public static Bctrace getInstance() {
     return instance;
   }
-  
+
   public Instrumentation getInstrumentation() {
     return this.instrumentation;
   }
-  
+
+  public boolean isLoadedBy(String className, ClassLoader cl) {
+    Class[] classes = instrumentation.getAllLoadedClasses();
+    for (int i = 0; i < classes.length; i++) {
+      if (classes[i].getClassLoader() == cl && classes[i].getName().equals(className)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   public static boolean isThreadNotificationEnabled() {
     return Callback.isThreadNotificationEnabled();
   }
-  
+
   public static void enableThreadNotification() {
     Callback.enableThreadNotification();
   }
-  
+
   public static void disableThreadNotification() {
     Callback.disableThreadNotification();
   }
-  
+
   public Hook[] getHooks() {
     return this.hooks;
   }
-  
+
   public Logger getAgentLogger() {
     return LOGGER;
   }

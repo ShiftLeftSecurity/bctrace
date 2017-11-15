@@ -24,100 +24,23 @@
  */
 package io.shiftleft.bctrace.spi;
 
+import io.shiftleft.bctrace.Bctrace;
 import io.shiftleft.bctrace.asm.util.ClassInfoCache;
 import java.io.IOException;
-import java.io.InputStream; 
+import java.io.InputStream;
 import java.util.List;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.ClassNode;
 
 /**
- *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public final class HierarchyClassInfo {
+public interface HierarchyClassInfo {
 
-  private final ClassNode cn;
-  private final ClassLoader cl;
+  public HierarchyClassInfo getSuperClass() ;
 
-  public HierarchyClassInfo(ClassNode cn, ClassLoader cl) {
-    this.cn = cn;
-    this.cl = cl;
-  }
+  public HierarchyClassInfo[] getInterfaces();
 
-  public ClassNode getRawClassNode() {
-    return cn;
-  }
+  public String getName();
 
-  public HierarchyClassInfo getSuperclass() {
-    return getParentClassInfo(this.cn.superName, this.cl);
-  }
-
-  public HierarchyClassInfo[] getInterfaces() {
-    List<String> interfaces = this.cn.interfaces;
-    HierarchyClassInfo[] ret = new HierarchyClassInfo[interfaces.size()];
-    int i = 0;
-    for (String interfaceName : interfaces) {
-      ret[i] = getParentClassInfo(interfaceName, cl);
-      i++;
-    }
-    return ret;
-  }
-
-  private static HierarchyClassInfo getParentClassInfo(String name, ClassLoader cl) {
-    if (name == null) {
-      return null;
-    }
-    ClassLoaderEntry entry = readClassResource(name + ".class", cl);
-    HierarchyClassInfo ci = ClassInfoCache.getInstance().get(name, entry.cl);
-    if (ci == null) {
-      ci = new HierarchyClassInfo(createClassNode(entry.is), entry.cl);
-      ClassInfoCache.getInstance().add(name, entry.cl, ci);
-    }
-    return ci;
-  }
-
-  private static ClassLoaderEntry readClassResource(String classResource, ClassLoader loader) {
-    if (loader == null) {
-      InputStream is = ClassLoader.getSystemResourceAsStream(classResource);
-      if (is == null) {
-        return null;
-      } else {
-        return new ClassLoaderEntry(is, loader);
-      }
-    } else {
-      ClassLoaderEntry entry = readClassResource(classResource, loader.getParent());
-      if (entry != null) {
-        return entry;
-      }
-      InputStream is = loader.getResourceAsStream(classResource);
-      if (is == null) {
-        return null;
-      } else {
-        return new ClassLoaderEntry(is, loader);
-      }
-    }
-  }
-
-  private static ClassNode createClassNode(InputStream is) {
-    try {
-      ClassReader cr = new ClassReader(is);
-      ClassNode cn = new ClassNode();
-      cr.accept(cn, 0);
-      return cn;
-    } catch (IOException ex) {
-      throw new RuntimeException(ex);
-    }
-  }
-
-  private static class ClassLoaderEntry {
-
-    InputStream is;
-    ClassLoader cl;
-
-    public ClassLoaderEntry(InputStream is, ClassLoader cl) {
-      this.is = is;
-      this.cl = cl;
-    }
-  }
 }

@@ -34,7 +34,7 @@ import org.objectweb.asm.tree.MethodNode;
  * If the class is transformable, the framework performs an initial query to the
  * {@link #instrumentClass(String, ProtectionDomain, ClassLoader) instrumentClass}
  * method. If this return <code>true</code> the filter
- * {@link #instrumentMethod(ClassNode, MethodNode) instrumentMethod} method will
+ * {@link #instrumentMethod(UnloadedClassInfo, MethodNode) instrumentMethod} method will
  * be invoked once per non abstract nor native method in the class. Invocations
  * returning <code>true</code> lead to a hook insertions into the bytecode of
  * the method.
@@ -60,5 +60,5 @@ public interface Filter {
    * @param mn
    * @return
    */
-  public boolean instrumentMethod(HierarchyClassInfo classInfo, MethodNode mn);
+  public boolean instrumentMethod(UnloadedClassInfo classInfo, MethodNode mn);
 }

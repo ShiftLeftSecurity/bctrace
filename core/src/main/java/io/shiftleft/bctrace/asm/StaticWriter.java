@@ -1,31 +1,23 @@
-/** *
- * ASM tests
- * Copyright (c) 2002-2005 France Telecom
- * All rights reserved.
+/**
+ * ASM tests Copyright (c) 2002-2005 France Telecom All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- * 3. Neither the name of the copyright holders nor the names of its
- *    contributors may be used to endorse or promote products derived from
- *    this software without specific prior written permission.
+ * Redistribution and use in source and binary forms, with or without modification, are permitted
+ * provided that the following conditions are met: 1. Redistributions of source code must retain the
+ * above copyright notice, this list of conditions and the following disclaimer. 2. Redistributions
+ * in binary form must reproduce the above copyright notice, this list of conditions and the
+ * following disclaimer in the documentation and/or other materials provided with the distribution.
+ * 3. Neither the name of the copyright holders nor the names of its contributors may be used to
+ * endorse or promote products derived from this software without specific prior written
+ * permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
- * THE POSSIBILITY OF SUCH DAMAGE.
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+ * FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY
+ * WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 // Portions Copyright 2011 Google, Inc.
 //
@@ -35,6 +27,7 @@
 // the comments.  The original author is Eric Bruneton.
 package io.shiftleft.bctrace.asm;
 
+import io.shiftleft.bctrace.Bctrace;
 import java.io.IOException;
 import java.io.InputStream;
 import org.objectweb.asm.ClassReader;
@@ -73,7 +66,7 @@ class StaticClassWriter extends ClassWriter {
    * @param classLoader the class loader that loaded this class
    */
   public StaticClassWriter(
-          ClassReader classReader, int flags, ClassLoader classLoader) {
+      ClassReader classReader, int flags, ClassLoader classLoader) {
     super(classReader, flags);
     this.classLoader = classLoader;
   }
@@ -83,7 +76,7 @@ class StaticClassWriter extends ClassWriter {
    */
   @Override
   protected String getCommonSuperClass(
-          final String type1, final String type2) {
+      final String type1, final String type2) {
     try {
       return super.getCommonSuperClass(type1, type2);
     } catch (Throwable e) {
@@ -132,11 +125,13 @@ class StaticClassWriter extends ClassWriter {
 
     public ClassInfo(String type, ClassLoader loader) {
       Class<?> cls = null;
-      // First, see if we can extract the information from the class...
-      try {
-        cls = Class.forName(type);
-      } catch (Exception e) {
-        // failover...
+      // Non intrusive get class
+      if (Bctrace.getInstance().isLoadedBy(type, loader)) {
+        try {
+          cls = Class.forName(type, false, loader);
+        } catch (Exception e) {
+          // failover...
+        }
       }
 
       if (cls != null) {
@@ -161,8 +156,8 @@ class StaticClassWriter extends ClassWriter {
       ClassReader cr;
       try {
         is = (loader == null)
-                ? ClassLoader.getSystemResourceAsStream(fileName)
-                : loader.getResourceAsStream(fileName);
+            ? ClassLoader.getSystemResourceAsStream(fileName)
+            : loader.getResourceAsStream(fileName);
         cr = new ClassReader(is);
       } catch (IOException e) {
         throw new RuntimeException(fileName, e);
@@ -239,7 +234,7 @@ class StaticClassWriter extends ClassWriter {
       for (ClassInfo c = this; c != null; c = c.getSuperclass()) {
         for (ClassInfo iface : c.getInterfaces()) {
           if (iface.type.equals(that.type)
-                  || iface.implementsInterface(that)) {
+              || iface.implementsInterface(that)) {
             return true;
           }
         }
@@ -250,7 +245,7 @@ class StaticClassWriter extends ClassWriter {
     private boolean isSubclassOf(ClassInfo that) {
       for (ClassInfo ci = this; ci != null; ci = ci.getSuperclass()) {
         if (ci.getSuperclass() != null
-                && ci.getSuperclass().type.equals(that.type)) {
+            && ci.getSuperclass().type.equals(that.type)) {
           return true;
         }
       }
@@ -262,10 +257,10 @@ class StaticClassWriter extends ClassWriter {
      */
     boolean isAssignableFrom(ClassInfo that) {
       return (this == that
-              || that.isSubclassOf(this)
-              || that.implementsInterface(this)
-              || (that.isInterface()
-              && getType().getDescriptor().equals("Ljava/lang/Object;")));
+          || that.isSubclassOf(this)
+          || that.implementsInterface(this)
+          || (that.isInterface()
+          && getType().getDescriptor().equals("Ljava/lang/Object;")));
     }
   }
 

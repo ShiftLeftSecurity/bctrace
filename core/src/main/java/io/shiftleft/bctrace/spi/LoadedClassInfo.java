@@ -22,27 +22,45 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.impl;
+package io.shiftleft.bctrace.spi;
 
-import io.shiftleft.bctrace.spi.Filter;
-import io.shiftleft.bctrace.spi.UnloadedClassInfo;
-import java.security.ProtectionDomain;
-import org.objectweb.asm.tree.MethodNode;
+import io.shiftleft.bctrace.asm.util.ClassInfoCache;
 
 /**
- * A filter that accepts all classes non loaded by the bootstrap class loader
- *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public class NonBootstrapFilter implements Filter {
+public class LoadedClassInfo implements HierarchyClassInfo {
 
-  @Override
-  public boolean instrumentClass(String className, ProtectionDomain protectionDomain, ClassLoader cl) {
-    return cl != Object.class.getClassLoader();
+  private final Class clazz;
+
+  public LoadedClassInfo(Class clazz) {
+    this.clazz = clazz;
   }
 
   @Override
-  public boolean instrumentMethod(UnloadedClassInfo classInfo, MethodNode mn) {
-    return true;
+  public HierarchyClassInfo getSuperClass() {
+    return new LoadedClassInfo(clazz.getSuperclass());
   }
+
+  @Override
+  public HierarchyClassInfo[] getInterfaces() {
+    Class[] interfaces = clazz.getInterfaces();
+    HierarchyClassInfo[] ret = new HierarchyClassInfo[interfaces.length];
+    int i = 0;
+    for (Class intface : interfaces) {
+      ret[i] = new LoadedClassInfo(intface);
+      i++;
+    }
+    return ret;
+  }
+
+  @Override
+  public String getName() {
+    return clazz.getName();
+  }
+
+  public Class getClazz() {
+    return clazz;
+  }
+
 }

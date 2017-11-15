@@ -26,6 +26,7 @@ package io.shiftleft.bctrace.asm;
 
 import io.shiftleft.bctrace.Bctrace;
 import io.shiftleft.bctrace.impl.InstrumentationImpl;
+import io.shiftleft.bctrace.spi.UnloadedClassInfo;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.security.ProtectionDomain;
@@ -117,7 +118,7 @@ public class Transformer implements ClassFileTransformer {
       ClassNode cn = new ClassNode();
       cr.accept(cn, 0);
 
-      HierarchyClassInfo ci = new HierarchyClassInfo(cn, loader);
+      UnloadedClassInfo ci = new UnloadedClassInfo(cn, loader);
 
       boolean transformed = transformMethods(ci, matchingHooks);
       if (!transformed) {
@@ -176,7 +177,7 @@ public class Transformer implements ClassFileTransformer {
     return null;
   }
 
-  private boolean transformMethods(HierarchyClassInfo ci, ArrayList<Integer> matchingHooks) {
+  private boolean transformMethods(UnloadedClassInfo ci, ArrayList<Integer> matchingHooks) {
     ClassNode cn = ci.getRawClassNode();
     List<MethodNode> methods = cn.methods;
     boolean transformed = false;
