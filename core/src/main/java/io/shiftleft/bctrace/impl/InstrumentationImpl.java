@@ -28,24 +28,30 @@ import io.shiftleft.bctrace.asm.TransformationSupport;
 import io.shiftleft.bctrace.runtime.DebugInfo;
 import io.shiftleft.bctrace.spi.Instrumentation;
 import java.lang.instrument.UnmodifiableClassException;
-import java.util.HashSet;
+import java.lang.ref.WeakReference;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 
 /**
- * Single implementation of the {@link Instrumentation Instrumentation}
- * interface.
+ * Single implementation of the {@link Instrumentation Instrumentation} interface.
  *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
 public final class InstrumentationImpl implements Instrumentation {
 
   private final java.lang.instrument.Instrumentation javaInstrumentation;
-  private final Set<String> transformedClassNames = new HashSet<String>();
 
-  private boolean stale = true;
-  private Class[] transformedClasses;
+  private final Map<String, List<WeakReference<ClassLoader>>> loadedClassesMap = new HashMap<String, List<WeakReference<ClassLoader>>>();
+  private final Map<String, List<WeakReference<ClassLoader>>> unModifableLoadedClassesMap = Collections
+      .unmodifiableMap(loadedClassesMap);
+
+  private final Map<String, List<WeakReference<ClassLoader>>> transformedClassesMap = new HashMap<String, List<WeakReference<ClassLoader>>>();
+  private final Map<String, List<WeakReference<ClassLoader>>> unModifableTransformedClassesMap = Collections
+      .unmodifiableMap(loadedClassesMap);
+
 
   public InstrumentationImpl(java.lang.instrument.Instrumentation javaInstrumentation) {
     this.javaInstrumentation = javaInstrumentation;
@@ -58,32 +64,18 @@ public final class InstrumentationImpl implements Instrumentation {
 
   @Override
   public boolean isModifiableClass(Class<?> clazz) {
-    return isRetransformClassesSupported() && TransformationSupport.isRetransformable(clazz) && javaInstrumentation.isModifiableClass(clazz);
+    return isRetransformClassesSupported() && TransformationSupport.isRetransformable(clazz)
+        && javaInstrumentation.isModifiableClass(clazz);
   }
 
   @Override
   public boolean isModifiableClass(String jvmClassName) {
-    return isRetransformClassesSupported() && TransformationSupport.isTransformable(jvmClassName, null);
+    return isRetransformClassesSupported() && TransformationSupport
+        .isTransformable(jvmClassName, null);
   }
 
   public java.lang.instrument.Instrumentation getJavaInstrumentation() {
     return javaInstrumentation;
-  }
-
-  @Override
-  public Class[] getTransformedClasses() {
-    if (stale) {
-      List<Class> list = new LinkedList<Class>();
-      Class[] loaded = getAllLoadedClasses();
-      for (Class clazz : loaded) {
-        if (transformedClassNames.contains(clazz.getName())) {
-          list.add(clazz);
-        }
-      }
-      transformedClasses = list.toArray(new Class[list.size()]);
-      stale = false;
-    }
-    return transformedClasses;
   }
 
   @Override
@@ -101,18 +93,97 @@ public final class InstrumentationImpl implements Instrumentation {
     }
   }
 
+  public void addAllLoadedClasses() {
+    synchronized (unModifableLoadedClassesMap) {
+      if (javaInstrumentation != null) {
+        Class[] allLoadedClasses = javaInstrumentation.getAllLoadedClasses();
+        for (Class clazz : allLoadedClasses) {
+          registerClass(clazz.getName(), clazz.getClassLoader(), loadedClassesMap);
+        }
+      }
+    }
+  }
+
+  public void addLoadedClass(String className, ClassLoader cl) {
+    synchronized (unModifableLoadedClassesMap) {
+      if (loadedClassesMap.isEmpty()) {
+        addAllLoadedClasses();
+      }
+      registerClass(className, cl, loadedClassesMap);
+    }
+  }
+
+  public void removeLoadedClass(String className, ClassLoader cl) {
+    synchronized (unModifableLoadedClassesMap) {
+      removeClass(className, cl, loadedClassesMap);
+    }
+  }
+
+  public void addTransformedClass(String className, ClassLoader cl) {
+    synchronized (unModifableTransformedClassesMap) {
+      registerClass(className, cl, transformedClassesMap);
+    }
+  }
+
+  public void removeTransformedClass(String className, ClassLoader cl) {
+    synchronized (unModifableTransformedClassesMap) {
+      removeClass(className, cl, transformedClassesMap);
+    }
+  }
+
+  private void registerClass(String className, ClassLoader cl,
+      Map<String, List<WeakReference<ClassLoader>>> map) {
+    List<WeakReference<ClassLoader>> list = map.get(className);
+    if (list == null) {
+      list = new LinkedList<WeakReference<ClassLoader>>();
+      map.put(className, list);
+    } else {
+      for (WeakReference<ClassLoader> wr : list) {
+        if (cl == null) { // Bootstrap classloader
+          if (wr == null) {
+            return;
+          }
+        } else {
+          if (wr != null && wr.get() == cl) {
+            return;
+          }
+        }
+      }
+    }
+    if (cl == null) {
+      list.add(null);
+    } else {
+      list.add(new WeakReference<ClassLoader>(cl));
+    }
+  }
+
+  private synchronized void removeClass(String className, ClassLoader cl,
+      Map<String, List<WeakReference<ClassLoader>>> map) {
+    LinkedList<WeakReference<ClassLoader>> list = (LinkedList) map.get(className);
+    if (list != null) {
+      if (cl == null) { // Bootstrap classloader
+        list.remove(null);
+      } else {
+        for (WeakReference<ClassLoader> wr : list) {
+          if (wr != null && wr.get() == cl) {
+            list.remove(wr);
+            break;
+          }
+        }
+      }
+      if (list.isEmpty()) {
+        map.remove(className);
+      }
+    }
+  }
+
   @Override
-  public Class[] getAllLoadedClasses() {
-    return javaInstrumentation.getAllLoadedClasses();
+  public Map<String, List<WeakReference<ClassLoader>>> getLoadedClasses() {
+    return unModifableLoadedClassesMap;
   }
 
-  public void removeTransformedClass(String className) {
-    transformedClassNames.remove(className);
-    stale = true;
-  }
-
-  public void addTransformedClass(String className) {
-    transformedClassNames.add(className);
-    stale = true;
+  @Override
+  public Map<String, List<WeakReference<ClassLoader>>> getTransformedClasses() {
+    return unModifableTransformedClassesMap;
   }
 }

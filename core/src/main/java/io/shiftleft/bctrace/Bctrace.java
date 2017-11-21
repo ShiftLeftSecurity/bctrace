@@ -32,6 +32,8 @@ import io.shiftleft.bctrace.spi.AgentLoggerFactory;
 import io.shiftleft.bctrace.spi.Hook;
 import io.shiftleft.bctrace.spi.Instrumentation;
 import io.shiftleft.bctrace.spi.SystemProperty;
+import java.lang.ref.WeakReference;
+import java.util.List;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -53,7 +55,7 @@ public final class Bctrace {
 
   Bctrace(java.lang.instrument.Instrumentation javaInstrumentation, Hook[] hooks) {
     this.instrumentation = new InstrumentationImpl(javaInstrumentation);
-    this.transformer = new Transformer();
+    this.transformer = new Transformer(this.instrumentation);
     this.hooks = hooks;
   }
 
@@ -97,10 +99,20 @@ public final class Bctrace {
   }
 
   public boolean isLoadedBy(String className, ClassLoader cl) {
-    Class[] classes = instrumentation.getAllLoadedClasses();
-    for (int i = 0; i < classes.length; i++) {
-      if (classes[i].getClassLoader() == cl && classes[i].getName().equals(className)) {
-        return true;
+    List<WeakReference<ClassLoader>> classloaders = instrumentation
+        .getLoadedClasses().get(className);
+    if (classloaders == null) {
+      return false;
+    }
+    for (WeakReference<ClassLoader> wk : classloaders) {
+      if (cl == null) {
+        if (wk == null) {
+          return true;
+        }
+      } else {
+        if (wk != null && wk.get() == cl) {
+          return true;
+        }
       }
     }
     return false;

@@ -25,6 +25,9 @@
 package io.shiftleft.bctrace.spi;
 
 import java.lang.instrument.UnmodifiableClassException;
+import java.lang.ref.WeakReference;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Offers retransformation capabilities to the hooks. The framework passes a
@@ -61,18 +64,18 @@ public interface Instrumentation {
   boolean isModifiableClass(String jvmClassName);
 
   /**
-   * Returns an array of all classes currently loaded by the JVM.
+   * Returns an map of all classes currently loaded by the JVM.
    *
    * @return
    */
-  Class[] getAllLoadedClasses();
+  Map<String, List<WeakReference<ClassLoader>>> getLoadedClasses();
 
   /**
-   * Returns the names of the classes instrumented with the current hook.
+   * Returns an map of all classes currently transformed.
    *
    * @return
    */
-  Class[] getTransformedClasses();
+  Map<String, List<WeakReference<ClassLoader>>> getTransformedClasses();
 
   /**
    * Retransforms the classes.

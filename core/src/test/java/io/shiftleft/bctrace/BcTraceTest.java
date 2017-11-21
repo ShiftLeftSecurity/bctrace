@@ -62,7 +62,7 @@ public abstract class BcTraceTest {
       listeners[i] = hooks[i].getListener();
     }
     Callback.listeners = listeners;
-    Transformer transformer = new Transformer();
+    Transformer transformer = new Transformer(new InstrumentationImpl(null));
     byte[] newBytes = transformer.transform(null, className, clazz, null, bytes);
     ByteClassLoader cl = new ByteClassLoader();
     return cl.loadClass(className, newBytes);

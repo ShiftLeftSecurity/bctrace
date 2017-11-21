@@ -28,6 +28,7 @@ import io.shiftleft.bctrace.Bctrace;
 import io.shiftleft.bctrace.asm.util.ClassInfoCache;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.ref.WeakReference;
 import java.util.List;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.ClassNode;
@@ -106,21 +107,37 @@ public class UnloadedClassInfo implements HierarchyClassInfo {
   }
 
   private static Class getClassIfLoadedByClassLoader(String name, ClassLoader cl) {
-    Class[] allLoadedClasses = Bctrace.getInstance().getInstrumentation().getAllLoadedClasses();
-    for (Class clazz : allLoadedClasses) {
-      if (clazz.getClassLoader() == cl) {
-        if (clazz.getName().equals(name)) {
-          return clazz;
+    List<WeakReference<ClassLoader>> classloaders = Bctrace.getInstance().getInstrumentation()
+        .getLoadedClasses().get(name);
+    if (classloaders == null) {
+      return null;
+    }
+    try {
+      for (WeakReference<ClassLoader> wk : classloaders) {
+        if (cl == null) {
+          if (wk == null) {
+            return Class.forName(name);
+          }
+        } else {
+          if (wk != null && wk.get() == cl) {
+            return Class.forName(name, false, cl);
+          }
         }
       }
+    } catch (ClassNotFoundException e) {
+      throw new AssertionError();
     }
     return null;
   }
 
   private static boolean isLoadedByAnyClassLoader(String name) {
-    Class[] allLoadedClasses = Bctrace.getInstance().getInstrumentation().getAllLoadedClasses();
-    for (Class clazz : allLoadedClasses) {
-      if (clazz.getName().equals(name)) {
+    List<WeakReference<ClassLoader>> classloaders = Bctrace.getInstance().getInstrumentation()
+        .getLoadedClasses().get(name);
+    if (classloaders == null) {
+      return false;
+    }
+    for (WeakReference<ClassLoader> wk : classloaders) {
+      if (wk == null || wk.get() != null) {
         return true;
       }
     }
