@@ -29,7 +29,6 @@ import io.shiftleft.bctrace.runtime.DebugInfo;
 import io.shiftleft.bctrace.spi.Instrumentation;
 import java.lang.instrument.UnmodifiableClassException;
 import java.lang.ref.WeakReference;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -45,12 +44,7 @@ public final class InstrumentationImpl implements Instrumentation {
   private final java.lang.instrument.Instrumentation javaInstrumentation;
 
   private final Map<String, List<WeakReference<ClassLoader>>> loadedClassesMap = new HashMap<String, List<WeakReference<ClassLoader>>>();
-  private final Map<String, List<WeakReference<ClassLoader>>> unModifableLoadedClassesMap = Collections
-      .unmodifiableMap(loadedClassesMap);
-
   private final Map<String, List<WeakReference<ClassLoader>>> transformedClassesMap = new HashMap<String, List<WeakReference<ClassLoader>>>();
-  private final Map<String, List<WeakReference<ClassLoader>>> unModifableTransformedClassesMap = Collections
-      .unmodifiableMap(loadedClassesMap);
 
 
   public InstrumentationImpl(java.lang.instrument.Instrumentation javaInstrumentation) {
@@ -94,7 +88,7 @@ public final class InstrumentationImpl implements Instrumentation {
   }
 
   public void addAllLoadedClasses() {
-    synchronized (unModifableLoadedClassesMap) {
+    synchronized (loadedClassesMap) {
       if (javaInstrumentation != null) {
         Class[] allLoadedClasses = javaInstrumentation.getAllLoadedClasses();
         for (Class clazz : allLoadedClasses) {
@@ -105,7 +99,7 @@ public final class InstrumentationImpl implements Instrumentation {
   }
 
   public void addLoadedClass(String className, ClassLoader cl) {
-    synchronized (unModifableLoadedClassesMap) {
+    synchronized (loadedClassesMap) {
       if (loadedClassesMap.isEmpty()) {
         addAllLoadedClasses();
       }
@@ -114,19 +108,19 @@ public final class InstrumentationImpl implements Instrumentation {
   }
 
   public void removeLoadedClass(String className, ClassLoader cl) {
-    synchronized (unModifableLoadedClassesMap) {
+    synchronized (loadedClassesMap) {
       removeClass(className, cl, loadedClassesMap);
     }
   }
 
   public void addTransformedClass(String className, ClassLoader cl) {
-    synchronized (unModifableTransformedClassesMap) {
+    synchronized (transformedClassesMap) {
       registerClass(className, cl, transformedClassesMap);
     }
   }
 
   public void removeTransformedClass(String className, ClassLoader cl) {
-    synchronized (unModifableTransformedClassesMap) {
+    synchronized (transformedClassesMap) {
       removeClass(className, cl, transformedClassesMap);
     }
   }
@@ -177,13 +171,67 @@ public final class InstrumentationImpl implements Instrumentation {
     }
   }
 
+
   @Override
-  public Map<String, List<WeakReference<ClassLoader>>> getLoadedClasses() {
-    return unModifableLoadedClassesMap;
+  public boolean isLoadedByAnyClassLoader(String name) {
+    List<WeakReference<ClassLoader>> classloaders = this.loadedClassesMap.get(name);
+    if (classloaders == null) {
+      return false;
+    }
+    for (WeakReference<ClassLoader> wk : classloaders) {
+      if (wk == null || wk.get() != null) {
+        return true;
+      }
+    }
+    return false;
   }
 
   @Override
-  public Map<String, List<WeakReference<ClassLoader>>> getTransformedClasses() {
-    return unModifableTransformedClassesMap;
+  public Class getClassIfLoadedByClassLoader(String name, ClassLoader cl) {
+    List<WeakReference<ClassLoader>> classloaders = this.loadedClassesMap.get(name);
+    if (classloaders == null) {
+      return null;
+    }
+    try {
+      for (WeakReference<ClassLoader> wk : classloaders) {
+        if (cl == null) {
+          if (wk == null) {
+            return Class.forName(name, false, null);
+          }
+        } else {
+          if (wk != null && wk.get() == cl) {
+            return Class.forName(name, false, cl);
+          }
+        }
+      }
+    } catch (ClassNotFoundException e) {
+      throw new AssertionError();
+    }
+    return null;
+  }
+
+  @Override
+  public boolean isLoadedBy(String className, ClassLoader cl) {
+    List<WeakReference<ClassLoader>> classloaders = this.loadedClassesMap.get(className);
+    if (classloaders == null) {
+      return false;
+    }
+    for (WeakReference<ClassLoader> wk : classloaders) {
+      if (cl == null) {
+        if (wk == null) {
+          return true;
+        }
+      } else {
+        if (wk != null && wk.get() == cl) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  @Override
+  public Class[] getAllLoadedClasses() {
+    return javaInstrumentation.getAllLoadedClasses();
   }
 }

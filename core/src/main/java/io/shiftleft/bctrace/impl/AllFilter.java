@@ -25,7 +25,7 @@
 package io.shiftleft.bctrace.impl;
 
 import io.shiftleft.bctrace.spi.Filter;
-import io.shiftleft.bctrace.spi.UnloadedClassInfo;
+import io.shiftleft.bctrace.spi.hierarchy.UnloadedClassInfo;
 import java.security.ProtectionDomain;
 import org.objectweb.asm.tree.MethodNode;
 

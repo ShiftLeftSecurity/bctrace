@@ -22,18 +22,19 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.spi;
-
-import io.shiftleft.bctrace.asm.util.ClassInfoCache;
+package io.shiftleft.bctrace.spi.hierarchy;
 
 /**
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public class LoadedClassInfo implements HierarchyClassInfo {
+public class LoadedClassInfo extends HierarchyClassInfo {
 
   private final Class clazz;
 
-  public LoadedClassInfo(Class clazz) {
+  LoadedClassInfo(Class clazz) {
+    if (clazz == null) {
+      throw new IllegalArgumentException("Class instance is required");
+    }
     this.clazz = clazz;
   }
 
@@ -57,6 +58,16 @@ public class LoadedClassInfo implements HierarchyClassInfo {
   @Override
   public String getName() {
     return clazz.getName();
+  }
+
+  @Override
+  public ClassLoader getClassLoader() {
+    return this.clazz.getClassLoader();
+  }
+
+  @Override
+  public boolean isInterface() {
+    return this.clazz.isInterface();
   }
 
   public Class getClazz() {

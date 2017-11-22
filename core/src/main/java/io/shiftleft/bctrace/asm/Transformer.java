@@ -45,7 +45,7 @@ import io.shiftleft.bctrace.spi.Hook;
 import io.shiftleft.bctrace.spi.MethodInfo;
 import io.shiftleft.bctrace.spi.MethodRegistry;
 import io.shiftleft.bctrace.spi.SystemProperty;
-import io.shiftleft.bctrace.spi.UnloadedClassInfo;
+import io.shiftleft.bctrace.spi.hierarchy.UnloadedClassInfo;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.lang.instrument.ClassFileTransformer;

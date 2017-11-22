@@ -22,54 +22,63 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.asm.util;
+package io.shiftleft.bctrace.spi.hierarchy;
 
-import io.shiftleft.bctrace.spi.HierarchyClassInfo;
-import java.util.HashMap;
-import java.util.Map;
+import io.shiftleft.bctrace.Bctrace;
+import io.shiftleft.bctrace.asm.util.ASMUtils;
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.ref.WeakReference;
+import java.util.List;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.tree.ClassNode;
 
 /**
- *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public class ClassInfoCache {
+public class UnloadedClassInfo extends HierarchyClassInfo {
 
-  private static final ClassInfoCache INSTANCE = new ClassInfoCache();
+  private final ClassNode cn;
+  private final ClassLoader cl;
 
-  private final Map<ClassLoader, Map<String, HierarchyClassInfo>> maps = new HashMap<ClassLoader, Map<String, HierarchyClassInfo>>();
-  private final Map<String, HierarchyClassInfo> bootstrapMap = new HashMap<String, HierarchyClassInfo>();
-
-  private ClassInfoCache() {
+  public UnloadedClassInfo(ClassNode cn, ClassLoader cl) {
+    this.cn = cn;
+    this.cl = cl;
   }
 
-  public static ClassInfoCache getInstance() {
-    return INSTANCE;
+  public ClassNode getRawClassNode() {
+    return cn;
   }
 
-  public synchronized void add(String className, ClassLoader cl, HierarchyClassInfo cn) {
-    Map<String, HierarchyClassInfo> map;
-    if (cl == null) {
-      map = bootstrapMap;
-    } else {
-      map = maps.get(cl);
-      if (map == null) {
-        map = new HashMap<String, HierarchyClassInfo>();
-        maps.put(cl, map);
-      }
+  public HierarchyClassInfo getSuperClass() {
+    return HierarchyClassInfo.from(this.cn.superName, this.cl);
+  }
+
+  public HierarchyClassInfo[] getInterfaces() {
+    List<String> interfaces = this.cn.interfaces;
+    HierarchyClassInfo[] ret = new HierarchyClassInfo[interfaces.size()];
+    int i = 0;
+    for (String interfaceName : interfaces) {
+      ret[i] = HierarchyClassInfo.from(interfaceName, cl);
+      i++;
     }
-    map.put(className, cn);
+    return ret;
   }
 
-  public synchronized HierarchyClassInfo get(String className, ClassLoader cl) {
-    Map<String, HierarchyClassInfo> map;
-    if (cl == null) {
-      map = bootstrapMap;
-    } else {
-      map = maps.get(cl);
-      if (map == null) {
-        return null;
-      }
-    }
-    return map.get(className);
+  @Override
+  public String getName() {
+    return cn.name;
   }
+
+  @Override
+  public ClassLoader getClassLoader() {
+    return this.cl;
+  }
+
+  @Override
+  public boolean isInterface() {
+    return ASMUtils.isInterface(this.cn.access);
+  }
+
 }
+

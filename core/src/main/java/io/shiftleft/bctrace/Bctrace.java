@@ -98,26 +98,6 @@ public final class Bctrace {
     return this.instrumentation;
   }
 
-  public boolean isLoadedBy(String className, ClassLoader cl) {
-    List<WeakReference<ClassLoader>> classloaders = instrumentation
-        .getLoadedClasses().get(className);
-    if (classloaders == null) {
-      return false;
-    }
-    for (WeakReference<ClassLoader> wk : classloaders) {
-      if (cl == null) {
-        if (wk == null) {
-          return true;
-        }
-      } else {
-        if (wk != null && wk.get() == cl) {
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-
   public static boolean isThreadNotificationEnabled() {
     return Callback.isThreadNotificationEnabled();
   }

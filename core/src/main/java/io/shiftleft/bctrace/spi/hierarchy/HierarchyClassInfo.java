@@ -22,60 +22,39 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.spi;
+package io.shiftleft.bctrace.spi.hierarchy;
 
 import io.shiftleft.bctrace.Bctrace;
-import io.shiftleft.bctrace.asm.util.ClassInfoCache;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.ref.WeakReference;
-import java.util.List;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.ClassNode;
 
 /**
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public class UnloadedClassInfo implements HierarchyClassInfo {
+public abstract class HierarchyClassInfo {
 
-  private final ClassNode cn;
-  private final ClassLoader cl;
-
-  public UnloadedClassInfo(ClassNode cn, ClassLoader cl) {
-    this.cn = cn;
-    this.cl = cl;
+  HierarchyClassInfo() {
   }
 
-  public ClassNode getRawClassNode() {
-    return cn;
-  }
+  public abstract HierarchyClassInfo getSuperClass();
 
-  public HierarchyClassInfo getSuperClass() {
-    return UnloadedClassInfo.from(this.cn.superName, this.cl);
-  }
+  public abstract HierarchyClassInfo[] getInterfaces();
 
-  public HierarchyClassInfo[] getInterfaces() {
-    List<String> interfaces = this.cn.interfaces;
-    HierarchyClassInfo[] ret = new HierarchyClassInfo[interfaces.size()];
-    int i = 0;
-    for (String interfaceName : interfaces) {
-      ret[i] = UnloadedClassInfo.from(interfaceName, cl);
-      i++;
-    }
-    return ret;
-  }
+  public abstract String getName();
 
-  @Override
-  public String getName() {
-    return cn.name;
-  }
+  public abstract ClassLoader getClassLoader();
 
-  private static HierarchyClassInfo from(String name, ClassLoader cl) {
+  public abstract boolean isInterface();
+
+  public static HierarchyClassInfo from(String name, ClassLoader cl) {
     if (name == null) {
       return null;
     }
-    if (isLoadedByAnyClassLoader(name)) {
-      Class clazz = getClassIfLoadedByClassLoader(name, cl);
+    if (Bctrace.getInstance().getInstrumentation().isLoadedByAnyClassLoader(name)) {
+      Class clazz = Bctrace.getInstance().getInstrumentation()
+          .getClassIfLoadedByClassLoader(name, cl);
       if (clazz == null) {
         clazz = getClassIfLoadedByClassLoaderAncestors(name, cl);
       }
@@ -92,61 +71,19 @@ public class UnloadedClassInfo implements HierarchyClassInfo {
       }
     }
 
-    UnloadedClassInfo.ClassLoaderEntry entry = readClassResource(name + ".class", cl);
+    ClassLoaderEntry entry = readClassResource(name + ".class", cl);
     if (entry == null) {
       Bctrace.getInstance().getAgentLogger()
           .warning("Could not obtain class bytecode for unloaded class " + name);
-
-    }
-    HierarchyClassInfo ci = ClassInfoCache.getInstance().get(name, entry.cl);
-    if (ci == null) {
-      ci = new UnloadedClassInfo(createClassNode(entry.is), entry.cl);
-      ClassInfoCache.getInstance().add(name, entry.cl, ci);
-    }
-    return ci;
-  }
-
-  private static Class getClassIfLoadedByClassLoader(String name, ClassLoader cl) {
-    List<WeakReference<ClassLoader>> classloaders = Bctrace.getInstance().getInstrumentation()
-        .getLoadedClasses().get(name);
-    if (classloaders == null) {
       return null;
     }
-    try {
-      for (WeakReference<ClassLoader> wk : classloaders) {
-        if (cl == null) {
-          if (wk == null) {
-            return Class.forName(name);
-          }
-        } else {
-          if (wk != null && wk.get() == cl) {
-            return Class.forName(name, false, cl);
-          }
-        }
-      }
-    } catch (ClassNotFoundException e) {
-      throw new AssertionError();
-    }
-    return null;
-  }
-
-  private static boolean isLoadedByAnyClassLoader(String name) {
-    List<WeakReference<ClassLoader>> classloaders = Bctrace.getInstance().getInstrumentation()
-        .getLoadedClasses().get(name);
-    if (classloaders == null) {
-      return false;
-    }
-    for (WeakReference<ClassLoader> wk : classloaders) {
-      if (wk == null || wk.get() != null) {
-        return true;
-      }
-    }
-    return false;
+    return new UnloadedClassInfo(createClassNode(entry.is), entry.cl);
   }
 
   private static Class getClassIfLoadedByClassLoaderAncestors(String name, ClassLoader cl) {
     if (cl.getParent() != null) {
-      Class clazz = getClassIfLoadedByClassLoader(name, cl.getParent());
+      Class clazz = Bctrace.getInstance().getInstrumentation()
+          .getClassIfLoadedByClassLoader(name, cl.getParent());
       if (clazz != null) {
         return clazz;
       } else {
@@ -154,30 +91,6 @@ public class UnloadedClassInfo implements HierarchyClassInfo {
       }
     }
     return null;
-  }
-
-  private static UnloadedClassInfo.ClassLoaderEntry readClassResource(String classResource,
-      ClassLoader loader) {
-    if (loader == null) {
-      InputStream is = ClassLoader.getSystemResourceAsStream(classResource);
-      if (is == null) {
-        return null;
-      } else {
-        return new UnloadedClassInfo.ClassLoaderEntry(is, loader);
-      }
-    } else {
-      UnloadedClassInfo.ClassLoaderEntry entry = readClassResource(classResource,
-          loader.getParent());
-      if (entry != null) {
-        return entry;
-      }
-      InputStream is = loader.getResourceAsStream(classResource);
-      if (is == null) {
-        return null;
-      } else {
-        return new UnloadedClassInfo.ClassLoaderEntry(is, loader);
-      }
-    }
   }
 
   private static ClassNode createClassNode(InputStream is) {
@@ -191,6 +104,48 @@ public class UnloadedClassInfo implements HierarchyClassInfo {
     }
   }
 
+  private static ClassLoaderEntry readClassResource(String classResource,
+      ClassLoader loader) {
+    if (loader == null) {
+      InputStream is = ClassLoader.getSystemResourceAsStream(classResource);
+      if (is == null) {
+        return null;
+      } else {
+        return new ClassLoaderEntry(is, loader);
+      }
+    } else {
+      ClassLoaderEntry entry = readClassResource(classResource,
+          loader.getParent());
+      if (entry != null) {
+        return entry;
+      }
+      InputStream is = loader.getResourceAsStream(classResource);
+      if (is == null) {
+        return null;
+      } else {
+        return new ClassLoaderEntry(is, loader);
+      }
+    }
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj) {
+      return true;
+    }
+    if (!(obj instanceof HierarchyClassInfo)) {
+      return false;
+    }
+    HierarchyClassInfo other = (HierarchyClassInfo) obj;
+    return this.getName().equals(other.getName()) && this.getClassLoader() == other
+        .getClassLoader();
+  }
+
+  @Override
+  public int hashCode() {
+    return this.getName().hashCode();
+  }
+
   private static class ClassLoaderEntry {
 
     InputStream is;
@@ -201,5 +156,37 @@ public class UnloadedClassInfo implements HierarchyClassInfo {
       this.cl = cl;
     }
   }
-}
 
+  public final boolean isSubclassOf(HierarchyClassInfo other) {
+    for (HierarchyClassInfo ci = this; ci != null; ci = ci.getSuperClass()) {
+      if (ci.getSuperClass() != null
+          && ci.getSuperClass().equals(other)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  public final boolean isAssignableFrom(HierarchyClassInfo other) {
+    return (this == other
+        || other.isSubclassOf(this)
+        || other.implementsInterface(this)
+        || (other.isInterface() && getName().equals("java.lang.Object")));
+  }
+
+  public final boolean implementsInterface(HierarchyClassInfo other) {
+    for (HierarchyClassInfo ci = this; ci != null; ci = ci.getSuperClass()) {
+      for (HierarchyClassInfo iface : ci.getInterfaces()) {
+        if (iface.equals(other)
+            || iface.implementsInterface(other)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  public static void main(String[] args) {
+
+  }
+}
