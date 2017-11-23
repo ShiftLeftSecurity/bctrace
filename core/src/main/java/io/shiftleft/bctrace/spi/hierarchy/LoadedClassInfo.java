@@ -30,29 +30,36 @@ package io.shiftleft.bctrace.spi.hierarchy;
 public class LoadedClassInfo extends HierarchyClassInfo {
 
   private final Class clazz;
+  private final HierarchyClassInfo superClass;
+  private final HierarchyClassInfo[] interfaces;
 
   LoadedClassInfo(Class clazz) {
     if (clazz == null) {
       throw new IllegalArgumentException("Class instance is required");
     }
     this.clazz = clazz;
+    if (clazz.getSuperclass() == null) {
+      this.superClass = null;
+    } else {
+      this.superClass = new LoadedClassInfo(clazz.getSuperclass());
+    }
+    Class[] interfaces = clazz.getInterfaces();
+    this.interfaces = new HierarchyClassInfo[interfaces.length];
+    int i = 0;
+    for (Class cl : interfaces) {
+      this.interfaces[i] = new LoadedClassInfo(cl);
+      i++;
+    }
   }
 
   @Override
   public HierarchyClassInfo getSuperClass() {
-    return new LoadedClassInfo(clazz.getSuperclass());
+    return this.superClass;
   }
 
   @Override
   public HierarchyClassInfo[] getInterfaces() {
-    Class[] interfaces = clazz.getInterfaces();
-    HierarchyClassInfo[] ret = new HierarchyClassInfo[interfaces.length];
-    int i = 0;
-    for (Class intface : interfaces) {
-      ret[i] = new LoadedClassInfo(intface);
-      i++;
-    }
-    return ret;
+    return this.interfaces;
   }
 
   @Override
