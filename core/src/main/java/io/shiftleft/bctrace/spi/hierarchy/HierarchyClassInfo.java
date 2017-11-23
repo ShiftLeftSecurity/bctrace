@@ -48,6 +48,13 @@ public abstract class HierarchyClassInfo {
 
   public abstract boolean isInterface();
 
+  /**
+   * Factory method that constructs an instance given the class name and classloader.
+   *
+   * @param name class name according to the JAva Language Specification (dot separated)
+   * @param cl
+   * @return
+   */
   public static HierarchyClassInfo from(String name, ClassLoader cl) {
     if (name == null) {
       return null;
@@ -71,7 +78,7 @@ public abstract class HierarchyClassInfo {
       }
     }
 
-    ClassLoaderEntry entry = readClassResource(name + ".class", cl);
+    ClassLoaderEntry entry = readClassResource(name.replace('.', '/') + ".class", cl);
     if (entry == null) {
       Bctrace.getInstance().getAgentLogger()
           .warning("Could not obtain class bytecode for unloaded class " + name);
@@ -126,6 +133,10 @@ public abstract class HierarchyClassInfo {
         return new ClassLoaderEntry(is, loader);
       }
     }
+  }
+
+  public final String getJVMName() {
+    return getName().replace('.', '/');
   }
 
   @Override
@@ -184,9 +195,5 @@ public abstract class HierarchyClassInfo {
       }
     }
     return false;
-  }
-
-  public static void main(String[] args) {
-
   }
 }
