@@ -81,6 +81,6 @@ class StaticClassWriter extends ClassWriter {
       // or an interface, it would have been caught above.
       ci1 = ci1.getSuperClass();
     } while (!ci1.isAssignableFrom(ci2));
-    return ci1.getName().replace('.', '/');
+    return ci1.getJVMName();
   }
 }
