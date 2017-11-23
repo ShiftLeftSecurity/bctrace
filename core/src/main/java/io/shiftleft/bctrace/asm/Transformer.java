@@ -101,8 +101,6 @@ public class Transformer implements ClassFileTransformer {
       return null;
     }
 
-    instrumentation.addLoadedClass(className.replace('/', '.'), loader);
-
     if (DebugInfo.isEnabled()) {
       DebugInfo.getInstance().addInstrumented(className, loader);
     }
@@ -110,6 +108,7 @@ public class Transformer implements ClassFileTransformer {
     int counter = TRANSFORMATION_COUNTER.incrementAndGet();
 
     byte[] ret = null;
+    boolean transformed = false;
     try {
       if (classfileBuffer == null) {
         return ret;
@@ -128,7 +127,7 @@ public class Transformer implements ClassFileTransformer {
 
       UnloadedClassInfo ci = new UnloadedClassInfo(cn, loader);
 
-      boolean transformed = transformMethods(ci, matchingHooks, loader);
+      transformed = transformMethods(ci, matchingHooks, loader);
       if (!transformed) {
         return ret;
       } else {
@@ -144,6 +143,10 @@ public class Transformer implements ClassFileTransformer {
     } finally {
       if (DUMP_FOLDER != null) {
         dump(counter, className, classfileBuffer, ret);
+      }
+      instrumentation.addLoadedClass(className.replace('/', '.'), loader);
+      if (transformed) {
+        instrumentation.addTransformedClass(className.replace('/', '.'), loader);
       }
     }
   }
@@ -190,7 +193,8 @@ public class Transformer implements ClassFileTransformer {
     return null;
   }
 
-  private boolean transformMethods(UnloadedClassInfo ci, ArrayList<Integer> matchingHooks, ClassLoader cl) {
+  private boolean transformMethods(UnloadedClassInfo ci, ArrayList<Integer> matchingHooks,
+      ClassLoader cl) {
     ClassNode cn = ci.getRawClassNode();
     List<MethodNode> methods = cn.methods;
     boolean transformed = false;
@@ -203,7 +207,6 @@ public class Transformer implements ClassFileTransformer {
       for (Integer i : matchingHooks) {
         if (hooks[i] != null && hooks[i].getFilter().instrumentMethod(ci, mn)) {
           hooksToUse.add(i);
-          instrumentation.addTransformedClass(cn.name.replace('/', '.'), cl);
         }
       }
       if (!hooksToUse.isEmpty()) {
