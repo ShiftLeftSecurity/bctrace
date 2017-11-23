@@ -87,7 +87,7 @@ public final class InstrumentationImpl implements Instrumentation {
     }
   }
 
-  public void addAllLoadedClasses() {
+  private void addAllLoadedClasses() {
     synchronized (loadedClassesMap) {
       if (javaInstrumentation != null) {
         Class[] allLoadedClasses = javaInstrumentation.getAllLoadedClasses();
