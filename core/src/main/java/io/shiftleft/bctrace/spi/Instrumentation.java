@@ -25,7 +25,6 @@
 package io.shiftleft.bctrace.spi;
 
 import java.lang.instrument.UnmodifiableClassException;
-import java.util.Set;
 
 /**
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
@@ -66,10 +65,8 @@ public interface Instrumentation {
   public boolean isLoadedByAnyClassLoader(String className);
 
   /**
-   *
-   * @param className
-   * @param cl
-   * @return
+   * Returns a class with no side effects (if not loaded it remains not loaded), without using the
+   * expensive instrumentation.getAllLoadedClasses()
    */
   public Class getClassIfLoadedByClassLoader(String className, ClassLoader cl);
 
