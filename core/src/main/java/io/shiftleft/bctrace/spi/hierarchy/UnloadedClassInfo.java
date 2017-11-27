@@ -22,43 +22,66 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.spi;
+package io.shiftleft.bctrace.spi.hierarchy;
 
-import io.shiftleft.bctrace.spi.hierarchy.UnloadedClassInfo;
-import java.security.ProtectionDomain;
-import org.objectweb.asm.tree.MethodNode;
+import io.shiftleft.bctrace.asm.util.ASMUtils;
+import java.util.List;
+import org.objectweb.asm.tree.ClassNode;
 
 /**
- * A filter determines which classes and methods are instrumented.
- * <br><br>
- * If the class is transformable, the framework performs an initial query to the
- * {@link #instrumentClass(String, ProtectionDomain, ClassLoader) instrumentClass}
- * method. If this return <code>true</code> the filter
- * {@link #instrumentMethod(UnloadedClassInfo, MethodNode) instrumentMethod} method will
- * be invoked once per non abstract nor native method in the class. Invocations
- * returning <code>true</code> lead to a hook insertions into the bytecode of
- * the method.
- *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public interface Filter {
+public class UnloadedClassInfo extends HierarchyClassInfo {
 
-  /**
-   * Whether or not instrument the methods of a class.
-   *
-   * @param className
-   * @param protectionDomain
-   * @param cl
-   * @return
-   */
-  public boolean instrumentClass(String className, ProtectionDomain protectionDomain, ClassLoader cl);
+  private final ClassNode cn;
+  private final ClassLoader cl;
+  private final HierarchyClassInfo superClass;
+  private final HierarchyClassInfo[] interfaces;
 
-  /**
-   * Whether or not instrument the specified method.
-   *
-   * @param classInfo
-   * @param mn
-   * @return
-   */
-  public boolean instrumentMethod(UnloadedClassInfo classInfo, MethodNode mn);
+
+  public UnloadedClassInfo(ClassNode cn, ClassLoader cl) {
+    this.cn = cn;
+    this.cl = cl;
+    if (this.cn.superName == null) {
+      this.superClass = null;
+    } else {
+      this.superClass = HierarchyClassInfo.from(this.cn.superName.replace('/', '.'), this.cl);
+    }
+    List<String> ifaces = this.cn.interfaces;
+    this.interfaces = new HierarchyClassInfo[ifaces.size()];
+    int i = 0;
+    for (String interfaceName : ifaces) {
+      this.interfaces[i] = HierarchyClassInfo.from(interfaceName.replace('/', '.'), cl);
+      i++;
+    }
+  }
+
+  public ClassNode getRawClassNode() {
+    return cn;
+  }
+
+  public HierarchyClassInfo getSuperClass() {
+    return this.superClass;
+  }
+
+  public HierarchyClassInfo[] getInterfaces() {
+    return this.interfaces;
+  }
+
+  @Override
+  public String getName() {
+    return cn.name;
+  }
+
+  @Override
+  public ClassLoader getClassLoader() {
+    return this.cl;
+  }
+
+  @Override
+  public boolean isInterface() {
+    return ASMUtils.isInterface(this.cn.access);
+  }
+
 }
+

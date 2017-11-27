@@ -44,6 +44,10 @@ import org.objectweb.asm.tree.VarInsnNode;
  */
 public class ASMUtils {
 
+  public static boolean isInterface(int modifiers) {
+    return (modifiers & Opcodes.ACC_INTERFACE) != 0;
+  }
+
   public static boolean isAbstract(int modifiers) {
     return (modifiers & Opcodes.ACC_ABSTRACT) != 0;
   }

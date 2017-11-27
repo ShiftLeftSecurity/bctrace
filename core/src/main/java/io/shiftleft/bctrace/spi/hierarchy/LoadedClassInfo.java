@@ -22,54 +22,63 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.asm.util;
-
-import io.shiftleft.bctrace.spi.HierarchyClassInfo;
-import java.util.HashMap;
-import java.util.Map;
+package io.shiftleft.bctrace.spi.hierarchy;
 
 /**
- *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public class ClassInfoCache {
+public class LoadedClassInfo extends HierarchyClassInfo {
 
-  private static final ClassInfoCache INSTANCE = new ClassInfoCache();
+  private final Class clazz;
+  private final HierarchyClassInfo superClass;
+  private final HierarchyClassInfo[] interfaces;
 
-  private final Map<ClassLoader, Map<String, HierarchyClassInfo>> maps = new HashMap<ClassLoader, Map<String, HierarchyClassInfo>>();
-  private final Map<String, HierarchyClassInfo> bootstrapMap = new HashMap<String, HierarchyClassInfo>();
-
-  private ClassInfoCache() {
-  }
-
-  public static ClassInfoCache getInstance() {
-    return INSTANCE;
-  }
-
-  public synchronized void add(String className, ClassLoader cl, HierarchyClassInfo cn) {
-    Map<String, HierarchyClassInfo> map;
-    if (cl == null) {
-      map = bootstrapMap;
-    } else {
-      map = maps.get(cl);
-      if (map == null) {
-        map = new HashMap<String, HierarchyClassInfo>();
-        maps.put(cl, map);
-      }
+  LoadedClassInfo(Class clazz) {
+    if (clazz == null) {
+      throw new IllegalArgumentException("Class instance is required");
     }
-    map.put(className, cn);
+    this.clazz = clazz;
+    if (clazz.getSuperclass() == null) {
+      this.superClass = null;
+    } else {
+      this.superClass = new LoadedClassInfo(clazz.getSuperclass());
+    }
+    Class[] interfaces = clazz.getInterfaces();
+    this.interfaces = new HierarchyClassInfo[interfaces.length];
+    int i = 0;
+    for (Class cl : interfaces) {
+      this.interfaces[i] = new LoadedClassInfo(cl);
+      i++;
+    }
   }
 
-  public synchronized HierarchyClassInfo get(String className, ClassLoader cl) {
-    Map<String, HierarchyClassInfo> map;
-    if (cl == null) {
-      map = bootstrapMap;
-    } else {
-      map = maps.get(cl);
-      if (map == null) {
-        return null;
-      }
-    }
-    return map.get(className);
+  @Override
+  public HierarchyClassInfo getSuperClass() {
+    return this.superClass;
   }
+
+  @Override
+  public HierarchyClassInfo[] getInterfaces() {
+    return this.interfaces;
+  }
+
+  @Override
+  public String getName() {
+    return clazz.getName();
+  }
+
+  @Override
+  public ClassLoader getClassLoader() {
+    return this.clazz.getClassLoader();
+  }
+
+  @Override
+  public boolean isInterface() {
+    return this.clazz.isInterface();
+  }
+
+  public Class getClazz() {
+    return clazz;
+  }
+
 }

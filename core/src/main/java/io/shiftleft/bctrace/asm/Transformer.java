@@ -25,33 +25,34 @@
 package io.shiftleft.bctrace.asm;
 
 import io.shiftleft.bctrace.Bctrace;
-import io.shiftleft.bctrace.impl.InstrumentationImpl;
-import java.lang.instrument.ClassFileTransformer;
-import java.lang.instrument.IllegalClassFormatException;
-import java.security.ProtectionDomain;
-import java.util.List;
 import io.shiftleft.bctrace.asm.helper.CatchHelper;
 import io.shiftleft.bctrace.asm.helper.MinStartHelper;
 import io.shiftleft.bctrace.asm.helper.ReturnHelper;
 import io.shiftleft.bctrace.asm.helper.StartArgumentsHelper;
 import io.shiftleft.bctrace.asm.helper.StartHelper;
 import io.shiftleft.bctrace.asm.helper.ThrowHelper;
-import io.shiftleft.bctrace.spi.HierarchyClassInfo;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
+import io.shiftleft.bctrace.impl.InstrumentationImpl;
 import io.shiftleft.bctrace.runtime.DebugInfo;
-import io.shiftleft.bctrace.spi.MethodInfo;
-import io.shiftleft.bctrace.spi.MethodRegistry;
-import io.shiftleft.bctrace.spi.Hook;
+import io.shiftleft.bctrace.runtime.listener.Listener;
 import io.shiftleft.bctrace.runtime.listener.info.BeforeThrownListener;
 import io.shiftleft.bctrace.runtime.listener.info.FinishReturnListener;
 import io.shiftleft.bctrace.runtime.listener.info.FinishThrowableListener;
-import io.shiftleft.bctrace.runtime.listener.Listener;
 import io.shiftleft.bctrace.runtime.listener.info.StartArgumentsListener;
 import io.shiftleft.bctrace.runtime.listener.info.StartListener;
 import io.shiftleft.bctrace.runtime.listener.min.MinStartListener;
+import io.shiftleft.bctrace.spi.Hook;
+import io.shiftleft.bctrace.spi.MethodInfo;
+import io.shiftleft.bctrace.spi.MethodRegistry;
+import io.shiftleft.bctrace.spi.SystemProperty;
+import io.shiftleft.bctrace.spi.hierarchy.UnloadedClassInfo;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.lang.instrument.ClassFileTransformer;
+import java.lang.instrument.IllegalClassFormatException;
+import java.security.ProtectionDomain;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import org.objectweb.asm.ClassReader;
@@ -59,16 +60,16 @@ import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.MethodNode;
-import io.shiftleft.bctrace.spi.SystemProperty;
 
 /**
- *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
 public class Transformer implements ClassFileTransformer {
 
   private static final File DUMP_FOLDER;
-  private static final AtomicInteger TRANSFORMATION_COUNTER = new AtomicInteger();
+  private final InstrumentationImpl instrumentation;
+
+  private final AtomicInteger TRANSFORMATION_COUNTER = new AtomicInteger();
 
   static {
     if (System.getProperty(SystemProperty.DUMP_FOLDER) != null) {
@@ -85,22 +86,29 @@ public class Transformer implements ClassFileTransformer {
     }
   }
 
+  public Transformer(InstrumentationImpl instrumentation) {
+    this.instrumentation = instrumentation;
+  }
+
   @Override
   public byte[] transform(final ClassLoader loader,
-          final String className, final Class<?> classBeingRedefined,
-          final ProtectionDomain protectionDomain,
-          final byte[] classfileBuffer)
-          throws IllegalClassFormatException {
+      final String className, final Class<?> classBeingRedefined,
+      final ProtectionDomain protectionDomain,
+      final byte[] classfileBuffer)
+      throws IllegalClassFormatException {
 
     if (className == null) {
       return null;
     }
+
     if (DebugInfo.isEnabled()) {
       DebugInfo.getInstance().addInstrumented(className, loader);
     }
+
     int counter = TRANSFORMATION_COUNTER.incrementAndGet();
 
     byte[] ret = null;
+    boolean transformed = false;
     try {
       if (classfileBuffer == null) {
         return ret;
@@ -117,9 +125,9 @@ public class Transformer implements ClassFileTransformer {
       ClassNode cn = new ClassNode();
       cr.accept(cn, 0);
 
-      HierarchyClassInfo ci = new HierarchyClassInfo(cn, loader);
+      UnloadedClassInfo ci = new UnloadedClassInfo(cn, loader);
 
-      boolean transformed = transformMethods(ci, matchingHooks);
+      transformed = transformMethods(ci, matchingHooks, loader);
       if (!transformed) {
         return ret;
       } else {
@@ -129,11 +137,16 @@ public class Transformer implements ClassFileTransformer {
         return ret;
       }
     } catch (Throwable th) {
-      Bctrace.getInstance().getAgentLogger().log(Level.SEVERE, "Error found instrumenting class " + className, th);
+      Bctrace.getInstance().getAgentLogger()
+          .log(Level.SEVERE, "Error found instrumenting class " + className, th);
       return ret;
     } finally {
       if (DUMP_FOLDER != null) {
         dump(counter, className, classfileBuffer, ret);
+      }
+      instrumentation.addLoadedClass(className.replace('/', '.'), loader);
+      if (transformed) {
+        instrumentation.addTransformedClass(className.replace('/', '.'), loader);
       }
     }
   }
@@ -141,10 +154,12 @@ public class Transformer implements ClassFileTransformer {
   private static void dump(int counter, String className, byte[] original, byte[] transformed) {
     try {
       if (transformed != null) {
-        FileOutputStream fos = new FileOutputStream(new File(DUMP_FOLDER, counter + "#" + className.replace('/', '.') + "(input).class"));
+        FileOutputStream fos = new FileOutputStream(
+            new File(DUMP_FOLDER, counter + "#" + className.replace('/', '.') + "(input).class"));
         fos.write(original);
         fos.close();
-        fos = new FileOutputStream(new File(DUMP_FOLDER, counter + "#" + className.replace('/', '.') + "(output).class"));
+        fos = new FileOutputStream(
+            new File(DUMP_FOLDER, counter + "#" + className.replace('/', '.') + "(output).class"));
         fos.write(transformed);
         fos.close();
       } else {
@@ -154,11 +169,13 @@ public class Transformer implements ClassFileTransformer {
         fos.close();
       }
     } catch (Exception ex) {
-      Bctrace.getInstance().getAgentLogger().log(Level.SEVERE, "Error dumping to disk instrumenting class " + className, ex);
+      Bctrace.getInstance().getAgentLogger()
+          .log(Level.SEVERE, "Error dumping to disk instrumenting class " + className, ex);
     }
   }
 
-  private ArrayList<Integer> getMatchingHooks(String className, ProtectionDomain protectionDomain, ClassLoader loader) {
+  private ArrayList<Integer> getMatchingHooks(String className, ProtectionDomain protectionDomain,
+      ClassLoader loader) {
     Hook[] hooks = Bctrace.getInstance().getHooks();
     if (hooks != null) {
       ArrayList<Integer> ret = new ArrayList<Integer>(hooks.length);
@@ -169,14 +186,15 @@ public class Transformer implements ClassFileTransformer {
         if (hooks[i].getFilter().instrumentClass(className, protectionDomain, loader)) {
           ret.add(i);
         }
-        ((InstrumentationImpl) hooks[i].getInstrumentation()).removeTransformedClass(className);
+        instrumentation.removeTransformedClass(className, loader);
       }
       return ret;
     }
     return null;
   }
 
-  private boolean transformMethods(HierarchyClassInfo ci, ArrayList<Integer> matchingHooks) {
+  private boolean transformMethods(UnloadedClassInfo ci, ArrayList<Integer> matchingHooks,
+      ClassLoader cl) {
     ClassNode cn = ci.getRawClassNode();
     List<MethodNode> methods = cn.methods;
     boolean transformed = false;
@@ -189,7 +207,6 @@ public class Transformer implements ClassFileTransformer {
       for (Integer i : matchingHooks) {
         if (hooks[i] != null && hooks[i].getFilter().instrumentMethod(ci, mn)) {
           hooksToUse.add(i);
-          ((InstrumentationImpl) hooks[i].getInstrumentation()).addTransformedClass(cn.name.replace('/', '.'));
         }
       }
       if (!hooksToUse.isEmpty()) {
@@ -219,10 +236,14 @@ public class Transformer implements ClassFileTransformer {
 
     ArrayList<Integer> minStartListenerHooks = getListenerHooks(hooksToUse, MinStartListener.class);
     ArrayList<Integer> startListenerHooks = getListenerHooks(hooksToUse, StartListener.class);
-    ArrayList<Integer> startArgumentsListenerHooks = getListenerHooks(hooksToUse, StartArgumentsListener.class);
-    ArrayList<Integer> finishReturnListenerHooks = getListenerHooks(hooksToUse, FinishReturnListener.class);
-    ArrayList<Integer> finishThrowableListenerHooks = getListenerHooks(hooksToUse, FinishThrowableListener.class);
-    ArrayList<Integer> beforeThrownListenerHooks = getListenerHooks(hooksToUse, BeforeThrownListener.class);
+    ArrayList<Integer> startArgumentsListenerHooks = getListenerHooks(hooksToUse,
+        StartArgumentsListener.class);
+    ArrayList<Integer> finishReturnListenerHooks = getListenerHooks(hooksToUse,
+        FinishReturnListener.class);
+    ArrayList<Integer> finishThrowableListenerHooks = getListenerHooks(hooksToUse,
+        FinishThrowableListener.class);
+    ArrayList<Integer> beforeThrownListenerHooks = getListenerHooks(hooksToUse,
+        BeforeThrownListener.class);
 
     LabelNode startNode = CatchHelper.insertStartNode(mn, finishThrowableListenerHooks);
     MinStartHelper.addTraceStart(methodId, cn, mn, minStartListenerHooks);
@@ -233,11 +254,13 @@ public class Transformer implements ClassFileTransformer {
     CatchHelper.addTraceThrowableUncaught(methodId, mn, startNode, finishThrowableListenerHooks);
   }
 
-  private static ArrayList<Integer> getListenerHooks(ArrayList<Integer> hooksToUse, Class<? extends Listener> clazz) {
+  private static ArrayList<Integer> getListenerHooks(ArrayList<Integer> hooksToUse,
+      Class<? extends Listener> clazz) {
     ArrayList<Integer> ret = null;
     for (Integer i : hooksToUse) {
       Hook[] hooks = Bctrace.getInstance().getHooks();
-      if (hooks[i].getListener() != null && clazz.isAssignableFrom(hooks[i].getListener().getClass())) {
+      if (hooks[i].getListener() != null && clazz
+          .isAssignableFrom(hooks[i].getListener().getClass())) {
         if (ret == null) {
           ret = new ArrayList<Integer>(hooksToUse.size());
         }
