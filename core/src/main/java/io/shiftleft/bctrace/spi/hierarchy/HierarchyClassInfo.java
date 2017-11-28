@@ -52,8 +52,6 @@ public abstract class HierarchyClassInfo {
    * Factory method that constructs an instance given the class name and classloader.
    *
    * @param name class name according to the JAva Language Specification (dot separated)
-   * @param cl
-   * @return
    */
   public static HierarchyClassInfo from(String name, ClassLoader cl) {
     if (name == null) {
@@ -88,7 +86,7 @@ public abstract class HierarchyClassInfo {
   }
 
   private static Class getClassIfLoadedByClassLoaderAncestors(String name, ClassLoader cl) {
-    if (cl.getParent() != null) {
+    if (cl != null && cl.getParent() != null) {
       Class clazz = Bctrace.getInstance().getInstrumentation()
           .getClassIfLoadedByClassLoader(name, cl.getParent());
       if (clazz != null) {
