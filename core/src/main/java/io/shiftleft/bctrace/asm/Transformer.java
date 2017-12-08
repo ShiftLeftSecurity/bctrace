@@ -137,7 +137,7 @@ public class Transformer implements ClassFileTransformer {
         return ret;
       }
     } catch (Throwable th) {
-      Bctrace.getInstance().getAgentLogger()
+      Bctrace.getAgentLogger()
           .log(Level.SEVERE, "Error found instrumenting class " + className, th);
       return ret;
     } finally {
@@ -169,7 +169,7 @@ public class Transformer implements ClassFileTransformer {
         fos.close();
       }
     } catch (Exception ex) {
-      Bctrace.getInstance().getAgentLogger()
+      Bctrace.getAgentLogger()
           .log(Level.SEVERE, "Error dumping to disk instrumenting class " + className, ex);
     }
   }

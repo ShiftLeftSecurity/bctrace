@@ -49,7 +49,7 @@ public class DebugHttpServer {
     String debugServer = System.getProperty(SystemProperty.DEBUG_SERVER);
     if (debugServer != null) {
       try {
-        Bctrace.getInstance().getAgentLogger().severe("Starting debug server at " + debugServer);
+        Bctrace.getAgentLogger().severe("Starting debug server at " + debugServer);
         String[] tokens = debugServer.split(":");
         if (tokens.length != 2) {
           throw new Error("Invalid system property " + SystemProperty.DEBUG_SERVER + ". Value has to be in the form 'hostname:port'");

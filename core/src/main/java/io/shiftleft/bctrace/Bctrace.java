@@ -114,7 +114,7 @@ public final class Bctrace {
     return this.hooks;
   }
 
-  public Logger getAgentLogger() {
+  public static Logger getAgentLogger() {
     return LOGGER;
   }
 }
