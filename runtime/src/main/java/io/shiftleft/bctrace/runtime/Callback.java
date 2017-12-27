@@ -51,9 +51,6 @@ public final class Callback {
     if (Boolean.TRUE == NOTIFYING_FLAG.get()) {
       return;
     }
-    if (DebugInfo.isEnabled()) {
-      DebugInfo.getInstance().increaseCallCounter(methodId);
-    }
     try {
       NOTIFYING_FLAG.set(Boolean.TRUE);
       ((MinStartListener) listeners[i]).onStart(methodId);
@@ -70,9 +67,6 @@ public final class Callback {
     if (Boolean.TRUE == NOTIFYING_FLAG.get()) {
       return;
     }
-    if (DebugInfo.isEnabled()) {
-      DebugInfo.getInstance().increaseCallCounter(methodId);
-    }
     try {
       NOTIFYING_FLAG.set(Boolean.TRUE);
       ((StartListener) listeners[i]).onStart(methodId, instance);
@@ -88,9 +82,6 @@ public final class Callback {
     }
     if (Boolean.TRUE == NOTIFYING_FLAG.get()) {
       return;
-    }
-    if (DebugInfo.isEnabled()) {
-      DebugInfo.getInstance().increaseCallCounter(methodId);
     }
     try {
       NOTIFYING_FLAG.set(Boolean.TRUE);

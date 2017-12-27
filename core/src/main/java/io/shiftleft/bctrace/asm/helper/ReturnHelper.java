@@ -42,8 +42,8 @@ import org.objectweb.asm.tree.VarInsnNode;
  */
 public class ReturnHelper extends Helper {
 
-  public static void addTraceReturn(int methodId, MethodNode mn, ArrayList<Integer> hooksToUse) {
-    if (!isInstrumentationNeeded(hooksToUse)) {
+  public static void addTraceReturn(int methodId, MethodNode mn, ArrayList<Integer> listenersToUse) {
+    if (!isInstrumentationNeeded(listenersToUse)) {
       return;
     }
     InsnList il = mn.instructions;
@@ -55,22 +55,22 @@ public class ReturnHelper extends Helper {
 
       switch (abstractInsnNode.getOpcode()) {
         case Opcodes.RETURN:
-          il.insertBefore(abstractInsnNode, getVoidReturnTraceInstructions(methodId, mn, hooksToUse));
+          il.insertBefore(abstractInsnNode, getVoidReturnTraceInstructions(methodId, mn, listenersToUse));
           break;
         case Opcodes.IRETURN:
         case Opcodes.LRETURN:
         case Opcodes.FRETURN:
         case Opcodes.ARETURN:
         case Opcodes.DRETURN:
-          il.insertBefore(abstractInsnNode, getReturnTraceInstructions(methodId, mn, returnType, hooksToUse));
+          il.insertBefore(abstractInsnNode, getReturnTraceInstructions(methodId, mn, returnType, listenersToUse));
       }
     }
   }
 
-  private static InsnList getVoidReturnTraceInstructions(int methodId, MethodNode mn, ArrayList<Integer> hooksToUse) {
+  private static InsnList getVoidReturnTraceInstructions(int methodId, MethodNode mn, ArrayList<Integer> listenersToUse) {
     InsnList il = new InsnList();
-    for (int i = hooksToUse.size() - 1; i >= 0; i--) {
-      Integer index = hooksToUse.get(i);
+    for (int i = listenersToUse.size() - 1; i >= 0; i--) {
+      Integer index = listenersToUse.get(i);
       il.add(new InsnNode(Opcodes.ACONST_NULL)); // return value
       il.add(ASMUtils.getPushInstruction(methodId)); // method id
       if (ASMUtils.isStatic(mn.access) || mn.name.equals("<init>")) { // current instance
@@ -86,10 +86,10 @@ public class ReturnHelper extends Helper {
     return il;
   }
 
-  private static InsnList getReturnTraceInstructions(int methodId, MethodNode mn, Type returnType, ArrayList<Integer> hooksToUse) {
+  private static InsnList getReturnTraceInstructions(int methodId, MethodNode mn, Type returnType, ArrayList<Integer> listenersToUse) {
     InsnList il = new InsnList();
-    for (int i = hooksToUse.size() - 1; i >= 0; i--) {
-      Integer index = hooksToUse.get(i);
+    for (int i = listenersToUse.size() - 1; i >= 0; i--) {
+      Integer index = listenersToUse.get(i);
       if (returnType.getSize() == 1) {
         il.add(new InsnNode(Opcodes.DUP));
       } else {

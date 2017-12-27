@@ -41,8 +41,8 @@ import org.objectweb.asm.tree.VarInsnNode;
  */
 public class ThrowHelper extends Helper {
 
-  public static void addTraceThrow(int methodId, MethodNode mn, ArrayList<Integer> hooksToUse) {
-    if (!isInstrumentationNeeded(hooksToUse)) {
+  public static void addTraceThrow(int methodId, MethodNode mn, ArrayList<Integer> listenersToUse) {
+    if (!isInstrumentationNeeded(listenersToUse)) {
       return;
     }
     InsnList il = mn.instructions;
@@ -52,15 +52,15 @@ public class ThrowHelper extends Helper {
 
       switch (abstractInsnNode.getOpcode()) {
         case Opcodes.ATHROW:
-          il.insertBefore(abstractInsnNode, getThrowTraceInstructions(methodId, mn, hooksToUse));
+          il.insertBefore(abstractInsnNode, getThrowTraceInstructions(methodId, mn, listenersToUse));
           break;
       }
     }
   }
 
-  private static InsnList getThrowTraceInstructions(int methodId, MethodNode mn, ArrayList<Integer> hooksToUse) {
+  private static InsnList getThrowTraceInstructions(int methodId, MethodNode mn, ArrayList<Integer> listenersToUse) {
     InsnList il = new InsnList();
-    for (Integer index : hooksToUse) {
+    for (Integer index : listenersToUse) {
       il.add(new InsnNode(Opcodes.DUP)); // dup throwable
       il.add(ASMUtils.getPushInstruction(methodId)); // method id
       if (ASMUtils.isStatic(mn.access) || mn.name.equals("<init>")) { // current instance

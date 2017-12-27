@@ -40,12 +40,12 @@ import org.objectweb.asm.tree.VarInsnNode;
  */
 public class StartHelper extends Helper {
 
-  public static void addTraceStart(int methodId, ClassNode cn, MethodNode mn, ArrayList<Integer> hooksToUse) {
-    if (!isInstrumentationNeeded(hooksToUse)) {
+  public static void addTraceStart(int methodId, ClassNode cn, MethodNode mn, ArrayList<Integer> listenersToUse) {
+    if (!isInstrumentationNeeded(listenersToUse)) {
       return;
     }
     InsnList il = new InsnList();
-    for (Integer index : hooksToUse) {
+    for (Integer index : listenersToUse) {
       il.add(ASMUtils.getPushInstruction(methodId));
       if (ASMUtils.isStatic(mn.access) || mn.name.equals("<init>")) {
         il.add(new InsnNode(Opcodes.ACONST_NULL));
