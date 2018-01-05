@@ -49,20 +49,6 @@ public final class Bctrace {
   static Bctrace instance;
 
   private static final Logger LOGGER = createLogger();
-  private static final StartListener CALL_COUNTER_LISTENER;
-
-  static {
-    if (DebugInfo.isEnabled()) {
-      CALL_COUNTER_LISTENER = new StartListener() {
-        @Override
-        public void onStart(int methodId, Object instance) {
-          DebugInfo.getInstance().increaseCallCounter(methodId);
-        }
-      };
-    } else {
-      CALL_COUNTER_LISTENER = null;
-    }
-  }
 
   private final Transformer transformer;
   private final InstrumentationImpl instrumentation;
