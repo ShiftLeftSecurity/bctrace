@@ -25,12 +25,12 @@
 package io.shiftleft.bctrace;
 
 import io.shiftleft.bctrace.asm.Transformer;
+import io.shiftleft.bctrace.debug.CallCounterHook;
 import io.shiftleft.bctrace.debug.DebugInfo;
 import io.shiftleft.bctrace.impl.InstrumentationImpl;
 import io.shiftleft.bctrace.runtime.Callback;
 import io.shiftleft.bctrace.runtime.listener.Listener;
 import io.shiftleft.bctrace.runtime.listener.info.StartListener;
-import io.shiftleft.bctrace.runtime.listener.min.MinStartListener;
 import io.shiftleft.bctrace.spi.AgentLoggerFactory;
 import io.shiftleft.bctrace.spi.Hook;
 import io.shiftleft.bctrace.spi.Instrumentation;
@@ -67,23 +67,16 @@ public final class Bctrace {
   private final Transformer transformer;
   private final InstrumentationImpl instrumentation;
   private final Hook[] hooks;
-  // This listeners are additionally added to those methods being listened.
-  private final Listener[] additionalListeners;
 
   Bctrace(java.lang.instrument.Instrumentation javaInstrumentation, Hook[] hooks) {
     this.instrumentation = new InstrumentationImpl(javaInstrumentation);
     this.transformer = new Transformer(this.instrumentation);
-    this.hooks = hooks;
     if (DebugInfo.isEnabled()) {
-      // Add a call debugging counter listener for those methods being listened
-      additionalListeners = new Listener[]{new MinStartListener() {
-        @Override
-        public void onStart(int methodId) {
-          DebugInfo.getInstance().increaseCallCounter(methodId);
-        }
-      }};
+      this.hooks = new Hook[hooks.length + 1];
+      System.arraycopy(hooks, 0, this.hooks, 0, hooks.length);
+      this.hooks[hooks.length] = new CallCounterHook();
     } else {
-      additionalListeners = new Listener[0];
+      this.hooks = hooks;
     }
   }
 
@@ -94,10 +87,7 @@ public final class Bctrace {
         hooks[i].init(this.instrumentation);
         listeners[i] = this.hooks[i].getListener();
       }
-      Callback.listeners = new Listener[listeners.length + additionalListeners.length];
-      System.arraycopy(listeners, 0, Callback.listeners, 0, listeners.length);
-      System.arraycopy(additionalListeners, 0, Callback.listeners, listeners.length,
-          additionalListeners.length);
+      Callback.listeners = listeners;
 
       if (instrumentation != null && instrumentation.getJavaInstrumentation() != null) {
         instrumentation.getJavaInstrumentation()
@@ -148,10 +138,6 @@ public final class Bctrace {
 
   public Hook[] getHooks() {
     return this.hooks;
-  }
-
-  public Listener[] getAdditionalListeners() {
-    return additionalListeners;
   }
 
   public static Logger getAgentLogger() {
