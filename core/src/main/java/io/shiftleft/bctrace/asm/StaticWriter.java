@@ -1,30 +1,27 @@
-/**
- * ASM tests Copyright (c) 2002-2005 France Telecom All rights reserved.
+/*
+ * ShiftLeft, Inc. CONFIDENTIAL
+ * Unpublished Copyright (c) 2017 ShiftLeft, Inc., All Rights Reserved.
  *
- * Redistribution and use in source and binary forms, with or without modification, are permitted
- * provided that the following conditions are met: 1. Redistributions of source code must retain the
- * above copyright notice, this list of conditions and the following disclaimer. 2. Redistributions
- * in binary form must reproduce the above copyright notice, this list of conditions and the
- * following disclaimer in the documentation and/or other materials provided with the distribution.
- * 3. Neither the name of the copyright holders nor the names of its contributors may be used to
- * endorse or promote products derived from this software without specific prior written
- * permission.
+ * NOTICE: All information contained herein is, and remains the property of ShiftLeft, Inc.
+ * The intellectual and technical concepts contained herein are proprietary to ShiftLeft, Inc.
+ * and may be covered by U.S. and Foreign Patents, patents in process, and are protected by
+ * trade secret or copyright law. Dissemination of this information or reproduction of this
+ * material is strictly forbidden unless prior written permission is obtained
+ * from ShiftLeft, Inc. Access to the source code contained herein is hereby forbidden to
+ * anyone except current ShiftLeft, Inc. employees, managers or contractors who have executed
+ * Confidentiality and Non-disclosure agreements explicitly covering such access.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
- * FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY
- * WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * The copyright notice above does not evidence any actual or intended publication or disclosure
+ * of this source code, which includeas information that is confidential and/or proprietary, and
+ * is a trade secret, of ShiftLeft, Inc.
+ *
+ * ANY REPRODUCTION, MODIFICATION, DISTRIBUTION, PUBLIC PERFORMANCE, OR PUBLIC DISPLAY
+ * OF OR THROUGH USE OF THIS SOURCE CODE WITHOUT THE EXPRESS WRITTEN CONSENT OF ShiftLeft, Inc.
+ * IS STRICTLY PROHIBITED, AND IN VIOLATION OF APPLICABLE LAWS AND INTERNATIONAL TREATIES.
+ * THE RECEIPT OR POSSESSION OF THIS SOURCE CODE AND/OR RELATED INFORMATION DOES NOT
+ * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
+ * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-// Portions Copyright 2011 Google, Inc.
-//
-// This is an extracted version of the ClassInfo and ClassWriter
-// portions of ClassWriterComputeFramesTest in the set of ASM tests.
-// We have done a fair bit of rewriting for readability, and changed
-// the comments.  The original author is Eric Bruneton.
 package io.shiftleft.bctrace.asm;
 
 import io.shiftleft.bctrace.Bctrace;
