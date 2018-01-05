@@ -27,9 +27,8 @@ package io.shiftleft.bctrace.spi;
 import io.shiftleft.bctrace.runtime.listener.Listener;
 
 /**
- * An <b>instrumentation hook</b> determines what methods to instrument and what
- * actions to perform at runtime under the events triggered by the instrumented
- * methods.
+ * An <b>instrumentation hook</b> determines what methods to instrument and what actions to perform
+ * at runtime under the events triggered by the instrumented methods.
  *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
@@ -44,11 +43,9 @@ public abstract class Hook {
   }
 
   /**
-   * Initializes the plugin. Called once at startup before initial
-   * instrumentation is performed.
+   * Initializes the plugin. Called once at startup before initial instrumentation is performed.
    *
-   * @param instrumentation Intrumentation callback, allowing triggering
-   * retransformations
+   * @param instrumentation Intrumentation callback, allowing triggering retransformations
    */
   public final void init(Instrumentation instrumentation) {
     this.instrumentation = instrumentation;
@@ -61,6 +58,12 @@ public abstract class Hook {
   public void doInit() {
   }
 
+  /**
+   * Callback method invoked after the transformer is registered
+   */
+  public void afterRegistration() {
+  }
+
   public final Instrumentation getInstrumentation() {
     return instrumentation;
   }
@@ -71,15 +74,11 @@ public abstract class Hook {
 
   /**
    * Returns the filter, deciding what methods to instrument.
-   *
-   * @return
    */
   public abstract Filter getFilter();
 
   /**
    * Returns the listener invoked by the instrumented method hooks.
-   *
-   * @return
    */
   public abstract Listener getListener();
 }

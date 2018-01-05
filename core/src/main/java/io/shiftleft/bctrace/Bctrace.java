@@ -98,10 +98,15 @@ public final class Bctrace {
       System.arraycopy(listeners, 0, Callback.listeners, 0, listeners.length);
       System.arraycopy(additionalListeners, 0, Callback.listeners, listeners.length,
           additionalListeners.length);
-    }
-    if (instrumentation != null && instrumentation.getJavaInstrumentation() != null) {
-      instrumentation.getJavaInstrumentation()
-          .addTransformer(transformer, instrumentation.isRetransformClassesSupported());
+
+      if (instrumentation != null && instrumentation.getJavaInstrumentation() != null) {
+        instrumentation.getJavaInstrumentation()
+            .addTransformer(transformer, true);
+      }
+
+      for (int i = 0; i < hooks.length; i++) {
+        hooks[i].afterRegistration();
+      }
     }
   }
 
