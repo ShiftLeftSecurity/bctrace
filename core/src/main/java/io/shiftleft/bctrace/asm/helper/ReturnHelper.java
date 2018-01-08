@@ -95,9 +95,9 @@ public class ReturnHelper extends Helper {
       } else {
         il.add(new InsnNode(Opcodes.DUP2));
       }
-      MethodInsnNode mNode = ASMUtils.getWrapperContructionInst(returnType);
-      if (mNode != null) {
-        il.add(mNode);
+      MethodInsnNode primitiveToWrapperInst = ASMUtils.getPrimitiveToWrapperInst(returnType);
+      if (primitiveToWrapperInst != null) {
+        il.add(primitiveToWrapperInst);
       }
       il.add(ASMUtils.getPushInstruction(methodId)); // method id
       if (ASMUtils.isStatic(mn.access) || mn.name.equals("<init>")) { // current instance
