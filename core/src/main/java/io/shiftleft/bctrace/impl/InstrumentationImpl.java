@@ -30,11 +30,9 @@ import io.shiftleft.bctrace.spi.Instrumentation;
 import java.lang.instrument.UnmodifiableClassException;
 import java.lang.ref.WeakReference;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Single implementation of the {@link Instrumentation Instrumentation} interface.
@@ -189,14 +187,16 @@ public final class InstrumentationImpl implements Instrumentation {
   }
 
   @Override
-  public Set<ClassLoader> getClassLoaders(String className) {
+  public List<ClassLoader> getClassLoadersLoading(String className) {
     List<WeakReference<ClassLoader>> classloaders = this.loadedClassesMap.get(className);
     if (classloaders == null) {
       return null;
     }
-    Set<ClassLoader> ret = new HashSet<ClassLoader>();
+    List<ClassLoader> ret = new LinkedList<ClassLoader>();
     for (WeakReference<ClassLoader> wk : classloaders) {
       if (wk == null) {
+        ret.add(null);
+      } else {
         ClassLoader cl = wk.get();
         if (cl != null) {
           ret.add(cl);
