@@ -38,12 +38,12 @@ import org.objectweb.asm.tree.MethodNode;
  */
 public class MinStartHelper extends Helper {
 
-  public static void addTraceStart(int methodId, ClassNode cn, MethodNode mn, ArrayList<Integer> hooksToUse) {
-    if (!isInstrumentationNeeded(hooksToUse)) {
+  public static void addTraceStart(int methodId, ClassNode cn, MethodNode mn, ArrayList<Integer> listenersToUse) {
+    if (!isInstrumentationNeeded(listenersToUse)) {
       return;
     }
     InsnList il = new InsnList();
-    for (Integer index : hooksToUse) {
+    for (Integer index : listenersToUse) {
       il.add(ASMUtils.getPushInstruction(methodId));
       il.add(ASMUtils.getPushInstruction(index));
       il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,

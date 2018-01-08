@@ -25,7 +25,7 @@
 package io.shiftleft.bctrace.impl;
 
 import io.shiftleft.bctrace.asm.TransformationSupport;
-import io.shiftleft.bctrace.runtime.DebugInfo;
+import io.shiftleft.bctrace.debug.DebugInfo;
 import io.shiftleft.bctrace.spi.Instrumentation;
 import java.lang.instrument.UnmodifiableClassException;
 import java.lang.ref.WeakReference;
@@ -53,12 +53,13 @@ public final class InstrumentationImpl implements Instrumentation {
 
   @Override
   public boolean isRetransformClassesSupported() {
-    return javaInstrumentation.isRetransformClassesSupported();
+    return javaInstrumentation != null && javaInstrumentation.isRetransformClassesSupported();
   }
 
   @Override
   public boolean isModifiableClass(Class<?> clazz) {
-    return isRetransformClassesSupported() && TransformationSupport.isRetransformable(clazz)
+    return isRetransformClassesSupported()
+        && TransformationSupport.isRetransformable(clazz)
         && javaInstrumentation.isModifiableClass(clazz);
   }
 
@@ -74,7 +75,7 @@ public final class InstrumentationImpl implements Instrumentation {
 
   @Override
   public void retransformClasses(Class<?>... classes) throws UnmodifiableClassException {
-    if (classes != null && classes.length > 0) {
+    if (javaInstrumentation != null && classes != null && classes.length > 0) {
       for (Class<?> clazz : classes) {
         if (!isModifiableClass(clazz)) {
           throw new UnmodifiableClassException(clazz.getName());
@@ -232,6 +233,9 @@ public final class InstrumentationImpl implements Instrumentation {
 
   @Override
   public Class[] getAllLoadedClasses() {
+    if (javaInstrumentation == null) {
+      return new Class[0];
+    }
     return javaInstrumentation.getAllLoadedClasses();
   }
 }

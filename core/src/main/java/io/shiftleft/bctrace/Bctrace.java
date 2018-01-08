@@ -25,15 +25,16 @@
 package io.shiftleft.bctrace;
 
 import io.shiftleft.bctrace.asm.Transformer;
+import io.shiftleft.bctrace.debug.CallCounterHook;
+import io.shiftleft.bctrace.debug.DebugInfo;
 import io.shiftleft.bctrace.impl.InstrumentationImpl;
 import io.shiftleft.bctrace.runtime.Callback;
 import io.shiftleft.bctrace.runtime.listener.Listener;
+import io.shiftleft.bctrace.runtime.listener.info.StartListener;
 import io.shiftleft.bctrace.spi.AgentLoggerFactory;
 import io.shiftleft.bctrace.spi.Hook;
 import io.shiftleft.bctrace.spi.Instrumentation;
 import io.shiftleft.bctrace.spi.SystemProperty;
-import java.lang.ref.WeakReference;
-import java.util.List;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -56,21 +57,32 @@ public final class Bctrace {
   Bctrace(java.lang.instrument.Instrumentation javaInstrumentation, Hook[] hooks) {
     this.instrumentation = new InstrumentationImpl(javaInstrumentation);
     this.transformer = new Transformer(this.instrumentation);
-    this.hooks = hooks;
+    if (DebugInfo.isEnabled()) {
+      this.hooks = new Hook[hooks.length + 1];
+      System.arraycopy(hooks, 0, this.hooks, 0, hooks.length);
+      this.hooks[hooks.length] = new CallCounterHook();
+    } else {
+      this.hooks = hooks;
+    }
   }
 
   void init() {
     if (hooks != null) {
-      Listener[] listeners = new Listener[this.hooks.length];
+      Listener[] listeners = new Listener[hooks.length];
       for (int i = 0; i < hooks.length; i++) {
         hooks[i].init(this.instrumentation);
         listeners[i] = this.hooks[i].getListener();
       }
       Callback.listeners = listeners;
-    }
-    if (instrumentation != null) {
-      instrumentation.getJavaInstrumentation()
-          .addTransformer(transformer, instrumentation.isRetransformClassesSupported());
+
+      if (instrumentation != null && instrumentation.getJavaInstrumentation() != null) {
+        instrumentation.getJavaInstrumentation()
+            .addTransformer(transformer, true);
+      }
+
+      for (int i = 0; i < hooks.length; i++) {
+        hooks[i].afterRegistration();
+      }
     }
   }
 

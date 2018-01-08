@@ -32,10 +32,10 @@ import java.util.ArrayList;
  */
 public class Helper {
 
-  protected static boolean isInstrumentationNeeded(ArrayList<Integer> hooksToUse) {
-    if (hooksToUse == null) {
+  protected static boolean isInstrumentationNeeded(ArrayList<Integer> listenersToUse) {
+    if (listenersToUse == null) {
       return false;
     }
-    return hooksToUse.size() > 0;
+    return listenersToUse.size() > 0;
   }
 }

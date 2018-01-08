@@ -22,41 +22,33 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.asm.helper;
+package io.shiftleft.bctrace.debug;
 
-import io.shiftleft.bctrace.asm.util.ASMUtils;
-import java.util.ArrayList;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.InsnList;
-import org.objectweb.asm.tree.InsnNode;
-import org.objectweb.asm.tree.MethodInsnNode;
-import org.objectweb.asm.tree.MethodNode;
-import org.objectweb.asm.tree.VarInsnNode;
+import io.shiftleft.bctrace.runtime.listener.Listener;
+import io.shiftleft.bctrace.runtime.listener.min.MinStartListener;
+import io.shiftleft.bctrace.spi.Filter;
+import io.shiftleft.bctrace.spi.Hook;
 
 /**
- *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public class StartHelper extends Helper {
+public class CallCounterHook extends Hook {
 
-  public static void addTraceStart(int methodId, ClassNode cn, MethodNode mn, ArrayList<Integer> listenersToUse) {
-    if (!isInstrumentationNeeded(listenersToUse)) {
-      return;
+  private final Listener listener = new MinStartListener() {
+    @Override
+    public void onStart(int methodId) {
+      DebugInfo.getInstance().increaseCallCounter(methodId);
     }
-    InsnList il = new InsnList();
-    for (Integer index : listenersToUse) {
-      il.add(ASMUtils.getPushInstruction(methodId));
-      if (ASMUtils.isStatic(mn.access) || mn.name.equals("<init>")) {
-        il.add(new InsnNode(Opcodes.ACONST_NULL));
-      } else {
-        il.add(new VarInsnNode(Opcodes.ALOAD, 0));
-      }
-      il.add(ASMUtils.getPushInstruction(index));
-      il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
-              "io/shiftleft/bctrace/runtime/Callback", "onStart",
-              "(ILjava/lang/Object;I)V", false));
-    }
-    mn.instructions.insert(il);
+  };
+
+  @Override
+  public Filter getFilter() {
+    // This is an additional hook, that attaches its listener to the methods instrumented by other hooks
+    return null;
+  }
+
+  @Override
+  public Listener getListener() {
+    return listener;
   }
 }

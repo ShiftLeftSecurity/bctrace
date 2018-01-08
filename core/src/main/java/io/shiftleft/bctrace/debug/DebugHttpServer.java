@@ -24,7 +24,6 @@
  */
 package io.shiftleft.bctrace.debug;
 
-import io.shiftleft.bctrace.runtime.DebugInfo;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import io.shiftleft.bctrace.Bctrace;
@@ -40,10 +39,6 @@ import io.shiftleft.bctrace.spi.SystemProperty;
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
 public class DebugHttpServer {
-
-  static {
-    DebugInfo.enabled = System.getProperty(SystemProperty.DEBUG_SERVER) != null;
-  }
 
   public static void init() {
     String debugServer = System.getProperty(SystemProperty.DEBUG_SERVER);
@@ -66,7 +61,7 @@ public class DebugHttpServer {
     server.createContext("/", new RootHandler());
     server.createContext("/methods", new MethodRegistryHandler());
     server.createContext("/methods/instrumented", new InstrumentedMethodsHandler());
-    server.createContext("/classes/instrumented", new InstrumentedClassesHandler());
+    server.createContext("/classes/instrumentable", new InstrumentableClassesHandler());
     server.createContext("/classes/requested", new RequestedToInstrumentClassesHandler());
     server.start();
   }
@@ -102,14 +97,14 @@ public class DebugHttpServer {
     }
   }
 
-  private static class InstrumentedClassesHandler implements HttpHandler {
+  private static class InstrumentableClassesHandler implements HttpHandler {
 
     @Override
     public void handle(HttpExchange t) throws IOException {
       StringBuilder sb = new StringBuilder();
       sb.append("[");
       boolean first = true;
-      DebugInfo.ClassInfo[] instrumented = DebugInfo.getInstance().getInstrumented();
+      DebugInfo.ClassInfo[] instrumented = DebugInfo.getInstance().getInstrumentable();
       for (DebugInfo.ClassInfo ci : instrumented) {
         if (!first) {
           sb.append(",");
@@ -152,7 +147,7 @@ public class DebugHttpServer {
           sb.append("{");
           sb.append("\"id\":").append(i).append(",");
           sb.append("\"className\":").append("\"").append(mi.getBinaryClassName()).append("\"").append(",");
-          sb.append("\"method\":").append("\"").append(mi.getMethodName()).append(mi.getMethodDescriptor()).append("\"");
+          sb.append("\"method\":").append("\"").append(mi.getMethodName()).append(mi.getMethodDescriptor()).append("\"").append(",");
           sb.append("\"callCounter\":").append(callCounter);
           sb.append("}");
         }
@@ -206,9 +201,9 @@ public class DebugHttpServer {
       StringBuilder sb = new StringBuilder();
       sb.append("<h1>Bctrace stats API</h1>");
       sb.append("<ul>");
-      sb.append("<li><a href=\"/methods\">All methods</a></li>");
-      sb.append("<li><a href=\"/methods/instrumented\">Instrumented methods</a></li>");
-      sb.append("<li><a href=\"/classes/instrumented\">Instrumented classes</a></li>");
+      sb.append("<li><a href=\"/methods\">Method registry</a></li>");
+      sb.append("<li><a href=\"/methods/instrumented\">Instrumented method call counters</a></li>");
+      sb.append("<li><a href=\"/classes/instrumentable\">Instrumentable classes found</a></li>");
       sb.append("<li><a href=\"/classes/requested\">Classes requested to instrument (via API)</a></li>");
       sb.append("</ul>");
       byte[] bytes = sb.toString().getBytes();

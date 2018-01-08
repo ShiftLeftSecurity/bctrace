@@ -41,8 +41,8 @@ import org.objectweb.asm.tree.VarInsnNode;
  */
 public class CatchHelper extends Helper {
 
-  public static LabelNode insertStartNode(MethodNode mn, ArrayList<Integer> hooksToUse) {
-    if (!isInstrumentationNeeded(hooksToUse)) {
+  public static LabelNode insertStartNode(MethodNode mn, ArrayList<Integer> listenersToUse) {
+    if (!isInstrumentationNeeded(listenersToUse)) {
       return null;
     }
     LabelNode ret = new LabelNode();
@@ -50,8 +50,8 @@ public class CatchHelper extends Helper {
     return ret;
   }
 
-  public static void addTraceThrowableUncaught(int methodId, MethodNode mn, LabelNode startNode, ArrayList<Integer> hooksToUse) {
-    if (!isInstrumentationNeeded(hooksToUse)) {
+  public static void addTraceThrowableUncaught(int methodId, MethodNode mn, LabelNode startNode, ArrayList<Integer> listenersToUse) {
+    if (!isInstrumentationNeeded(listenersToUse)) {
       return;
     }
 
@@ -60,15 +60,15 @@ public class CatchHelper extends Helper {
     LabelNode endNode = new LabelNode();
     il.add(endNode);
 
-    addCatchBlock(methodId, mn, startNode, endNode, hooksToUse);
+    addCatchBlock(methodId, mn, startNode, endNode, listenersToUse);
   }
 
-  private static void addCatchBlock(int methodId, MethodNode mn, LabelNode startNode, LabelNode endNode, ArrayList<Integer> hooksToUse) {
+  private static void addCatchBlock(int methodId, MethodNode mn, LabelNode startNode, LabelNode endNode, ArrayList<Integer> listenersToUse) {
 
     InsnList il = new InsnList();
     LabelNode handlerNode = new LabelNode();
     il.add(handlerNode);
-    il.add(getThrowableTraceInstructions(methodId, mn, hooksToUse));
+    il.add(getThrowableTraceInstructions(methodId, mn, listenersToUse));
     il.add(new InsnNode(Opcodes.ATHROW));
 
     TryCatchBlockNode blockNode = new TryCatchBlockNode(startNode, endNode, handlerNode, "java/lang/Throwable");
@@ -76,10 +76,10 @@ public class CatchHelper extends Helper {
     mn.instructions.add(il);
   }
 
-  private static InsnList getThrowableTraceInstructions(int methodId, MethodNode mn, ArrayList<Integer> hooksToUse) {
+  private static InsnList getThrowableTraceInstructions(int methodId, MethodNode mn, ArrayList<Integer> listenersToUse) {
     InsnList il = new InsnList();
-    for (int i = hooksToUse.size() - 1; i >= 0; i--) {
-      Integer index = hooksToUse.get(i);
+    for (int i = listenersToUse.size() - 1; i >= 0; i--) {
+      Integer index = listenersToUse.get(i);
       il.add(new InsnNode(Opcodes.DUP)); // dup throwable
       il.add(ASMUtils.getPushInstruction(methodId)); // method id
       if (ASMUtils.isStatic(mn.access) || mn.name.equals("<init>")) { // instance

@@ -22,8 +22,9 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.runtime;
+package io.shiftleft.bctrace.debug;
 
+import io.shiftleft.bctrace.spi.SystemProperty;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -32,18 +33,29 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
 public class DebugInfo {
 
   private static final DebugInfo INSTANCE = new DebugInfo();
 
-  public static boolean enabled;
+  private static final boolean ENABLED;
 
-  private final Set<ClassInfo> requestedToInstrument = Collections.synchronizedSet(new LinkedHashSet<ClassInfo>());
-  private final Set<ClassInfo> instrumented = Collections.synchronizedSet(new LinkedHashSet<ClassInfo>());
-  private final Map<Integer, AtomicInteger> instrumentedMethods = Collections.synchronizedMap(new HashMap<Integer, AtomicInteger>());
+  static {
+    String prop = System.getProperty(SystemProperty.DEBUG_SERVER);
+    if (prop != null) {
+      ENABLED = Boolean.valueOf(prop);
+    } else {
+      ENABLED = false;
+    }
+  }
+
+  private final Set<ClassInfo> requestedToInstrument = Collections
+      .synchronizedSet(new LinkedHashSet<ClassInfo>());
+  private final Set<ClassInfo> instrumentable = Collections
+      .synchronizedSet(new LinkedHashSet<ClassInfo>());
+  private final Map<Integer, AtomicInteger> instrumentedMethods = Collections
+      .synchronizedMap(new HashMap<Integer, AtomicInteger>());
 
   public static DebugInfo getInstance() {
     return INSTANCE;
@@ -53,8 +65,8 @@ public class DebugInfo {
     this.requestedToInstrument.add(new ClassInfo(clazz));
   }
 
-  public void addInstrumented(String className, ClassLoader cl) {
-    this.instrumented.add(new ClassInfo(className, String.valueOf(cl)));
+  public void addInstrumentable(String className, ClassLoader cl) {
+    this.instrumentable.add(new ClassInfo(className, String.valueOf(cl)));
   }
 
   public void setInstrumented(Integer methodId, boolean instrumented) {
@@ -78,12 +90,12 @@ public class DebugInfo {
   }
 
   public static boolean isEnabled() {
-    return enabled;
+    return ENABLED;
   }
 
-  public ClassInfo[] getInstrumented() {
-    synchronized (instrumented) {
-      return instrumented.toArray(new ClassInfo[instrumented.size()]);
+  public ClassInfo[] getInstrumentable() {
+    synchronized (instrumentable) {
+      return instrumentable.toArray(new ClassInfo[instrumentable.size()]);
     }
   }
 
@@ -132,10 +144,12 @@ public class DebugInfo {
         return false;
       }
       final ClassInfo other = (ClassInfo) obj;
-      if ((this.className == null) ? (other.className != null) : !this.className.equals(other.className)) {
+      if ((this.className == null) ? (other.className != null)
+          : !this.className.equals(other.className)) {
         return false;
       }
-      if ((this.classLoader == null) ? (other.classLoader != null) : !this.classLoader.equals(other.classLoader)) {
+      if ((this.classLoader == null) ? (other.classLoader != null)
+          : !this.classLoader.equals(other.classLoader)) {
         return false;
       }
       return true;

@@ -42,16 +42,16 @@ import org.objectweb.asm.tree.VarInsnNode;
  */
 public class StartArgumentsHelper extends Helper {
 
-  public static void addTraceStart(int methodId, ClassNode cn, MethodNode mn, ArrayList<Integer> hooksToUse) {
-    if (!isInstrumentationNeeded(hooksToUse)) {
+  public static void addTraceStart(int methodId, ClassNode cn, MethodNode mn, ArrayList<Integer> listenersToUse) {
+    if (!isInstrumentationNeeded(listenersToUse)) {
       return;
     }
     InsnList il = new InsnList();
     addMethodParametersVariable(il, mn);
 
-    for (int i = 0; i < hooksToUse.size(); i++) {
-      Integer index = hooksToUse.get(i);
-      if (i < hooksToUse.size() - 1) {
+    for (int i = 0; i < listenersToUse.size(); i++) {
+      Integer index = listenersToUse.get(i);
+      if (i < listenersToUse.size() - 1) {
         il.add(new InsnNode(Opcodes.DUP));
       }
       il.add(ASMUtils.getPushInstruction(methodId));

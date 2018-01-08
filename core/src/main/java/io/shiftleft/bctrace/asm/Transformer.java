@@ -32,8 +32,8 @@ import io.shiftleft.bctrace.asm.helper.StartArgumentsHelper;
 import io.shiftleft.bctrace.asm.helper.StartHelper;
 import io.shiftleft.bctrace.asm.helper.ThrowHelper;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
+import io.shiftleft.bctrace.debug.DebugInfo;
 import io.shiftleft.bctrace.impl.InstrumentationImpl;
-import io.shiftleft.bctrace.runtime.DebugInfo;
 import io.shiftleft.bctrace.runtime.listener.Listener;
 import io.shiftleft.bctrace.runtime.listener.info.BeforeThrownListener;
 import io.shiftleft.bctrace.runtime.listener.info.FinishReturnListener;
@@ -67,9 +67,6 @@ import org.objectweb.asm.tree.MethodNode;
 public class Transformer implements ClassFileTransformer {
 
   private static final File DUMP_FOLDER;
-  private final InstrumentationImpl instrumentation;
-
-  private final AtomicInteger TRANSFORMATION_COUNTER = new AtomicInteger();
 
   static {
     if (System.getProperty(SystemProperty.DUMP_FOLDER) != null) {
@@ -85,6 +82,9 @@ public class Transformer implements ClassFileTransformer {
       DUMP_FOLDER.mkdirs();
     }
   }
+
+  private final InstrumentationImpl instrumentation;
+  private final AtomicInteger TRANSFORMATION_COUNTER = new AtomicInteger();
 
   public Transformer(InstrumentationImpl instrumentation) {
     this.instrumentation = instrumentation;
@@ -102,8 +102,9 @@ public class Transformer implements ClassFileTransformer {
     }
 
     if (DebugInfo.isEnabled()) {
-      DebugInfo.getInstance().addInstrumented(className, loader);
+      DebugInfo.getInstance().addInstrumentable(className, loader);
     }
+    instrumentation.removeTransformedClass(className.replace('/', '.'), loader);
 
     int counter = TRANSFORMATION_COUNTER.incrementAndGet();
 
@@ -176,21 +177,27 @@ public class Transformer implements ClassFileTransformer {
 
   private ArrayList<Integer> getMatchingHooks(String className, ProtectionDomain protectionDomain,
       ClassLoader loader) {
+
     Hook[] hooks = Bctrace.getInstance().getHooks();
-    if (hooks != null) {
-      ArrayList<Integer> ret = new ArrayList<Integer>(hooks.length);
+    if (hooks == null) {
+      return null;
+    }
+    ArrayList<Integer> ret = new ArrayList<Integer>(hooks.length);
+    for (int i = 0; i < hooks.length; i++) {
+      if (hooks[i].getFilter() != null &&
+          hooks[i].getFilter().instrumentClass(className, protectionDomain, loader)) {
+        ret.add(i);
+      }
+    }
+    // Add additional hooks (those who have a null filter and apply only where others are registered)
+    if (!ret.isEmpty()) {
       for (int i = 0; i < hooks.length; i++) {
-        if (className.startsWith(hooks[i].getJvmPackage())) {
-          return null;
-        }
-        if (hooks[i].getFilter().instrumentClass(className, protectionDomain, loader)) {
+        if (hooks[i].getFilter() == null) {
           ret.add(i);
         }
-        instrumentation.removeTransformedClass(className, loader);
       }
-      return ret;
     }
-    return null;
+    return ret;
   }
 
   private boolean transformMethods(UnloadedClassInfo ci, ArrayList<Integer> matchingHooks,
@@ -205,11 +212,18 @@ public class Transformer implements ClassFileTransformer {
       ArrayList<Integer> hooksToUse = new ArrayList<Integer>(matchingHooks.size());
       Hook[] hooks = Bctrace.getInstance().getHooks();
       for (Integer i : matchingHooks) {
-        if (hooks[i] != null && hooks[i].getFilter().instrumentMethod(ci, mn)) {
+        if (hooks[i] != null && hooks[i].getFilter() != null && hooks[i].getFilter()
+            .instrumentMethod(ci, mn)) {
           hooksToUse.add(i);
         }
       }
       if (!hooksToUse.isEmpty()) {
+        // Add additional hooks
+        for (Integer i : matchingHooks) {
+          if (hooks[i].getFilter() == null) {
+            hooksToUse.add(i);
+          }
+        }
         modifyMethod(cn, mn, hooksToUse);
         transformed = true;
         if (DebugInfo.getInstance() != null) {
@@ -234,33 +248,30 @@ public class Transformer implements ClassFileTransformer {
       DebugInfo.getInstance().setInstrumented(methodId, true);
     }
 
-    ArrayList<Integer> minStartListenerHooks = getListenerHooks(hooksToUse, MinStartListener.class);
-    ArrayList<Integer> startListenerHooks = getListenerHooks(hooksToUse, StartListener.class);
-    ArrayList<Integer> startArgumentsListenerHooks = getListenerHooks(hooksToUse,
-        StartArgumentsListener.class);
-    ArrayList<Integer> finishReturnListenerHooks = getListenerHooks(hooksToUse,
-        FinishReturnListener.class);
-    ArrayList<Integer> finishThrowableListenerHooks = getListenerHooks(hooksToUse,
+    ArrayList<Integer> finishThrowableListeners = getListenersOfType(hooksToUse,
         FinishThrowableListener.class);
-    ArrayList<Integer> beforeThrownListenerHooks = getListenerHooks(hooksToUse,
-        BeforeThrownListener.class);
 
-    LabelNode startNode = CatchHelper.insertStartNode(mn, finishThrowableListenerHooks);
-    MinStartHelper.addTraceStart(methodId, cn, mn, minStartListenerHooks);
-    StartHelper.addTraceStart(methodId, cn, mn, startListenerHooks);
-    StartArgumentsHelper.addTraceStart(methodId, cn, mn, startArgumentsListenerHooks);
-    ReturnHelper.addTraceReturn(methodId, mn, finishReturnListenerHooks);
-    ThrowHelper.addTraceThrow(methodId, mn, beforeThrownListenerHooks);
-    CatchHelper.addTraceThrowableUncaught(methodId, mn, startNode, finishThrowableListenerHooks);
+    LabelNode startNode = CatchHelper.insertStartNode(mn, finishThrowableListeners);
+    MinStartHelper.addTraceStart(methodId, cn, mn, getListenersOfType(hooksToUse,
+        MinStartListener.class));
+    StartHelper
+        .addTraceStart(methodId, cn, mn, getListenersOfType(hooksToUse, StartListener.class));
+    StartArgumentsHelper.addTraceStart(methodId, cn, mn, getListenersOfType(hooksToUse,
+        StartArgumentsListener.class));
+    ReturnHelper.addTraceReturn(methodId, mn, getListenersOfType(hooksToUse,
+        FinishReturnListener.class));
+    ThrowHelper.addTraceThrow(methodId, mn, getListenersOfType(hooksToUse,
+        BeforeThrownListener.class));
+    CatchHelper.addTraceThrowableUncaught(methodId, mn, startNode, finishThrowableListeners);
   }
 
-  private static ArrayList<Integer> getListenerHooks(ArrayList<Integer> hooksToUse,
+  private static ArrayList<Integer> getListenersOfType(ArrayList<Integer> hooksToUse,
       Class<? extends Listener> clazz) {
     ArrayList<Integer> ret = null;
     for (Integer i : hooksToUse) {
       Hook[] hooks = Bctrace.getInstance().getHooks();
-      if (hooks[i].getListener() != null && clazz
-          .isAssignableFrom(hooks[i].getListener().getClass())) {
+      if (hooks[i].getListener() != null &&
+          clazz.isAssignableFrom(hooks[i].getListener().getClass())) {
         if (ret == null) {
           ret = new ArrayList<Integer>(hooksToUse.size());
         }
