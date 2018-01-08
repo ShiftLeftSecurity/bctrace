@@ -46,6 +46,10 @@ public interface StartMutableListener extends Listener {
 
   public static class Return {
 
-    Object value;
+    public final Object value;
+
+    public Return(Object value) {
+      this.value = value;
+    }
   }
 }

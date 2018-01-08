@@ -30,8 +30,6 @@ import java.io.InputStream;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
-import org.objectweb.asm.tree.FieldInsnNode;
-import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.IntInsnNode;
 import org.objectweb.asm.tree.LdcInsnNode;
@@ -39,7 +37,6 @@ import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
 /**
- *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
 public class ASMUtils {
@@ -107,13 +104,56 @@ public class ASMUtils {
         break;
       default:
         throw new ClassFormatError("Invalid method signature: "
-                + type.getDescriptor());
+            + type.getDescriptor());
     }
     return new VarInsnNode(opCode, position);
   }
 
-  public static MethodInsnNode getWrapperContructionInst(Type type) {
+  public static InsnNode getReturnInst(Type type) {
+    int opCode = -1;
+    switch (type.getDescriptor().charAt(0)) {
+      case 'B':
+        opCode = Opcodes.IRETURN;
+        break;
+      case 'C':
+        opCode = Opcodes.IRETURN;
+        break;
+      case 'D':
+        opCode = Opcodes.DRETURN;
+        break;
+      case 'F':
+        opCode = Opcodes.FRETURN;
+        break;
+      case 'I':
+        opCode = Opcodes.IRETURN;
+        break;
+      case 'J':
+        opCode = Opcodes.LRETURN;
+        break;
+      case 'L':
+        opCode = Opcodes.ARETURN;
+        break;
+      case '[':
+        opCode = Opcodes.ARETURN;
+        break;
+      case 'Z':
+        opCode = Opcodes.IRETURN;
+        break;
+      case 'S':
+        opCode = Opcodes.IRETURN;
+        break;
+      default:
+        throw new ClassFormatError("Invalid return type: "
+            + type.getDescriptor());
+    }
+    return new InsnNode(opCode);
+  }
 
+  public static String getWrapper(Type type) {
+
+    if (type.getDescriptor().length() != 1) {
+      return null;
+    }
     char charType = type.getDescriptor().charAt(0);
     String wrapper;
     switch (charType) {
@@ -146,12 +186,63 @@ public class ASMUtils {
         wrapper = "java/lang/Short";
         break;
       default:
-        throw new ClassFormatError("Invalid method signature: "
-                + type.getDescriptor());
+        throw new ClassFormatError("Invalid type descriptor: "
+            + type.getDescriptor());
     }
+    return wrapper;
+  }
 
+  public static String getPrimitiveMethodName(String wrapper) {
+
+    if (wrapper == null) {
+      return null;
+    }
+    if (wrapper.equals("java/lang/Byte")) {
+      return "byteValue";
+    }
+    if (wrapper.equals("java/lang/Character")) {
+      return "charValue";
+    }
+    if (wrapper.equals("java/lang/Double")) {
+      return "doubleValue";
+    }
+    if (wrapper.equals("java/lang/Float")) {
+      return "floatValue";
+    }
+    if (wrapper.equals("java/lang/Integer")) {
+      return "intValue";
+    }
+    if (wrapper.equals("java/lang/Long")) {
+      return "longValue";
+    }
+    if (wrapper.equals("java/lang/Boolean")) {
+      return "booleanValue";
+    }
+    if (wrapper.equals("java/lang/Short")) {
+      return "shortValue";
+    }
+    throw new ClassFormatError("Invalid wrapper type: " + wrapper);
+  }
+
+  public static MethodInsnNode getPrimitiveToWrapperInst(Type type) {
+
+    String wrapper = getWrapper(type);
+    if (wrapper == null) {
+      return null;
+    }
     return new MethodInsnNode(Opcodes.INVOKESTATIC, wrapper, "valueOf",
-            "(" + charType + ")L" + wrapper + ";", false);
+        "(" + type.getDescriptor() + ")L" + wrapper + ";", false);
+
+  }
+
+  public static MethodInsnNode getWrapperToPrimitiveInst(Type primitiveType) {
+
+    String wrapper = getWrapper(primitiveType);
+    if (wrapper == null) {
+      return null;
+    }
+    return new MethodInsnNode(Opcodes.INVOKEVIRTUAL, wrapper, getPrimitiveMethodName(wrapper),
+        "()" + primitiveType.getDescriptor(), false);
 
   }
 
@@ -190,7 +281,7 @@ public class ASMUtils {
         break;
       default:
         throw new ClassFormatError("Invalid method signature: "
-                + type.getDescriptor());
+            + type.getDescriptor());
     }
     return new VarInsnNode(opCode, position);
   }
