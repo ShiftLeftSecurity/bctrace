@@ -26,21 +26,12 @@ package io.shiftleft.bctrace.asm;
 
 import io.shiftleft.bctrace.Bctrace;
 import io.shiftleft.bctrace.asm.helper.CatchHelper;
-import io.shiftleft.bctrace.asm.helper.MinStartHelper;
 import io.shiftleft.bctrace.asm.helper.ReturnHelper;
-import io.shiftleft.bctrace.asm.helper.StartArgumentsHelper;
 import io.shiftleft.bctrace.asm.helper.StartHelper;
 import io.shiftleft.bctrace.asm.helper.ThrowHelper;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
 import io.shiftleft.bctrace.debug.DebugInfo;
 import io.shiftleft.bctrace.impl.InstrumentationImpl;
-import io.shiftleft.bctrace.runtime.listener.Listener;
-import io.shiftleft.bctrace.runtime.listener.info.BeforeThrownListener;
-import io.shiftleft.bctrace.runtime.listener.info.FinishReturnListener;
-import io.shiftleft.bctrace.runtime.listener.info.FinishThrowableListener;
-import io.shiftleft.bctrace.runtime.listener.info.StartArgumentsListener;
-import io.shiftleft.bctrace.runtime.listener.info.StartListener;
-import io.shiftleft.bctrace.runtime.listener.min.MinStartListener;
 import io.shiftleft.bctrace.spi.Hook;
 import io.shiftleft.bctrace.spi.MethodInfo;
 import io.shiftleft.bctrace.spi.MethodRegistry;
@@ -58,7 +49,6 @@ import java.util.logging.Level;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.MethodNode;
 
 /**
@@ -112,6 +102,9 @@ public class Transformer implements ClassFileTransformer {
     boolean transformed = false;
     try {
       if (classfileBuffer == null) {
+        return ret;
+      }
+      if (className.equals("io/shiftleft/bctrace/asm/TransformationSupport")) {
         return ret;
       }
       if (!TransformationSupport.isTransformable(className, loader)) {
@@ -248,36 +241,10 @@ public class Transformer implements ClassFileTransformer {
       DebugInfo.getInstance().setInstrumented(methodId, true);
     }
 
-    ArrayList<Integer> finishThrowableListeners = getListenersOfType(hooksToUse,
-        FinishThrowableListener.class);
-
-    LabelNode startNode = CatchHelper.insertStartNode(mn, finishThrowableListeners);
-    MinStartHelper.addTraceStart(methodId, cn, mn, getListenersOfType(hooksToUse,
-        MinStartListener.class));
-    StartHelper
-        .addTraceStart(methodId, cn, mn, getListenersOfType(hooksToUse, StartListener.class));
-    StartArgumentsHelper.addTraceStart(methodId, cn, mn, getListenersOfType(hooksToUse,
-        StartArgumentsListener.class));
-    ReturnHelper.addTraceReturn(methodId, mn, getListenersOfType(hooksToUse,
-        FinishReturnListener.class));
-    ThrowHelper.addTraceThrow(methodId, mn, getListenersOfType(hooksToUse,
-        BeforeThrownListener.class));
-    CatchHelper.addTraceThrowableUncaught(methodId, mn, startNode, finishThrowableListeners);
-  }
-
-  private static ArrayList<Integer> getListenersOfType(ArrayList<Integer> hooksToUse,
-      Class<? extends Listener> clazz) {
-    ArrayList<Integer> ret = null;
-    for (Integer i : hooksToUse) {
-      Hook[] hooks = Bctrace.getInstance().getHooks();
-      if (hooks[i].getListener() != null &&
-          clazz.isAssignableFrom(hooks[i].getListener().getClass())) {
-        if (ret == null) {
-          ret = new ArrayList<Integer>(hooksToUse.size());
-        }
-        ret.add(i);
-      }
-    }
-    return ret;
+    // These are the actual bytecode modifications performed by Bctrace:
+    StartHelper.addByteCodeInstructions(methodId, cn, mn, hooksToUse);
+    ReturnHelper.addByteCodeInstructions(methodId, cn, mn, hooksToUse);
+    ThrowHelper.addByteCodeInstructions(methodId, cn, mn, hooksToUse);
+    CatchHelper.addByteCodeInstructions(methodId, cn, mn, hooksToUse);
   }
 }
