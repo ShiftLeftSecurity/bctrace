@@ -33,18 +33,29 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
 public class DebugInfo {
 
   private static final DebugInfo INSTANCE = new DebugInfo();
 
-  private static final boolean ENABLED = System.getProperty(SystemProperty.DEBUG_SERVER) != null;
+  private static final boolean ENABLED;
 
-  private final Set<ClassInfo> requestedToInstrument = Collections.synchronizedSet(new LinkedHashSet<ClassInfo>());
-  private final Set<ClassInfo> instrumentable = Collections.synchronizedSet(new LinkedHashSet<ClassInfo>());
-  private final Map<Integer, AtomicInteger> instrumentedMethods = Collections.synchronizedMap(new HashMap<Integer, AtomicInteger>());
+  static {
+    String prop = System.getProperty(SystemProperty.DEBUG_SERVER);
+    if (prop != null) {
+      ENABLED = Boolean.valueOf(prop);
+    } else {
+      ENABLED = false;
+    }
+  }
+
+  private final Set<ClassInfo> requestedToInstrument = Collections
+      .synchronizedSet(new LinkedHashSet<ClassInfo>());
+  private final Set<ClassInfo> instrumentable = Collections
+      .synchronizedSet(new LinkedHashSet<ClassInfo>());
+  private final Map<Integer, AtomicInteger> instrumentedMethods = Collections
+      .synchronizedMap(new HashMap<Integer, AtomicInteger>());
 
   public static DebugInfo getInstance() {
     return INSTANCE;
@@ -133,10 +144,12 @@ public class DebugInfo {
         return false;
       }
       final ClassInfo other = (ClassInfo) obj;
-      if ((this.className == null) ? (other.className != null) : !this.className.equals(other.className)) {
+      if ((this.className == null) ? (other.className != null)
+          : !this.className.equals(other.className)) {
         return false;
       }
-      if ((this.classLoader == null) ? (other.classLoader != null) : !this.classLoader.equals(other.classLoader)) {
+      if ((this.classLoader == null) ? (other.classLoader != null)
+          : !this.classLoader.equals(other.classLoader)) {
         return false;
       }
       return true;
