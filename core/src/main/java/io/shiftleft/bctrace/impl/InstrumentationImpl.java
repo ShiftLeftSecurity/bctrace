@@ -58,8 +58,9 @@ public final class InstrumentationImpl implements Instrumentation {
 
   @Override
   public boolean isModifiableClass(Class<?> clazz) {
-    return isRetransformClassesSupported() && TransformationSupport.isRetransformable(clazz)
-        && javaInstrumentation != null && javaInstrumentation.isModifiableClass(clazz);
+    return isRetransformClassesSupported()
+        && TransformationSupport.isRetransformable(clazz)
+        && javaInstrumentation.isModifiableClass(clazz);
   }
 
   @Override
