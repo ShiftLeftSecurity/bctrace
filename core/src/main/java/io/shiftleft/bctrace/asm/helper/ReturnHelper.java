@@ -44,15 +44,15 @@ import org.objectweb.asm.tree.VarInsnNode;
  *
  * This helper turns the method node instructions of a method like this:
  * <br><pre>{@code
- * public Object foo(Object args){
- *   return void(args);
+ * public Object foo(Object arg){
+ *   return void(arg);
  * }
  * }
  * </pre>
- * Into this:
+ * Into that:
  * <br><pre>{@code
- *public Object foo(Object args){
- *   Object ret = void(args);
+ *public Object foo(Object arg){
+ *   Object ret = void(arg);
  *   // Notify listeners that apply to this method
  *   Callback.onFinishedReturn(ret, this, 0);
  *   Callback.onFinishedThrowable(ret, this, 2);
@@ -62,6 +62,7 @@ import org.objectweb.asm.tree.VarInsnNode;
  * }
  * }
  * </pre>
+ *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
 public class ReturnHelper extends Helper {

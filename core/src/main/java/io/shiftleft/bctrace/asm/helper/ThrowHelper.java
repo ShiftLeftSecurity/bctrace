@@ -41,6 +41,20 @@ import org.objectweb.asm.tree.VarInsnNode;
  * Inserts the bytecode instructions within method node, needed to communicate to the registered
  * listeners, the throwables directly thrown by the target method.
  *
+ * This helper turns throw instructions like these:
+ * <br><pre>{@code
+ * throw aException;
+ * }
+ * </pre>
+ * Into that:
+ * <br><pre>{@code
+ * // Notify listeners that apply to this method (methodId 1550)
+ * Callback.onBeforeThrown(aException, 1550, this, 0);
+ * Callback.onBeforeThrown(aException, 1550, this, 2);
+ * Callback.onBeforeThrown(aException, 1550, this, 10);
+ * ...
+ * throw aException;
+ * }
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
 public class ThrowHelper extends Helper {

@@ -43,14 +43,14 @@ import org.objectweb.asm.tree.VarInsnNode;
  *
  * This helper turns the method node instructions of a method like this:
  * <br><pre>{@code
- * public Object foo(Object args){
+ * public Object foo(Object arg){
  *   return void(args);
  * }
  * }
  * </pre>
- * Into this:
+ * Into that:
  * <br><pre>{@code
- *public Object foo(Object args){
+ *public Object foo(Object arg){
  *   try{
  *     return void(args);
  *   } catch (Throwable th){
@@ -64,6 +64,7 @@ import org.objectweb.asm.tree.VarInsnNode;
  * }
  * }
  * </pre>
+ *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
 public class CatchHelper extends Helper {

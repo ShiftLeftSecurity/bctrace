@@ -60,7 +60,30 @@ public class StartHelper extends Helper {
     addMutableTraceStartWithArguments(methodId, cn, mn, hooksToUse);
   }
 
-  private static void addMinTraceStart(int methodId, ClassNode cn, MethodNode mn, ArrayList<Integer> hooksToUse) {
+  /**
+   * Depending on the {@link MinStartListener} listeners that apply to this method,  this helper
+   * turns the method node instructions of a method like this:
+   * <br><pre>{@code
+   * public Object foo(Object arg){
+   *   return void(args);
+   * }
+   * }
+   * </pre>
+   * Into that:
+   * <br><pre>{@code
+   * public Object foo(Object arg){
+   *   Object ret = void(args);
+   *   // Notify listeners that apply to this method (methodId 1550)
+   *   Callback.onStart(1550, 0);
+   *   Callback.onStart(1550, 2);
+   *   Callback.onStart(1550, 10);
+   *   return void(args);
+   * }
+   * }
+   * </pre>
+   */
+  private static void addMinTraceStart(int methodId, ClassNode cn, MethodNode mn,
+      ArrayList<Integer> hooksToUse) {
     ArrayList<Integer> listenersToUse = getListenersOfType(hooksToUse, MinStartListener.class);
     if (!isInstrumentationNeeded(listenersToUse)) {
       return;
@@ -76,6 +99,28 @@ public class StartHelper extends Helper {
     mn.instructions.insert(il);
   }
 
+  /**
+   * Depending on the {@link StartListener} listeners that apply to this method,  this helper turns
+   * the method node instructions of a method like this:
+   * <br><pre>{@code
+   * public Object foo(Object args){
+   *   return void(args);
+   * }
+   * }
+   * </pre>
+   * Into that:
+   * <br><pre>{@code
+   * public Object foo(Object arg){
+   *   Object ret = void(arg);
+   *   // Notify listeners that apply to this method (methodId 1550)
+   *   Callback.onStart(1550, this, 0);
+   *   Callback.onStart(1550, this, 2);
+   *   Callback.onStart(1550, this, 10);
+   *   return void(args);
+   * }
+   * }
+   * </pre>
+   */
   private static void addTraceStart(int methodId, ClassNode cn, MethodNode mn,
       ArrayList<Integer> hooksToUse) {
     ArrayList<Integer> listenersToUse = getListenersOfType(hooksToUse, StartListener.class);
@@ -98,6 +143,29 @@ public class StartHelper extends Helper {
     mn.instructions.insert(il);
   }
 
+  /**
+   * Depending on the {@link StartArgumentsListener} listeners that apply to this method,  this
+   * helper turns the method node instructions of a method like this:
+   * <br><pre>{@code
+   * public Object foo(Object arg1, Object arg2, ..., Object argn){
+   *   return void(arg1, arg2, ..., argn);
+   * }
+   * }
+   * </pre>
+   * Into that:
+   * <br><pre>{@code
+   * public Object foo(Object args){
+   *   Object[] args = new Object[]{arg1, arg2, ..., argn};
+   *   Object ret = void(args);
+   *   // Notify listeners that apply to this method (methodId 1550)
+   *   Callback.onStart(args, 1550, this, 0);
+   *   Callback.onStart(args, 1550, this, 2);
+   *   Callback.onStart(args, 1550, this, 10);
+   *   return void(arg1, arg2, ..., argn);
+   * }
+   * }
+   * </pre>
+   */
   private static void addTraceStartWithArguments(int methodId, ClassNode cn, MethodNode mn,
       ArrayList<Integer> hooksToUse) {
     ArrayList<Integer> listenersToUse = getListenersOfType(hooksToUse,
@@ -127,6 +195,38 @@ public class StartHelper extends Helper {
     mn.instructions.insert(il);
   }
 
+  /**
+   * Depending on the {@link StartMutableListener} listeners that apply to this method,  this helper
+   * turns the method node instructions of a method like this:
+   * <br><pre>{@code
+   * public Object foo(Object arg1, Object arg2, ..., Object argn){
+   *   return void(arg1, arg2, ..., argn);
+   * }
+   * }
+   * </pre>
+   * Into that:
+   * <br><pre>{@code
+   * public Object foo(Object args){
+   *   Object[] args = new Object[]{arg1, arg2, ..., argn};
+   *   Object ret = void(args);
+   *   // Notify listeners that apply to this method (methodId 1550)
+   *   Return ret0 = Callback.onStart(args, 1550, this, 0);
+   *   if(ret0 != null){
+   *     return ret0.value;
+   *   }
+   *   Callback.onStart(args, 1550, this, 2);
+   *   if(ret2 != null){
+   *     return ret2.value;
+   *   }
+   *   Callback.onStart(args, 1550, this, 10);
+   *   if(ret10 != null){
+   *     return ret10.value;
+   *   }
+   *   return void(arg1, arg2, ..., argn);
+   * }
+   * }
+   * </pre>
+   */
   private static void addMutableTraceStartWithArguments(int methodId, ClassNode cn, MethodNode mn,
       ArrayList<Integer> hooksToUse) {
     ArrayList<Integer> listenersToUse = getListenersOfType(hooksToUse, StartMutableListener.class);
