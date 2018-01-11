@@ -42,6 +42,26 @@ import org.objectweb.asm.tree.VarInsnNode;
  * Inserts the bytecode instructions within method node, needed to handle the return listeners
  * registered.
  *
+ * This helper turns the method node instructions of a method like this:
+ * <br><pre>{@code
+ * public Object foo(Object args){
+ *   return void(args);
+ * }
+ * }
+ * </pre>
+ * Into this:
+ * <br><pre>{@code
+ *public Object foo(Object args){
+ *   Object ret = void(args);
+ *   // Notify listeners that apply to this method
+ *   Callback.onFinishedReturn(ret, this, 0);
+ *   Callback.onFinishedThrowable(ret, this, 2);
+ *   Callback.onFinishedThrowable(ret, this, 10);
+ *   // Return the original value
+ *   return ret;
+ * }
+ * }
+ * </pre>
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
 public class ReturnHelper extends Helper {
