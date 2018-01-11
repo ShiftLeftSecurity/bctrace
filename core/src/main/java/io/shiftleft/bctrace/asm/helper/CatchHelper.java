@@ -41,6 +41,29 @@ import org.objectweb.asm.tree.VarInsnNode;
  * Inserts the bytecode instructions within method node, needed to communicate the throwables rised
  * by the target method at runtime to the listeners registered.
  *
+ * This helper turns the method node instructions of a method like this:
+ * <br><pre>{@code
+ * public Object foo(Object args){
+ *   return void(args);
+ * }
+ * }
+ * </pre>
+ * Into this:
+ * <br><pre>{@code
+ *public Object foo(Object args){
+ *   try{
+ *     return void(args);
+ *   } catch (Throwable th){
+ *     // Notify listeners that apply to this method
+ *     Callback.onFinishedThrowable(th, this, 0);
+ *     Callback.onFinishedThrowable(th, this, 2);
+ *     Callback.onFinishedThrowable(th, this, 10);
+ *     // Throw the cathed instance
+ *     throw th:
+ *   }
+ * }
+ * }
+ * </pre>
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
 public class CatchHelper extends Helper {
