@@ -25,8 +25,10 @@
 package io.shiftleft.bctrace.asm.helper;
 
 import io.shiftleft.bctrace.asm.util.ASMUtils;
+import io.shiftleft.bctrace.runtime.listener.info.FinishThrowableListener;
 import java.util.ArrayList;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.LabelNode;
@@ -36,12 +38,48 @@ import org.objectweb.asm.tree.TryCatchBlockNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
 /**
+ * Inserts the bytecode instructions within method node, needed to communicate the throwables rised
+ * by the target method at runtime to the listeners registered.
+ *
+ * This helper turns the method node instructions of a method like this:
+ * <br><pre>{@code
+ * public Object foo(Object arg){
+ *   return void(args);
+ * }
+ * }
+ * </pre>
+ * Into that:
+ * <br><pre>{@code
+ *public Object foo(Object arg){
+ *   try{
+ *     return void(args);
+ *   } catch (Throwable th){
+ *     // Notify listeners that apply to this method
+ *     Callback.onFinishedThrowable(th, this, 0);
+ *     Callback.onFinishedThrowable(th, this, 2);
+ *     Callback.onFinishedThrowable(th, this, 10);
+ *     // Throw the cathed instance
+ *     throw th:
+ *   }
+ * }
+ * }
+ * </pre>
  *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
 public class CatchHelper extends Helper {
 
-  public static LabelNode insertStartNode(MethodNode mn, ArrayList<Integer> listenersToUse) {
+  public static void addByteCodeInstructions(int methodId, ClassNode cn, MethodNode mn,
+      ArrayList<Integer> hooksToUse) {
+
+    ArrayList<Integer> listenersToUse = getListenersOfType(hooksToUse,
+        FinishThrowableListener.class);
+
+    LabelNode startNode = insertStartNode(mn, listenersToUse);
+    addTraceThrowableUncaught(methodId, mn, startNode, listenersToUse);
+  }
+
+  private static LabelNode insertStartNode(MethodNode mn, ArrayList<Integer> listenersToUse) {
     if (!isInstrumentationNeeded(listenersToUse)) {
       return null;
     }
@@ -50,7 +88,8 @@ public class CatchHelper extends Helper {
     return ret;
   }
 
-  public static void addTraceThrowableUncaught(int methodId, MethodNode mn, LabelNode startNode, ArrayList<Integer> listenersToUse) {
+  private static void addTraceThrowableUncaught(int methodId, MethodNode mn, LabelNode startNode,
+      ArrayList<Integer> listenersToUse) {
     if (!isInstrumentationNeeded(listenersToUse)) {
       return;
     }
@@ -63,7 +102,8 @@ public class CatchHelper extends Helper {
     addCatchBlock(methodId, mn, startNode, endNode, listenersToUse);
   }
 
-  private static void addCatchBlock(int methodId, MethodNode mn, LabelNode startNode, LabelNode endNode, ArrayList<Integer> listenersToUse) {
+  private static void addCatchBlock(int methodId, MethodNode mn, LabelNode startNode,
+      LabelNode endNode, ArrayList<Integer> listenersToUse) {
 
     InsnList il = new InsnList();
     LabelNode handlerNode = new LabelNode();
@@ -71,12 +111,14 @@ public class CatchHelper extends Helper {
     il.add(getThrowableTraceInstructions(methodId, mn, listenersToUse));
     il.add(new InsnNode(Opcodes.ATHROW));
 
-    TryCatchBlockNode blockNode = new TryCatchBlockNode(startNode, endNode, handlerNode, "java/lang/Throwable");
+    TryCatchBlockNode blockNode = new TryCatchBlockNode(startNode, endNode, handlerNode,
+        "java/lang/Throwable");
     mn.tryCatchBlocks.add(blockNode);
     mn.instructions.add(il);
   }
 
-  private static InsnList getThrowableTraceInstructions(int methodId, MethodNode mn, ArrayList<Integer> listenersToUse) {
+  private static InsnList getThrowableTraceInstructions(int methodId, MethodNode mn,
+      ArrayList<Integer> listenersToUse) {
     InsnList il = new InsnList();
     for (int i = listenersToUse.size() - 1; i >= 0; i--) {
       Integer index = listenersToUse.get(i);
@@ -89,8 +131,8 @@ public class CatchHelper extends Helper {
       }
       il.add(ASMUtils.getPushInstruction(index)); // hook id
       il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
-              "io/shiftleft/bctrace/runtime/Callback", "onFinishedThrowable",
-              "(Ljava/lang/Throwable;ILjava/lang/Object;I)V", false));
+          "io/shiftleft/bctrace/runtime/Callback", "onFinishedThrowable",
+          "(Ljava/lang/Throwable;ILjava/lang/Object;I)V", false));
     }
     return il;
   }

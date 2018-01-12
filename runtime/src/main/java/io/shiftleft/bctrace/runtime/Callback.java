@@ -31,6 +31,8 @@ import io.shiftleft.bctrace.runtime.listener.info.FinishThrowableListener;
 import io.shiftleft.bctrace.runtime.listener.info.StartArgumentsListener;
 import io.shiftleft.bctrace.runtime.listener.info.StartListener;
 import io.shiftleft.bctrace.runtime.listener.min.MinStartListener;
+import io.shiftleft.bctrace.runtime.listener.mut.StartMutableListener;
+import io.shiftleft.bctrace.runtime.listener.mut.StartMutableListener.Return;
 
 /**
  *
@@ -86,6 +88,22 @@ public final class Callback {
     try {
       NOTIFYING_FLAG.set(Boolean.TRUE);
       ((StartArgumentsListener) listeners[i]).onStart(methodId, instance, args);
+    } finally {
+      NOTIFYING_FLAG.remove();
+    }
+  }
+
+  @SuppressWarnings("BoxedValueEquality")
+  public static Return onMutableStart(Object[] args, int methodId, Object instance, int i) {
+    if (!isThreadNotificationEnabled()) {
+      return null;
+    }
+    if (Boolean.TRUE == NOTIFYING_FLAG.get()) {
+      return null;
+    }
+    try {
+      NOTIFYING_FLAG.set(Boolean.TRUE);
+      return ((StartMutableListener) listeners[i]).onStart(methodId, instance, args);
     } finally {
       NOTIFYING_FLAG.remove();
     }

@@ -24,23 +24,25 @@
  */
 package io.shiftleft.bctrace;
 
-import java.lang.reflect.InvocationTargetException;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import io.shiftleft.bctrace.TestClass.TestRuntimeException;
-import io.shiftleft.bctrace.spi.Filter;
-import io.shiftleft.bctrace.spi.Hook;
 import io.shiftleft.bctrace.impl.AllFilter;
-import org.junit.Test;
-import static org.junit.Assert.*;
-import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.MethodNode;
 import io.shiftleft.bctrace.runtime.listener.Listener;
 import io.shiftleft.bctrace.runtime.listener.info.BeforeThrownListener;
-import io.shiftleft.bctrace.runtime.listener.info.FinishReturnListener;
 import io.shiftleft.bctrace.runtime.listener.info.FinishThrowableListener;
 import io.shiftleft.bctrace.runtime.listener.info.StartListener;
+import io.shiftleft.bctrace.runtime.listener.mut.StartMutableListener;
+import io.shiftleft.bctrace.spi.Filter;
+import io.shiftleft.bctrace.spi.Hook;
+import io.shiftleft.bctrace.spi.hierarchy.UnloadedClassInfo;
+import java.lang.reflect.InvocationTargetException;
+import java.security.ProtectionDomain;
+import org.junit.Test;
+import org.objectweb.asm.tree.MethodNode;
 
 /**
- *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
 public class FeatureTest extends BcTraceTest {
@@ -49,40 +51,38 @@ public class FeatureTest extends BcTraceTest {
   public void testStart() throws Exception {
     final StringBuilder steps = new StringBuilder();
     Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
-      new Hook() {
-        @Override
-        public Filter getFilter() {
-          return new AllFilter();
-        }
+        new Hook() {
+          @Override
+          public Filter getFilter() {
+            return new AllFilter();
+          }
 
-        @Override
-        public Listener getListener() {
-          return new StartListener() {
-            @Override
-            public void onStart(int methodId, Object instance) {
-              assertTrue(methodId > 0);
-              steps.append("1");
-            }
-          };
-        }
-      },
-      new Hook() {
-        @Override
-        public Filter getFilter() {
-          return new AllFilter();
-        }
+          @Override
+          public Listener getListener() {
+            return new StartListener() {
+              @Override
+              public void onStart(int methodId, Object instance) {
+                steps.append("1");
+              }
+            };
+          }
+        },
+        new Hook() {
+          @Override
+          public Filter getFilter() {
+            return new AllFilter();
+          }
 
-        @Override
-        public Listener getListener() {
-          return new StartListener() {
-            @Override
-            public void onStart(int methodId, Object instance) {
-              assertTrue(methodId > 0);
-              steps.append("2");
-            }
-          };
+          @Override
+          public Listener getListener() {
+            return new StartListener() {
+              @Override
+              public void onStart(int methodId, Object instance) {
+                steps.append("2");
+              }
+            };
+          }
         }
-      }
     });
     clazz.getMethod("execVoid").invoke(null);
     System.out.println(clazz.getClassLoader());
@@ -90,19 +90,101 @@ public class FeatureTest extends BcTraceTest {
   }
 
   @Test
+  public void testMutableStartLong() throws Exception {
+    final StringBuilder steps = new StringBuilder();
+    final long aLong = System.currentTimeMillis();
+    Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
+        new Hook() {
+          @Override
+          public Filter getFilter() {
+            return new Filter() {
+              @Override
+              public boolean instrumentClass(String className, ProtectionDomain protectionDomain,
+                  ClassLoader cl) {
+                return true;
+              }
+
+              @Override
+              public boolean instrumentMethod(UnloadedClassInfo classInfo, MethodNode mn) {
+                return mn.name.equals("getLong");
+              }
+            };
+          }
+
+          @Override
+          public Listener getListener() {
+            return new StartMutableListener() {
+
+              @Override
+              public Return onStart(int methodId, Object instance, Object[] args) {
+                steps.append("1");
+                return new Return(aLong);
+              }
+            };
+          }
+        }
+    });
+    Long ret = (Long)clazz.getMethod("getLong").invoke(null);
+    assertEquals(aLong, ret.longValue());
+    System.out.println(clazz.getClassLoader());
+    assertEquals("1", steps.toString());
+  }
+
+  @Test
+  public void testMutableStartRef() throws Exception {
+    final StringBuilder steps = new StringBuilder();
+    final Object aObject = "5";
+    Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
+        new Hook() {
+          @Override
+          public Filter getFilter() {
+            return new Filter() {
+              @Override
+              public boolean instrumentClass(String className, ProtectionDomain protectionDomain,
+                  ClassLoader cl) {
+                return true;
+              }
+
+              @Override
+              public boolean instrumentMethod(UnloadedClassInfo classInfo, MethodNode mn) {
+                return mn.name.equals("getObject");
+              }
+            };
+          }
+
+          @Override
+          public Listener getListener() {
+            return new StartMutableListener() {
+
+              @Override
+              public Return onStart(int methodId, Object instance, Object[] args) {
+                steps.append("1");
+                return new Return(aObject);
+              }
+            };
+          }
+        }
+    });
+    Object ret = (Object)clazz.getMethod("getObject").invoke(null);
+    assertEquals(aObject, ret);
+    System.out.println(clazz.getClassLoader());
+    assertEquals("1", steps.toString());
+  }
+
+  @Test
   public void testConstructor() throws Exception {
     Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
-      new Hook() {
-        @Override
-        public Filter getFilter() {
-          return new AllFilter();
-        }
+        new Hook() {
+          @Override
+          public Filter getFilter() {
+            return new AllFilter();
+          }
 
-        @Override
-        public Listener getListener() {
-          return null;
+          @Override
+          public Listener getListener() {
+            return null;
+          }
         }
-      }
     });
     clazz.newInstance();
   }
@@ -111,42 +193,40 @@ public class FeatureTest extends BcTraceTest {
   public void testConstructor2() throws Exception {
     final StringBuilder steps = new StringBuilder();
     Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
-      new Hook() {
-        @Override
-        public Filter getFilter() {
-          return new AllFilter();
-        }
+        new Hook() {
+          @Override
+          public Filter getFilter() {
+            return new AllFilter();
+          }
 
-        @Override
-        public Listener getListener() {
-          return new FinishThrowableListener() {
-            @Override
-            public void onFinishedThrowable(int methodId, Object instance, Throwable th) {
-              assertTrue(th instanceof TestRuntimeException);
-              assertTrue(methodId > 0);
-              steps.append("2");
-            }
-          };
-        }
-      },
-      new Hook() {
-        @Override
-        public Filter getFilter() {
-          return new AllFilter();
-        }
+          @Override
+          public Listener getListener() {
+            return new FinishThrowableListener() {
+              @Override
+              public void onFinishedThrowable(int methodId, Object instance, Throwable th) {
+                assertTrue(th instanceof TestRuntimeException);
+                steps.append("2");
+              }
+            };
+          }
+        },
+        new Hook() {
+          @Override
+          public Filter getFilter() {
+            return new AllFilter();
+          }
 
-        @Override
-        public Listener getListener() {
-          return new BeforeThrownListener() {
-            @Override
-            public void onBeforeThrown(int methodId, Object instance, Throwable th) {
-              assertTrue(th instanceof TestRuntimeException);
-              assertTrue(methodId > 0);
-              steps.append("1");
-            }
-          };
+          @Override
+          public Listener getListener() {
+            return new BeforeThrownListener() {
+              @Override
+              public void onBeforeThrown(int methodId, Object instance, Throwable th) {
+                assertTrue(th instanceof TestRuntimeException);
+                steps.append("1");
+              }
+            };
+          }
         }
-      }
     });
     boolean captured = false;
     try {
@@ -164,42 +244,40 @@ public class FeatureTest extends BcTraceTest {
   public void testThrown() throws Exception {
     final StringBuilder steps = new StringBuilder();
     Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
-      new Hook() {
-        @Override
-        public Filter getFilter() {
-          return new AllFilter();
-        }
+        new Hook() {
+          @Override
+          public Filter getFilter() {
+            return new AllFilter();
+          }
 
-        @Override
-        public Listener getListener() {
-          return new BeforeThrownListener() {
-            @Override
-            public void onBeforeThrown(int methodId, Object instance, Throwable th) {
-              assertTrue(th instanceof TestRuntimeException);
-              assertTrue(methodId > 0);
-              steps.append("1");
-            }
-          };
-        }
-      },
-      new Hook() {
-        @Override
-        public Filter getFilter() {
-          return new AllFilter();
-        }
+          @Override
+          public Listener getListener() {
+            return new BeforeThrownListener() {
+              @Override
+              public void onBeforeThrown(int methodId, Object instance, Throwable th) {
+                assertTrue(th instanceof TestRuntimeException);
+                steps.append("1");
+              }
+            };
+          }
+        },
+        new Hook() {
+          @Override
+          public Filter getFilter() {
+            return new AllFilter();
+          }
 
-        @Override
-        public Listener getListener() {
-          return new BeforeThrownListener() {
-            @Override
-            public void onBeforeThrown(int methodId, Object instance, Throwable th) {
-              assertTrue(th instanceof TestRuntimeException);
-              assertTrue(methodId > 0);
-              steps.append("2");
-            }
-          };
+          @Override
+          public Listener getListener() {
+            return new BeforeThrownListener() {
+              @Override
+              public void onBeforeThrown(int methodId, Object instance, Throwable th) {
+                assertTrue(th instanceof TestRuntimeException);
+                steps.append("2");
+              }
+            };
+          }
         }
-      }
     });
     boolean captured = false;
     try {
@@ -212,9 +290,9 @@ public class FeatureTest extends BcTraceTest {
     }
     assertTrue("Expected exception", captured);
   }
-  
+
 // TODO uncoment when #2 is fixed
-  
+
 //  public void testVoidReturn() throws Exception {
 //    final StringBuilder steps = new StringBuilder();
 //    Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
@@ -230,7 +308,7 @@ public class FeatureTest extends BcTraceTest {
 //            @Override
 //            public void onFinishedReturn(int methodId, Object instance, Object ret) {
 //              assertNull(ret);
-//              assertTrue(methodId > 0);
+//             
 //              steps.append("1");
 //            }
 //          };
@@ -264,7 +342,7 @@ public class FeatureTest extends BcTraceTest {
 //            @Override
 //            public void onFinishedReturn(int methodId, Object instance, Object ret) {
 //              assertNull(ret);
-//              assertTrue(methodId > 0);
+//             
 //              steps.append("2");
 //            }
 //          };
@@ -291,7 +369,7 @@ public class FeatureTest extends BcTraceTest {
 //            @Override
 //            public void onFinishedReturn(int methodId, Object instance, Object ret) {
 //              assertNotNull(ret);
-//              assertTrue(methodId > 0);
+//             
 //              steps.append("1");
 //            }
 //          };
@@ -309,7 +387,7 @@ public class FeatureTest extends BcTraceTest {
 //            @Override
 //            public void onFinishedReturn(int methodId, Object instance, Object ret) {
 //              assertNotNull(ret);
-//              assertTrue(methodId > 0);
+//             
 //              steps.append("2");
 //            }
 //          };
@@ -338,7 +416,7 @@ public class FeatureTest extends BcTraceTest {
 //            @Override
 //            public void onFinishedReturn(int methodId, Object instance, Object ret) {
 //              assertNotNull(ret);
-//              assertTrue(methodId > 0);
+//             
 //              steps.append("1r");
 //            }
 //          };
@@ -356,7 +434,7 @@ public class FeatureTest extends BcTraceTest {
 //            @Override
 //            public void onFinishedThrowable(int methodId, Object instance, Throwable th) {
 //              assertNotNull(th);
-//              assertTrue(methodId > 0);
+//             
 //              steps.append("1t");
 //            }
 //          };
@@ -379,7 +457,7 @@ public class FeatureTest extends BcTraceTest {
 //            @Override
 //            public void onFinishedThrowable(int methodId, Object instance, Throwable th) {
 //              assertNotNull(th);
-//              assertTrue(methodId > 0);
+//             
 //              steps.append("2t");
 //            }
 //          };
@@ -402,7 +480,7 @@ public class FeatureTest extends BcTraceTest {
 //            @Override
 //            public void onFinishedReturn(int methodId, Object instance, Object ret) {
 //              assertNotNull(ret);
-//              assertTrue(methodId > 0);
+//             
 //              steps.append("2r");
 //            }
 //          };

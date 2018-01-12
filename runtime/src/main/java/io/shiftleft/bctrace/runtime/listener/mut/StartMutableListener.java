@@ -22,34 +22,34 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.asm.helper;
+package io.shiftleft.bctrace.runtime.listener.mut;
 
-import io.shiftleft.bctrace.asm.util.ASMUtils;
-import java.util.ArrayList;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.InsnList;
-import org.objectweb.asm.tree.MethodInsnNode;
-import org.objectweb.asm.tree.MethodNode;
+import io.shiftleft.bctrace.runtime.listener.Listener;
 
 /**
+ * Listener notified on method start (before any instruction in the method has executed), that
+ * allows skipping method execution and returning the specified value.
  *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public class MinStartHelper extends Helper {
+public interface StartMutableListener extends Listener {
 
-  public static void addTraceStart(int methodId, ClassNode cn, MethodNode mn, ArrayList<Integer> listenersToUse) {
-    if (!isInstrumentationNeeded(listenersToUse)) {
-      return;
+  /**
+   * @param methodId method id (as defined by MethodRegistry)
+   * @param instance instance where the method belongs. Null if the method is static
+   * @param args arguments passed to the method. returns false;
+   * @return null if the original method execution is permitted, otherwise the value to return by
+   * the instrumented method
+   */
+  public Return onStart(int methodId, Object instance, Object[] args);
+
+
+  public static class Return {
+
+    public final Object value;
+
+    public Return(Object value) {
+      this.value = value;
     }
-    InsnList il = new InsnList();
-    for (Integer index : listenersToUse) {
-      il.add(ASMUtils.getPushInstruction(methodId));
-      il.add(ASMUtils.getPushInstruction(index));
-      il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
-              "io/shiftleft/bctrace/runtime/Callback", "onStart",
-              "(II)V", false));
-    }
-    mn.instructions.insert(il);
   }
 }

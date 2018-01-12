@@ -24,12 +24,14 @@
  */
 package io.shiftleft.bctrace.asm.helper;
 
-import java.util.Iterator;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
+import io.shiftleft.bctrace.runtime.listener.info.FinishReturnListener;
 import java.util.ArrayList;
+import java.util.Iterator;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
+import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
@@ -37,12 +39,38 @@ import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
 /**
+ * Inserts the bytecode instructions within method node, needed to handle the return listeners
+ * registered.
+ *
+ * This helper turns the method node instructions of a method like this:
+ * <br><pre>{@code
+ * public Object foo(Object arg){
+ *   return void(arg);
+ * }
+ * }
+ * </pre>
+ * Into that:
+ * <br><pre>{@code
+ *public Object foo(Object arg){
+ *   Object ret = void(arg);
+ *   // Notify listeners that apply to this method
+ *   Callback.onFinishedReturn(ret, this, 0);
+ *   Callback.onFinishedThrowable(ret, this, 2);
+ *   Callback.onFinishedThrowable(ret, this, 10);
+ *   // Return the original value
+ *   return ret;
+ * }
+ * }
+ * </pre>
  *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
 public class ReturnHelper extends Helper {
 
-  public static void addTraceReturn(int methodId, MethodNode mn, ArrayList<Integer> listenersToUse) {
+
+  public static void addByteCodeInstructions(int methodId, ClassNode cn, MethodNode mn,
+      ArrayList<Integer> hooksToUse) {
+    ArrayList<Integer> listenersToUse = getListenersOfType(hooksToUse, FinishReturnListener.class);
     if (!isInstrumentationNeeded(listenersToUse)) {
       return;
     }
@@ -55,19 +83,22 @@ public class ReturnHelper extends Helper {
 
       switch (abstractInsnNode.getOpcode()) {
         case Opcodes.RETURN:
-          il.insertBefore(abstractInsnNode, getVoidReturnTraceInstructions(methodId, mn, listenersToUse));
+          il.insertBefore(abstractInsnNode,
+              getVoidReturnTraceInstructions(methodId, mn, listenersToUse));
           break;
         case Opcodes.IRETURN:
         case Opcodes.LRETURN:
         case Opcodes.FRETURN:
         case Opcodes.ARETURN:
         case Opcodes.DRETURN:
-          il.insertBefore(abstractInsnNode, getReturnTraceInstructions(methodId, mn, returnType, listenersToUse));
+          il.insertBefore(abstractInsnNode,
+              getReturnTraceInstructions(methodId, mn, returnType, listenersToUse));
       }
     }
   }
 
-  private static InsnList getVoidReturnTraceInstructions(int methodId, MethodNode mn, ArrayList<Integer> listenersToUse) {
+  private static InsnList getVoidReturnTraceInstructions(int methodId, MethodNode mn,
+      ArrayList<Integer> listenersToUse) {
     InsnList il = new InsnList();
     for (int i = listenersToUse.size() - 1; i >= 0; i--) {
       Integer index = listenersToUse.get(i);
@@ -80,13 +111,14 @@ public class ReturnHelper extends Helper {
       }
       il.add(ASMUtils.getPushInstruction(index)); // hook id
       il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
-              "io/shiftleft/bctrace/runtime/Callback", "onFinishedReturn",
-              "(Ljava/lang/Object;ILjava/lang/Object;I)V", false));
+          "io/shiftleft/bctrace/runtime/Callback", "onFinishedReturn",
+          "(Ljava/lang/Object;ILjava/lang/Object;I)V", false));
     }
     return il;
   }
 
-  private static InsnList getReturnTraceInstructions(int methodId, MethodNode mn, Type returnType, ArrayList<Integer> listenersToUse) {
+  private static InsnList getReturnTraceInstructions(int methodId, MethodNode mn, Type returnType,
+      ArrayList<Integer> listenersToUse) {
     InsnList il = new InsnList();
     for (int i = listenersToUse.size() - 1; i >= 0; i--) {
       Integer index = listenersToUse.get(i);
@@ -95,9 +127,9 @@ public class ReturnHelper extends Helper {
       } else {
         il.add(new InsnNode(Opcodes.DUP2));
       }
-      MethodInsnNode mNode = ASMUtils.getWrapperContructionInst(returnType);
-      if (mNode != null) {
-        il.add(mNode);
+      MethodInsnNode primitiveToWrapperInst = ASMUtils.getPrimitiveToWrapperInst(returnType);
+      if (primitiveToWrapperInst != null) {
+        il.add(primitiveToWrapperInst);
       }
       il.add(ASMUtils.getPushInstruction(methodId)); // method id
       if (ASMUtils.isStatic(mn.access) || mn.name.equals("<init>")) { // current instance
@@ -107,8 +139,8 @@ public class ReturnHelper extends Helper {
       }
       il.add(ASMUtils.getPushInstruction(index)); // hook id
       il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
-              "io/shiftleft/bctrace/runtime/Callback", "onFinishedReturn",
-              "(Ljava/lang/Object;ILjava/lang/Object;I)V", false));
+          "io/shiftleft/bctrace/runtime/Callback", "onFinishedReturn",
+          "(Ljava/lang/Object;ILjava/lang/Object;I)V", false));
     }
     return il;
   }

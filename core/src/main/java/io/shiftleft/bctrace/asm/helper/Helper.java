@@ -24,10 +24,12 @@
  */
 package io.shiftleft.bctrace.asm.helper;
 
+import io.shiftleft.bctrace.Bctrace;
+import io.shiftleft.bctrace.runtime.listener.Listener;
+import io.shiftleft.bctrace.spi.Hook;
 import java.util.ArrayList;
 
 /**
- *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
 public class Helper {
@@ -38,4 +40,21 @@ public class Helper {
     }
     return listenersToUse.size() > 0;
   }
+
+  protected static ArrayList<Integer> getListenersOfType(ArrayList<Integer> hooksToUse,
+      Class<? extends Listener> clazz) {
+    ArrayList<Integer> ret = null;
+    for (Integer i : hooksToUse) {
+      Hook[] hooks = Bctrace.getInstance().getHooks();
+      if (hooks[i].getListener() != null &&
+          clazz.isAssignableFrom(hooks[i].getListener().getClass())) {
+        if (ret == null) {
+          ret = new ArrayList<Integer>(hooksToUse.size());
+        }
+        ret.add(i);
+      }
+    }
+    return ret;
+  }
+
 }

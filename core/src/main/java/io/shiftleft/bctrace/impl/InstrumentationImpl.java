@@ -188,6 +188,26 @@ public final class InstrumentationImpl implements Instrumentation {
   }
 
   @Override
+  public List<ClassLoader> getClassLoadersLoading(String className) {
+    List<WeakReference<ClassLoader>> classloaders = this.loadedClassesMap.get(className);
+    if (classloaders == null) {
+      return null;
+    }
+    List<ClassLoader> ret = new LinkedList<ClassLoader>();
+    for (WeakReference<ClassLoader> wk : classloaders) {
+      if (wk == null) {
+        ret.add(null);
+      } else {
+        ClassLoader cl = wk.get();
+        if (cl != null) {
+          ret.add(cl);
+        }
+      }
+    }
+    return ret;
+  }
+
+  @Override
   public Class getClassIfLoadedByClassLoader(String name, ClassLoader cl) {
     List<WeakReference<ClassLoader>> classloaders = this.loadedClassesMap.get(name);
     if (classloaders == null) {

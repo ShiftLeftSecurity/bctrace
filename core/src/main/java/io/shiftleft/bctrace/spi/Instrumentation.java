@@ -25,6 +25,7 @@
 package io.shiftleft.bctrace.spi;
 
 import java.lang.instrument.UnmodifiableClassException;
+import java.util.List;
 
 /**
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
@@ -77,6 +78,13 @@ public interface Instrumentation {
    * @return
    */
   public boolean isLoadedBy(String className, ClassLoader cl);
+
+  /**
+   *
+   * @param className
+   * @return
+   */
+  public List<ClassLoader> getClassLoadersLoading(String className);
 
   /**
    *
