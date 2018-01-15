@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>io.shiftleft</groupId>
   <artifactId>bctrace</artifactId>
-  <version>0.3.0</version>
+  <version>0.0.0-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>${project.groupId}:${project.artifactId}</name>
   <description>Extensible java agent framework to instrument programs running on the JVM</description>
@@ -43,7 +43,7 @@
     <url>https://github.com/ShiftLeftSecurity/bctrace</url>
     <connection>scm:git:https://github.com/ShiftLeftSecurity/bctrace.git</connection>
     <developerConnection>scm:git:https://github.com/ShiftLeftSecurity/bctrace.git</developerConnection>
-    <tag>v0.3.0</tag>
+    <tag>HEAD</tag>
   </scm>
   <build>
     <pluginManagement>
