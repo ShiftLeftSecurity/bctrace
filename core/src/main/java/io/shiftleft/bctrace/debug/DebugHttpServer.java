@@ -29,13 +29,12 @@ import com.sun.net.httpserver.HttpHandler;
 import io.shiftleft.bctrace.Bctrace;
 import io.shiftleft.bctrace.spi.MethodInfo;
 import io.shiftleft.bctrace.spi.MethodRegistry;
+import io.shiftleft.bctrace.spi.SystemProperty;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
-import io.shiftleft.bctrace.spi.SystemProperty;
 
 /**
- *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
 public class DebugHttpServer {
@@ -44,10 +43,12 @@ public class DebugHttpServer {
     String debugServer = System.getProperty(SystemProperty.DEBUG_SERVER);
     if (debugServer != null) {
       try {
-        Bctrace.getAgentLogger().severe("Starting debug server at " + debugServer);
+        Bctrace.getAgentLogger().warning("Starting debug server at http://" + debugServer
+            + " (this adds a significant overhead and should only be used for debugging purposes)");
         String[] tokens = debugServer.split(":");
         if (tokens.length != 2) {
-          throw new Error("Invalid system property " + SystemProperty.DEBUG_SERVER + ". Value has to be in the form 'hostname:port'");
+          throw new Error("Invalid system property " + SystemProperty.DEBUG_SERVER
+              + ". Value has to be in the form 'hostname:port'");
         }
         new DebugHttpServer(tokens[0], Integer.valueOf(tokens[1]));
       } catch (IOException ex) {
@@ -57,7 +58,8 @@ public class DebugHttpServer {
   }
 
   private DebugHttpServer(String hostName, int port) throws IOException {
-    com.sun.net.httpserver.HttpServer server = com.sun.net.httpserver.HttpServer.create(new InetSocketAddress(hostName, port), 0);
+    com.sun.net.httpserver.HttpServer server = com.sun.net.httpserver.HttpServer
+        .create(new InetSocketAddress(hostName, port), 0);
     server.createContext("/", new RootHandler());
     server.createContext("/methods", new MethodRegistryHandler());
     server.createContext("/methods/instrumented", new InstrumentedMethodsHandler());
@@ -82,7 +84,8 @@ public class DebugHttpServer {
         sb.append("\n");
         sb.append("{");
         sb.append("\"className\":").append("\"").append(ci.getClassName()).append("\"").append(",");
-        sb.append("\"classLoader\":").append("\"").append(ci.getClassLoader()).append("\"").append(",");
+        sb.append("\"classLoader\":").append("\"").append(ci.getClassLoader()).append("\"")
+            .append(",");
         sb.append("}");
       }
       sb.append("\n");
@@ -146,8 +149,10 @@ public class DebugHttpServer {
           sb.append("\n");
           sb.append("{");
           sb.append("\"id\":").append(i).append(",");
-          sb.append("\"className\":").append("\"").append(mi.getBinaryClassName()).append("\"").append(",");
-          sb.append("\"method\":").append("\"").append(mi.getMethodName()).append(mi.getMethodDescriptor()).append("\"").append(",");
+          sb.append("\"className\":").append("\"").append(mi.getBinaryClassName()).append("\"")
+              .append(",");
+          sb.append("\"method\":").append("\"").append(mi.getMethodName())
+              .append(mi.getMethodDescriptor()).append("\"").append(",");
           sb.append("\"callCounter\":").append(callCounter);
           sb.append("}");
         }
@@ -178,8 +183,10 @@ public class DebugHttpServer {
         sb.append("\n");
         sb.append("{");
         sb.append("\"id\":").append(i).append(",");
-        sb.append("\"className\":").append("\"").append(mi.getBinaryClassName()).append("\"").append(",");
-        sb.append("\"method\":").append("\"").append(mi.getMethodName()).append(mi.getMethodDescriptor()).append("\"");
+        sb.append("\"className\":").append("\"").append(mi.getBinaryClassName()).append("\"")
+            .append(",");
+        sb.append("\"method\":").append("\"").append(mi.getMethodName())
+            .append(mi.getMethodDescriptor()).append("\"");
         sb.append("}");
       }
       sb.append("\n");
@@ -204,7 +211,8 @@ public class DebugHttpServer {
       sb.append("<li><a href=\"/methods\">Method registry</a></li>");
       sb.append("<li><a href=\"/methods/instrumented\">Instrumented method call counters</a></li>");
       sb.append("<li><a href=\"/classes/instrumentable\">Instrumentable classes found</a></li>");
-      sb.append("<li><a href=\"/classes/requested\">Classes requested to instrument (via API)</a></li>");
+      sb.append(
+          "<li><a href=\"/classes/requested\">Classes requested to instrument (via API)</a></li>");
       sb.append("</ul>");
       byte[] bytes = sb.toString().getBytes();
       t.sendResponseHeaders(200, bytes.length);
