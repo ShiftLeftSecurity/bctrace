@@ -56,6 +56,9 @@ import org.objectweb.asm.tree.MethodNode;
  */
 public class Transformer implements ClassFileTransformer {
 
+  private static String TRANSFORMATION_SUPPORT_CLASS_NAME = TransformationSupport.class.getName()
+      .replace('.', '/');
+
   private static final File DUMP_FOLDER;
 
   static {
@@ -82,7 +85,8 @@ public class Transformer implements ClassFileTransformer {
 
   @Override
   public byte[] transform(final ClassLoader loader,
-      final String className, final Class<?> classBeingRedefined,
+      final String className,
+      final Class<?> classBeingRedefined,
       final ProtectionDomain protectionDomain,
       final byte[] classfileBuffer)
       throws IllegalClassFormatException {
@@ -104,7 +108,7 @@ public class Transformer implements ClassFileTransformer {
       if (classfileBuffer == null) {
         return ret;
       }
-      if (className.equals("io/shiftleft/bctrace/asm/TransformationSupport")) {
+      if (className.equals(TRANSFORMATION_SUPPORT_CLASS_NAME)) {
         return ret;
       }
       if (!TransformationSupport.isTransformable(className, loader)) {
