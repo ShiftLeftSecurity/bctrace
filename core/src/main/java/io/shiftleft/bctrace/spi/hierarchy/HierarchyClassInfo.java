@@ -85,7 +85,8 @@ public abstract class HierarchyClassInfo {
           .warning("Could not obtain class bytecode for unloaded class " + name);
       return null;
     }
-    return new UnloadedClassInfo(createClassNode(entry.is), entry.cl);
+    // Cannot know the protection domain of an unloaded class (other than the being-instrumented one)
+    return new UnloadedClassInfo(createClassNode(entry.is), null, entry.cl);
   }
 
   private static Class getClassIfLoadedByClassLoaderAncestors(String name, ClassLoader cl) {
