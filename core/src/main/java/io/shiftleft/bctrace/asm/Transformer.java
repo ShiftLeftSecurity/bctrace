@@ -123,7 +123,7 @@ public class Transformer implements ClassFileTransformer {
       ClassNode cn = new ClassNode();
       cr.accept(cn, 0);
 
-      UnloadedClassInfo ci = new UnloadedClassInfo(cn, loader);
+      UnloadedClassInfo ci = new UnloadedClassInfo(cn, protectionDomain, loader);
 
       transformed = transformMethods(ci, matchingHooks, loader);
       if (!transformed) {

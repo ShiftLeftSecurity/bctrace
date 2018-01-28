@@ -27,6 +27,7 @@ package io.shiftleft.bctrace.spi.hierarchy;
 import io.shiftleft.bctrace.Bctrace;
 import java.io.IOException;
 import java.io.InputStream;
+import java.security.ProtectionDomain;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.ClassNode;
 
@@ -45,6 +46,8 @@ public abstract class HierarchyClassInfo {
   public abstract String getName();
 
   public abstract ClassLoader getClassLoader();
+
+  public abstract ProtectionDomain getProtectionDomain();
 
   public abstract boolean isInterface();
 

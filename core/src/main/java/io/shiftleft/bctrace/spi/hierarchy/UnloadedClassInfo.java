@@ -25,6 +25,7 @@
 package io.shiftleft.bctrace.spi.hierarchy;
 
 import io.shiftleft.bctrace.asm.util.ASMUtils;
+import java.security.ProtectionDomain;
 import java.util.List;
 import org.objectweb.asm.tree.ClassNode;
 
@@ -35,13 +36,15 @@ public class UnloadedClassInfo extends HierarchyClassInfo {
 
   private final ClassNode cn;
   private final ClassLoader cl;
+  private final ProtectionDomain protectionDomain;
   private final HierarchyClassInfo superClass;
   private final HierarchyClassInfo[] interfaces;
 
 
-  public UnloadedClassInfo(ClassNode cn, ClassLoader cl) {
+  public UnloadedClassInfo(ClassNode cn, ProtectionDomain protectionDomain, ClassLoader cl) {
     this.cn = cn;
     this.cl = cl;
+    this.protectionDomain = protectionDomain;
     if (this.cn.superName == null) {
       this.superClass = null;
     } else {
@@ -60,10 +63,12 @@ public class UnloadedClassInfo extends HierarchyClassInfo {
     return cn;
   }
 
+  @Override
   public HierarchyClassInfo getSuperClass() {
     return this.superClass;
   }
 
+  @Override
   public HierarchyClassInfo[] getInterfaces() {
     return this.interfaces;
   }
@@ -76,6 +81,11 @@ public class UnloadedClassInfo extends HierarchyClassInfo {
   @Override
   public ClassLoader getClassLoader() {
     return this.cl;
+  }
+
+  @Override
+  public ProtectionDomain getProtectionDomain() {
+    return this.protectionDomain;
   }
 
   @Override
