@@ -30,7 +30,6 @@ import io.shiftleft.bctrace.debug.DebugInfo;
 import io.shiftleft.bctrace.impl.InstrumentationImpl;
 import io.shiftleft.bctrace.runtime.Callback;
 import io.shiftleft.bctrace.runtime.listener.Listener;
-import io.shiftleft.bctrace.runtime.listener.info.StartListener;
 import io.shiftleft.bctrace.spi.AgentLoggerFactory;
 import io.shiftleft.bctrace.spi.Hook;
 import io.shiftleft.bctrace.spi.Instrumentation;
@@ -49,6 +48,7 @@ public final class Bctrace {
   static Bctrace instance;
 
   private static final Logger LOGGER = createLogger();
+  private static final String NATIVE_WRAPPER_PREFIX = "$$$Bctrace_Wrapper_" + System.currentTimeMillis() + "$$$";
 
   private final Transformer transformer;
   private final InstrumentationImpl instrumentation;
@@ -76,8 +76,9 @@ public final class Bctrace {
       Callback.listeners = listeners;
 
       if (instrumentation != null && instrumentation.getJavaInstrumentation() != null) {
-        instrumentation.getJavaInstrumentation()
-            .addTransformer(transformer, true);
+        instrumentation.getJavaInstrumentation().addTransformer(transformer, true);
+        instrumentation.getJavaInstrumentation().setNativeMethodPrefix(transformer, NATIVE_WRAPPER_PREFIX);
+
       }
 
       for (int i = 0; i < hooks.length; i++) {

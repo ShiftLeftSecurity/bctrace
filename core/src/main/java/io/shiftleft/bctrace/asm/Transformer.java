@@ -203,7 +203,7 @@ public class Transformer implements ClassFileTransformer {
     List<MethodNode> methods = cn.methods;
     boolean transformed = false;
     for (MethodNode mn : methods) {
-      if (ASMUtils.isAbstract(mn.access) || ASMUtils.isNative(mn.access)) {
+      if (ASMUtils.isAbstract(mn.access)) {
         continue;
       }
       ArrayList<Integer> hooksToUse = new ArrayList<Integer>(matchingHooks.size());
