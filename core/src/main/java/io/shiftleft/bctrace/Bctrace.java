@@ -48,7 +48,7 @@ public final class Bctrace {
   static Bctrace instance;
 
   private static final Logger LOGGER = createLogger();
-  private static final String NATIVE_WRAPPER_PREFIX = "$$$Bctrace_Wrapper_" + System.currentTimeMillis() + "$$$";
+  private static final String NATIVE_WRAPPER_PREFIX = "$$$Bctrace_Wrapper_" + System.currentTimeMillis() + "$$$_";
 
   private final Transformer transformer;
   private final InstrumentationImpl instrumentation;
@@ -56,7 +56,7 @@ public final class Bctrace {
 
   Bctrace(java.lang.instrument.Instrumentation javaInstrumentation, Hook[] hooks) {
     this.instrumentation = new InstrumentationImpl(javaInstrumentation);
-    this.transformer = new Transformer(this.instrumentation);
+    this.transformer = new Transformer(this.instrumentation, NATIVE_WRAPPER_PREFIX);
     if (DebugInfo.isEnabled()) {
       this.hooks = new Hook[hooks.length + 1];
       System.arraycopy(hooks, 0, this.hooks, 0, hooks.length);
@@ -78,7 +78,6 @@ public final class Bctrace {
       if (instrumentation != null && instrumentation.getJavaInstrumentation() != null) {
         instrumentation.getJavaInstrumentation().addTransformer(transformer, true);
         instrumentation.getJavaInstrumentation().setNativeMethodPrefix(transformer, NATIVE_WRAPPER_PREFIX);
-
       }
 
       for (int i = 0; i < hooks.length; i++) {
