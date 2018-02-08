@@ -54,7 +54,7 @@ public abstract class HierarchyClassInfo {
   /**
    * Factory method that constructs an instance given the class name and classloader.
    *
-   * @param name class name according to the JAva Language Specification (dot separated)
+   * @param name class name according to the Java Language Specification (dot separated)
    */
   public static HierarchyClassInfo from(String name, ClassLoader cl) {
     if (name == null) {
@@ -71,7 +71,7 @@ public abstract class HierarchyClassInfo {
           clazz = Class.forName(name, false, cl);
         } catch (ClassNotFoundException e) {
           // Caused by application ClassNotFoundException, so not our problem
-          return null;
+          return new UnresolvedClassInfo(name);
         }
       }
       if (clazz != null) {
@@ -83,10 +83,10 @@ public abstract class HierarchyClassInfo {
     if (entry == null) {
       Bctrace.getAgentLogger()
           .warning("Could not obtain class bytecode for unloaded class " + name);
-      return null;
+      return new UnresolvedClassInfo(name);
     }
     // Cannot know the protection domain of an unloaded class (other than the being-instrumented one)
-    return new UnloadedClassInfo(createClassNode(entry.is), null, entry.cl);
+    return new UnloadedClassInfo(createClassNode(entry.is), entry.cl);
   }
 
   private static Class getClassIfLoadedByClassLoaderAncestors(String name, ClassLoader cl) {
@@ -123,14 +123,9 @@ public abstract class HierarchyClassInfo {
         return new ClassLoaderEntry(is, loader);
       }
     } else {
-      ClassLoaderEntry entry = readClassResource(classResource,
-          loader.getParent());
-      if (entry != null) {
-        return entry;
-      }
       InputStream is = loader.getResourceAsStream(classResource);
       if (is == null) {
-        return null;
+        return readClassResource(classResource, loader.getParent());
       } else {
         return new ClassLoaderEntry(is, loader);
       }
@@ -189,10 +184,12 @@ public abstract class HierarchyClassInfo {
 
   public final boolean implementsInterface(HierarchyClassInfo other) {
     for (HierarchyClassInfo ci = this; ci != null; ci = ci.getSuperClass()) {
-      for (HierarchyClassInfo iface : ci.getInterfaces()) {
-        if (iface.equals(other)
-            || iface.implementsInterface(other)) {
-          return true;
+      if (ci.getInterfaces() != null) {
+        for (HierarchyClassInfo iface : ci.getInterfaces()) {
+          if (iface.equals(other)
+              || iface.implementsInterface(other)) {
+            return true;
+          }
         }
       }
     }
