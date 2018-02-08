@@ -25,30 +25,43 @@
 package io.shiftleft.bctrace.asm;
 
 import io.shiftleft.bctrace.Bctrace;
+import io.shiftleft.bctrace.Init;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.Scanner;
 
 /**
- *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
 public class TransformationSupport {
 
-  private static final String[] CLASSNAME_PREFIX_IGNORE_LIST = new String[]{
-    "io/shiftleft/bctrace/",
-    "java/lang/Object",
-    "java/lang/String",
-    "java/lang/ThreadLocal",
-    "java/lang/VerifyError",
-    "java/lang/instrument",
-    "java/lang/invoke",
-    "java/lang/ref",
-    "java/lang/concurrent",
-    "java/security/",
-    "java/io/ByteArrayInputStream",
-    "sun/",
-    "com/sun/",
-    "javafx/",
-    "oracle/"
-  };
+  private static final String IGNORE_LIST_DESCRIPTOR_NAME = "bctrace.ignore";
+  private static final String[] CLASSNAME_PREFIX_IGNORE_LIST = readIgnoreClassNamesFromDescriptors();
+
+  private static String[] readIgnoreClassNamesFromDescriptors() {
+    try {
+      ClassLoader cl = Init.class.getClassLoader();
+      if (cl == null) {
+        cl = ClassLoader.getSystemClassLoader().getParent();
+      }
+      Enumeration<URL> resources = cl.getResources(IGNORE_LIST_DESCRIPTOR_NAME);
+      ArrayList<String> list = new ArrayList<String>();
+      while (resources.hasMoreElements()) {
+        URL url = resources.nextElement();
+        Scanner scanner = new Scanner(url.openStream());
+        while (scanner.hasNextLine()) {
+          String line = scanner.nextLine().trim();
+          if (!line.isEmpty()) {
+            list.add(line);
+          }
+        }
+      }
+      return list.toArray(new String[list.size()]);
+    } catch (Exception ex) {
+      throw new RuntimeException(ex);
+    }
+  }
 
   public static boolean isTransformable(String jvmClassName, ClassLoader loader) {
 
