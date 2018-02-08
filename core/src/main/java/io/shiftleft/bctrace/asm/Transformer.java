@@ -26,6 +26,7 @@ package io.shiftleft.bctrace.asm;
 
 import io.shiftleft.bctrace.Bctrace;
 import io.shiftleft.bctrace.asm.helper.CatchHelper;
+import io.shiftleft.bctrace.asm.helper.NativeWrapperHelper;
 import io.shiftleft.bctrace.asm.helper.ReturnHelper;
 import io.shiftleft.bctrace.asm.helper.StartHelper;
 import io.shiftleft.bctrace.asm.helper.ThrowHelper;
@@ -60,6 +61,7 @@ public class Transformer implements ClassFileTransformer {
       .replace('.', '/');
 
   private static final File DUMP_FOLDER;
+  private final String nativeWrapperPrefix;
 
   static {
     if (System.getProperty(SystemProperty.DUMP_FOLDER) != null) {
@@ -79,8 +81,9 @@ public class Transformer implements ClassFileTransformer {
   private final InstrumentationImpl instrumentation;
   private final AtomicInteger TRANSFORMATION_COUNTER = new AtomicInteger();
 
-  public Transformer(InstrumentationImpl instrumentation) {
+  public Transformer(InstrumentationImpl instrumentation, String nativeWrapperPrefix) {
     this.instrumentation = instrumentation;
+    this.nativeWrapperPrefix = nativeWrapperPrefix;
   }
 
   @Override
@@ -105,6 +108,7 @@ public class Transformer implements ClassFileTransformer {
     byte[] ret = null;
     boolean transformed = false;
     try {
+      Bctrace.disableThreadNotification();
       if (classfileBuffer == null) {
         return ret;
       }
@@ -139,6 +143,7 @@ public class Transformer implements ClassFileTransformer {
           .log(Level.SEVERE, "Error found instrumenting class " + className, th);
       return ret;
     } finally {
+      Bctrace.enableThreadNotification();
       if (DUMP_FOLDER != null) {
         dump(counter, className, classfileBuffer, ret);
       }
@@ -202,6 +207,7 @@ public class Transformer implements ClassFileTransformer {
     ClassNode cn = ci.getRawClassNode();
     List<MethodNode> methods = cn.methods;
     boolean transformed = false;
+    List<MethodNode> newMethods = new ArrayList<MethodNode>();
     for (MethodNode mn : methods) {
       if (ASMUtils.isAbstract(mn.access)) {
         continue;
@@ -221,7 +227,7 @@ public class Transformer implements ClassFileTransformer {
             hooksToUse.add(i);
           }
         }
-        modifyMethod(cn, mn, hooksToUse);
+        modifyMethod(cn, mn, hooksToUse, newMethods);
         transformed = true;
         if (DebugInfo.getInstance() != null) {
           Integer methodId = MethodRegistry.getInstance().getMethodId(cn.name, mn.name, mn.desc);
@@ -234,15 +240,20 @@ public class Transformer implements ClassFileTransformer {
         }
       }
     }
+    cn.methods.addAll(newMethods);
     return transformed;
   }
 
-  private void modifyMethod(ClassNode cn, MethodNode mn, ArrayList<Integer> hooksToUse) {
+  private void modifyMethod(ClassNode cn, MethodNode mn, ArrayList<Integer> hooksToUse, List<MethodNode> newMethods) {
 
     Integer methodId = MethodRegistry.getInstance().registerMethodId(MethodInfo.from(cn, mn));
 
     if (DebugInfo.getInstance() != null) {
       DebugInfo.getInstance().setInstrumented(methodId, true);
+    }
+
+    if (ASMUtils.isNative(mn.access)) {
+      NativeWrapperHelper.createWrapperImpl(cn, mn, nativeWrapperPrefix, newMethods);
     }
 
     // These are the actual bytecode modifications performed by Bctrace:
