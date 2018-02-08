@@ -29,10 +29,12 @@ import io.shiftleft.bctrace.runtime.listener.info.BeforeThrownListener;
 import java.util.ArrayList;
 import java.util.Iterator;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
+import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.VarInsnNode;
@@ -49,9 +51,9 @@ import org.objectweb.asm.tree.VarInsnNode;
  * Into that:
  * <br><pre>{@code
  * // Notify listeners that apply to this method (methodId 1550)
- * Callback.onBeforeThrown(aException, 1550, this, 0);
- * Callback.onBeforeThrown(aException, 1550, this, 2);
- * Callback.onBeforeThrown(aException, 1550, this, 10);
+ * Callback.onBeforeThrown(aException, 1550, clazz, this, 0);
+ * Callback.onBeforeThrown(aException, 1550, clazz, this, 2);
+ * Callback.onBeforeThrown(aException, 1550, clazz, this, 10);
  * ...
  * throw aException;
  * }
@@ -76,18 +78,19 @@ public class ThrowHelper extends Helper {
       switch (abstractInsnNode.getOpcode()) {
         case Opcodes.ATHROW:
           il.insertBefore(abstractInsnNode,
-              getThrowTraceInstructions(methodId, mn, listenersToUse));
+              getThrowTraceInstructions(methodId, cn, mn, listenersToUse));
           break;
       }
     }
   }
 
-  private static InsnList getThrowTraceInstructions(int methodId, MethodNode mn,
+  private static InsnList getThrowTraceInstructions(int methodId, ClassNode cn, MethodNode mn,
       ArrayList<Integer> listenersToUse) {
     InsnList il = new InsnList();
     for (Integer index : listenersToUse) {
       il.add(new InsnNode(Opcodes.DUP)); // dup throwable
       il.add(ASMUtils.getPushInstruction(methodId)); // method id
+      il.add(new LdcInsnNode(Type.getObjectType(cn.name)));
       if (ASMUtils.isStatic(mn.access) || mn.name.equals("<init>")) { // current instance
         il.add(new InsnNode(Opcodes.ACONST_NULL));
       } else {
@@ -96,7 +99,7 @@ public class ThrowHelper extends Helper {
       il.add(ASMUtils.getPushInstruction(index)); // hook id
       il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
           "io/shiftleft/bctrace/runtime/Callback", "onBeforeThrown",
-          "(Ljava/lang/Throwable;ILjava/lang/Object;I)V", false));
+          "(Ljava/lang/Throwable;ILjava/lang/Class;Ljava/lang/Object;I)V", false));
     }
     return il;
   }

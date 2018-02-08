@@ -36,12 +36,13 @@ public interface StartMutableListener extends Listener {
 
   /**
    * @param methodId method id (as defined by MethodRegistry)
-   * @param instance instance where the method belongs. Null if the method is static
+   * @param clazz class defining the method.
+   * @param instance instance where the method is invoked. Null if the method is static
    * @param args arguments passed to the method. returns false;
    * @return null if the original method execution is permitted, otherwise the value to return by
    * the instrumented method
    */
-  public Return onStart(int methodId, Object instance, Object[] args);
+  public Return onStart(int methodId, Class clazz, Object instance, Object[] args);
 
 
   public static class Return {

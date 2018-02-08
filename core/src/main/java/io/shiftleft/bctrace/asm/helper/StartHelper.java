@@ -38,6 +38,7 @@ import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.JumpInsnNode;
 import org.objectweb.asm.tree.LabelNode;
+import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TypeInsnNode;
@@ -113,9 +114,9 @@ public class StartHelper extends Helper {
    * public Object foo(Object arg){
    *   Object ret = void(arg);
    *   // Notify listeners that apply to this method (methodId 1550)
-   *   Callback.onStart(1550, this, 0);
-   *   Callback.onStart(1550, this, 2);
-   *   Callback.onStart(1550, this, 10);
+   *   Callback.onStart(1550, clazz, this, 0);
+   *   Callback.onStart(1550, clazz, this, 2);
+   *   Callback.onStart(1550, clazz, this, 10);
    *   return void(args);
    * }
    * }
@@ -130,6 +131,7 @@ public class StartHelper extends Helper {
     InsnList il = new InsnList();
     for (Integer index : listenersToUse) {
       il.add(ASMUtils.getPushInstruction(methodId));
+      il.add(new LdcInsnNode(Type.getObjectType(cn.name)));
       if (ASMUtils.isStatic(mn.access) || mn.name.equals("<init>")) {
         il.add(new InsnNode(Opcodes.ACONST_NULL));
       } else {
@@ -138,7 +140,7 @@ public class StartHelper extends Helper {
       il.add(ASMUtils.getPushInstruction(index));
       il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
           "io/shiftleft/bctrace/runtime/Callback", "onStart",
-          "(ILjava/lang/Object;I)V", false));
+          "(ILjava/lang/Class;Ljava/lang/Object;I)V", false));
     }
     mn.instructions.insert(il);
   }
@@ -158,9 +160,9 @@ public class StartHelper extends Helper {
    *   Object[] args = new Object[]{arg1, arg2, ..., argn};
    *   Object ret = void(args);
    *   // Notify listeners that apply to this method (methodId 1550)
-   *   Callback.onStart(args, 1550, this, 0);
-   *   Callback.onStart(args, 1550, this, 2);
-   *   Callback.onStart(args, 1550, this, 10);
+   *   Callback.onStart(args, 1550, clazz, this, 0);
+   *   Callback.onStart(args, 1550, clazz, this, 2);
+   *   Callback.onStart(args, 1550, clazz, this, 10);
    *   return void(arg1, arg2, ..., argn);
    * }
    * }
@@ -174,7 +176,7 @@ public class StartHelper extends Helper {
       return;
     }
     InsnList il = new InsnList();
-    addMethodParametersVariable(il, mn);
+    pushMethodArgsArray(il, mn);
 
     for (int i = 0; i < listenersToUse.size(); i++) {
       Integer index = listenersToUse.get(i);
@@ -182,6 +184,7 @@ public class StartHelper extends Helper {
         il.add(new InsnNode(Opcodes.DUP));
       }
       il.add(ASMUtils.getPushInstruction(methodId));
+      il.add(new LdcInsnNode(Type.getObjectType(cn.name)));
       if (ASMUtils.isStatic(mn.access) || mn.name.equals("<init>")) {
         il.add(new InsnNode(Opcodes.ACONST_NULL));
       } else {
@@ -190,7 +193,7 @@ public class StartHelper extends Helper {
       il.add(ASMUtils.getPushInstruction(index));
       il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
           "io/shiftleft/bctrace/runtime/Callback", "onStart",
-          "([Ljava/lang/Object;ILjava/lang/Object;I)V", false));
+          "([Ljava/lang/Object;ILjava/lang/Class;Ljava/lang/Object;I)V", false));
     }
     mn.instructions.insert(il);
   }
@@ -210,15 +213,15 @@ public class StartHelper extends Helper {
    *   Object[] args = new Object[]{arg1, arg2, ..., argn};
    *   Object ret = void(args);
    *   // Notify listeners that apply to this method (methodId 1550)
-   *   Return ret0 = Callback.onStart(args, 1550, this, 0);
+   *   Return ret0 = Callback.onStart(args, 1550, clazz, this, 0);
    *   if(ret0 != null){
    *     return ret0.value;
    *   }
-   *   Callback.onStart(args, 1550, this, 2);
+   *   Callback.onStart(args, 1550, clazz, this, 2);
    *   if(ret2 != null){
    *     return ret2.value;
    *   }
-   *   Callback.onStart(args, 1550, this, 10);
+   *   Callback.onStart(args, 1550, clazz, this, 10);
    *   if(ret10 != null){
    *     return ret10.value;
    *   }
@@ -237,7 +240,7 @@ public class StartHelper extends Helper {
       throw new UnsupportedOperationException("Skipping constructor execution is not supported");
     }
     InsnList il = new InsnList();
-    addMethodParametersVariable(il, mn);
+    pushMethodArgsArray(il, mn);
 
     for (int i = 0; i < listenersToUse.size(); i++) {
       Integer index = listenersToUse.get(i);
@@ -245,6 +248,7 @@ public class StartHelper extends Helper {
         il.add(new InsnNode(Opcodes.DUP));
       }
       il.add(ASMUtils.getPushInstruction(methodId));
+      il.add(new LdcInsnNode(Type.getObjectType(cn.name)));
       if (ASMUtils.isStatic(mn.access) || mn.name.equals("<init>")) {
         il.add(new InsnNode(Opcodes.ACONST_NULL));
       } else {
@@ -253,7 +257,7 @@ public class StartHelper extends Helper {
       il.add(ASMUtils.getPushInstruction(index));
       il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
           "io/shiftleft/bctrace/runtime/Callback", "onMutableStart",
-          "([Ljava/lang/Object;ILjava/lang/Object;I)Lio/shiftleft/bctrace/runtime/listener/mut/StartMutableListener$Return;",
+          "([Ljava/lang/Object;ILjava/lang/Class;Ljava/lang/Object;I)Lio/shiftleft/bctrace/runtime/listener/mut/StartMutableListener$Return;",
           false));
       il.add(new InsnNode(Opcodes.DUP));
       LabelNode returnBlock = new LabelNode();
@@ -281,31 +285,5 @@ public class StartHelper extends Helper {
 
     }
     mn.instructions.insert(il);
-  }
-
-  /**
-   * Creates the parameter object array reference on top of the operand stack
-   */
-  private static void addMethodParametersVariable(InsnList il, MethodNode mn) {
-    Type[] methodArguments = Type.getArgumentTypes(mn.desc);
-    if (methodArguments.length == 0) {
-      il.add(new InsnNode(Opcodes.ACONST_NULL));
-    } else {
-      il.add(ASMUtils.getPushInstruction(methodArguments.length));
-      il.add(new TypeInsnNode(Opcodes.ANEWARRAY, "java/lang/Object"));
-      int index = ASMUtils.isStatic(mn.access) ? 0 : 1;
-      for (int i = 0; i < methodArguments.length; i++) {
-        il.add(new InsnNode(Opcodes.DUP));
-        il.add(ASMUtils.getPushInstruction(i));
-        il.add(ASMUtils.getLoadInst(methodArguments[i], index));
-        MethodInsnNode primitiveToWrapperInst = ASMUtils
-            .getPrimitiveToWrapperInst(methodArguments[i]);
-        if (primitiveToWrapperInst != null) {
-          il.add(primitiveToWrapperInst);
-        }
-        il.add(new InsnNode(Opcodes.AASTORE));
-        index += methodArguments[i].getSize();
-      }
-    }
   }
 }

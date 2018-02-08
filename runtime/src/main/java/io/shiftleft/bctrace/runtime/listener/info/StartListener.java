@@ -27,20 +27,19 @@ package io.shiftleft.bctrace.runtime.listener.info;
 import io.shiftleft.bctrace.runtime.listener.Listener;
 
 /**
- *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public interface StartListener extends Listener{
-  
+public interface StartListener extends Listener {
+
   /**
-   * Invoked by instrumented methods before any of its original instructions (if
-   * multiple plugins are registered, listener notification is performed
-   * according to their respective plugin registration order).
+   * Invoked by instrumented methods before any of its original instructions (if multiple plugins
+   * are registered, listener notification is performed according to their respective plugin
+   * registration order).
    *
    * @param methodId method id (as defined by MethodRegistry)
-   * @param instance instance where the method belongs. Null if the method is
-   * static
+   * @param clazz class defining the method.
+   * @param instance instance where the method is invoked. Null if the method is static
    */
-  public void onStart(int methodId, Object instance);
+  public void onStart(int methodId, Class clazz, Object instance);
 
 }
