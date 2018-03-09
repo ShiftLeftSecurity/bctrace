@@ -186,9 +186,10 @@ public abstract class HierarchyClassInfo {
   public final boolean implementsInterface(HierarchyClassInfo other) {
     for (HierarchyClassInfo ci = this; ci != null; ci = ci.getSuperClass()) {
       for (HierarchyClassInfo iface : ci.getInterfaces()) {
-        if (iface.equals(other)
-            || iface.implementsInterface(other)) {
-          return true;
+        if (iface != null) {
+          if (iface.equals(other) || iface.implementsInterface(other)) {
+            return true;
+          }
         }
       }
     }
