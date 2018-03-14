@@ -25,6 +25,7 @@
 package io.shiftleft.bctrace.runtime;
 
 import io.shiftleft.bctrace.runtime.listener.Listener;
+import io.shiftleft.bctrace.runtime.listener.info.BeforeCallSiteListener;
 import io.shiftleft.bctrace.runtime.listener.info.BeforeThrownListener;
 import io.shiftleft.bctrace.runtime.listener.info.FinishReturnArgumentsListener;
 import io.shiftleft.bctrace.runtime.listener.info.FinishReturnListener;
@@ -174,6 +175,23 @@ public final class Callback {
     try {
       NOTIFYING_FLAG.set(Boolean.TRUE);
       ((BeforeThrownListener) listeners[i]).onBeforeThrown(methodId, clazz, instance, th);
+    } finally {
+      NOTIFYING_FLAG.remove();
+    }
+  }
+
+  @SuppressWarnings("BoxedValueEquality")
+  public static void onBeforeCallSite(Object callSiteInstance, Object[] callSiteArgs, int methodId, Class clazz, Object instance,
+      int i) {
+    if (!isThreadNotificationEnabled()) {
+      return;
+    }
+    if (Boolean.TRUE == NOTIFYING_FLAG.get()) {
+      return;
+    }
+    try {
+      NOTIFYING_FLAG.set(Boolean.TRUE);
+      ((BeforeCallSiteListener) listeners[i]).onBeforeCall(methodId, clazz, instance, callSiteInstance, callSiteArgs);
     } finally {
       NOTIFYING_FLAG.remove();
     }

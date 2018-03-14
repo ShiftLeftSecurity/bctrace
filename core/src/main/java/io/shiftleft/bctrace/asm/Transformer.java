@@ -25,6 +25,7 @@
 package io.shiftleft.bctrace.asm;
 
 import io.shiftleft.bctrace.Bctrace;
+import io.shiftleft.bctrace.asm.helper.CallSiteHelper;
 import io.shiftleft.bctrace.asm.helper.CatchHelper;
 import io.shiftleft.bctrace.asm.helper.NativeWrapperHelper;
 import io.shiftleft.bctrace.asm.helper.ReturnHelper;
@@ -244,7 +245,8 @@ public class Transformer implements ClassFileTransformer {
     return transformed;
   }
 
-  private void modifyMethod(ClassNode cn, MethodNode mn, ArrayList<Integer> hooksToUse, List<MethodNode> newMethods) {
+  private void modifyMethod(ClassNode cn, MethodNode mn, ArrayList<Integer> hooksToUse,
+      List<MethodNode> newMethods) {
 
     Integer methodId = MethodRegistry.getInstance().registerMethodId(MethodInfo.from(cn, mn));
 
@@ -260,6 +262,7 @@ public class Transformer implements ClassFileTransformer {
     StartHelper.addByteCodeInstructions(methodId, cn, mn, hooksToUse);
     ReturnHelper.addByteCodeInstructions(methodId, cn, mn, hooksToUse);
     ThrowHelper.addByteCodeInstructions(methodId, cn, mn, hooksToUse);
+    CallSiteHelper.addByteCodeInstructions(methodId, cn, mn, hooksToUse);
     CatchHelper.addByteCodeInstructions(methodId, cn, mn, hooksToUse);
   }
 }
