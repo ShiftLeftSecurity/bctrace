@@ -34,7 +34,6 @@ import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
-import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.VarInsnNode;
@@ -90,7 +89,7 @@ public class ThrowHelper extends Helper {
     for (Integer index : listenersToUse) {
       il.add(new InsnNode(Opcodes.DUP)); // dup throwable
       il.add(ASMUtils.getPushInstruction(methodId)); // method id
-      il.add(new LdcInsnNode(Type.getObjectType(cn.name)));
+      il.add(getClassConstantReference(Type.getObjectType(cn.name), cn.version));
       if (ASMUtils.isStatic(mn.access) || mn.name.equals("<init>")) { // current instance
         il.add(new InsnNode(Opcodes.ACONST_NULL));
       } else {

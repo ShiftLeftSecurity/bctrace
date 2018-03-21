@@ -38,7 +38,6 @@ import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.JumpInsnNode;
 import org.objectweb.asm.tree.LabelNode;
-import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TypeInsnNode;
@@ -131,7 +130,7 @@ public class StartHelper extends Helper {
     InsnList il = new InsnList();
     for (Integer index : listenersToUse) {
       il.add(ASMUtils.getPushInstruction(methodId));
-      il.add(new LdcInsnNode(Type.getObjectType(cn.name)));
+      il.add(getClassConstantReference(Type.getObjectType(cn.name), cn.version));
       if (ASMUtils.isStatic(mn.access) || mn.name.equals("<init>")) {
         il.add(new InsnNode(Opcodes.ACONST_NULL));
       } else {
@@ -184,7 +183,7 @@ public class StartHelper extends Helper {
         il.add(new InsnNode(Opcodes.DUP));
       }
       il.add(ASMUtils.getPushInstruction(methodId));
-      il.add(new LdcInsnNode(Type.getObjectType(cn.name)));
+      il.add(getClassConstantReference(Type.getObjectType(cn.name), cn.version));
       if (ASMUtils.isStatic(mn.access) || mn.name.equals("<init>")) {
         il.add(new InsnNode(Opcodes.ACONST_NULL));
       } else {
@@ -248,7 +247,7 @@ public class StartHelper extends Helper {
         il.add(new InsnNode(Opcodes.DUP));
       }
       il.add(ASMUtils.getPushInstruction(methodId));
-      il.add(new LdcInsnNode(Type.getObjectType(cn.name)));
+      il.add(getClassConstantReference(Type.getObjectType(cn.name), cn.version));
       if (ASMUtils.isStatic(mn.access) || mn.name.equals("<init>")) {
         il.add(new InsnNode(Opcodes.ACONST_NULL));
       } else {

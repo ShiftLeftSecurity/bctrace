@@ -35,7 +35,6 @@ import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
-import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TypeInsnNode;
@@ -132,7 +131,7 @@ public class CallSiteHelper extends Helper {
         il.add(new VarInsnNode(Opcodes.ALOAD, callSiteArgsVarIndex)); // call site args
 
         il.add(ASMUtils.getPushInstruction(methodId)); // method id
-        il.add(new LdcInsnNode(Type.getObjectType(cn.name))); // class
+        il.add(getClassConstantReference(Type.getObjectType(cn.name), cn.version)); // class
         if (ASMUtils.isStatic(mn.access) || mn.name.equals("<init>")) { // instance
           il.add(new InsnNode(Opcodes.ACONST_NULL));
         } else {

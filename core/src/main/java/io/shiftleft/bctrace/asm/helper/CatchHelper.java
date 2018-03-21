@@ -33,7 +33,6 @@ import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.LabelNode;
-import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
@@ -127,7 +126,7 @@ public class CatchHelper extends Helper {
       Integer index = listenersToUse.get(i);
       il.add(new InsnNode(Opcodes.DUP)); // dup throwable
       il.add(ASMUtils.getPushInstruction(methodId)); // method id
-      il.add(new LdcInsnNode(Type.getObjectType(cn.name)));
+      il.add(getClassConstantReference(Type.getObjectType(cn.name), cn.version));
       if (ASMUtils.isStatic(mn.access) || mn.name.equals("<init>")) { // instance
         il.add(new InsnNode(Opcodes.ACONST_NULL));
       } else {

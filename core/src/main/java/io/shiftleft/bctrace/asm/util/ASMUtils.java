@@ -103,8 +103,7 @@ public class ASMUtils {
         opCode = Opcodes.ILOAD;
         break;
       default:
-        throw new ClassFormatError("Invalid method signature: "
-            + type.getDescriptor());
+        throw new ClassFormatError("Invalid method signature: " + type.getDescriptor());
     }
     return new VarInsnNode(opCode, position);
   }
@@ -143,8 +142,7 @@ public class ASMUtils {
         opCode = Opcodes.IRETURN;
         break;
       default:
-        throw new ClassFormatError("Invalid return type: "
-            + type.getDescriptor());
+        throw new ClassFormatError("Invalid return type: " + type.getDescriptor());
     }
     return new InsnNode(opCode);
   }

@@ -33,6 +33,7 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
+import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TypeInsnNode;
@@ -63,6 +64,22 @@ public class Helper {
       }
     }
     return ret;
+  }
+
+  public static InsnList getClassConstantReference(Type type, int majorVersion) {
+    InsnList il = new InsnList();
+
+    if (majorVersion >= Opcodes.V1_5) {
+      il.add(new LdcInsnNode(type));
+
+    } else {
+      String fullyQualifiedName = type.getInternalName().replaceAll("/", ".");
+      il.add(new LdcInsnNode(fullyQualifiedName));
+      il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
+          "java/lang/Class", "forName",
+          "(Ljava/lang/String;)Ljava/lang/Class;", false));
+    }
+    return il;
   }
 
   /**
