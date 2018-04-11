@@ -39,8 +39,8 @@ import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
 /**
- * Inserts the bytecode instructions within method node, needed to communicate to the registered
- * listeners, the throwables directly thrown by the target method.
+ * Inserts into the method bytecodes, the instructions needed to notify the registered listeners
+ * before a throwable is directly thrown by the target method.
  *
  * This helper turns throw instructions like these:
  * <br><pre>{@code
@@ -49,7 +49,7 @@ import org.objectweb.asm.tree.VarInsnNode;
  * </pre>
  * Into that:
  * <br><pre>{@code
- * // Notify listeners that apply to this method (methodId 1550)
+ * // Notify the event to the listeners that apply to this method (suppose methodId 1550)
  * Callback.onBeforeThrown(aException, 1550, clazz, this, 0);
  * Callback.onBeforeThrown(aException, 1550, clazz, this, 2);
  * Callback.onBeforeThrown(aException, 1550, clazz, this, 10);

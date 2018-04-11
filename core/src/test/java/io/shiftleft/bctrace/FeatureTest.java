@@ -211,7 +211,6 @@ public class FeatureTest extends BcTraceTest {
         }
     });
     clazz.getMethod("arrayCopyWrapper2").invoke(null);
-    System.out.println(clazz.getClassLoader());
     assertEquals("012", steps.toString());
   }
 

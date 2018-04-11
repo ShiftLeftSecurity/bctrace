@@ -39,6 +39,7 @@ public class DebugInfo {
 
   private static final DebugInfo INSTANCE = new DebugInfo();
 
+  // Debug server is of type host:port
   private static final boolean ENABLED = System.getProperty(SystemProperty.DEBUG_SERVER) != null;
 
   private final Set<ClassInfo> requestedToInstrument = Collections

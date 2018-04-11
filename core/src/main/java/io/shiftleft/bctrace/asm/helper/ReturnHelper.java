@@ -96,7 +96,7 @@ public class ReturnHelper extends Helper {
   }
 
   private static void addReturnTrace(int methodId, ClassNode cn, MethodNode mn,
-      ArrayList<Integer> listenersToUse, boolean passArguments) {
+      ArrayList<Integer> listenersToUse, boolean passArgumentsToListener) {
     InsnList il = mn.instructions;
     Iterator<AbstractInsnNode> it = il.iterator();
     Type returnType = Type.getReturnType(mn.desc);
@@ -107,7 +107,7 @@ public class ReturnHelper extends Helper {
       switch (abstractInsnNode.getOpcode()) {
         case Opcodes.RETURN:
           il.insertBefore(abstractInsnNode,
-              getVoidReturnTraceInstructions(methodId, cn, mn, listenersToUse, passArguments));
+              getVoidReturnTraceInstructions(methodId, cn, mn, listenersToUse, passArgumentsToListener));
           break;
         case Opcodes.IRETURN:
         case Opcodes.LRETURN:
@@ -116,13 +116,13 @@ public class ReturnHelper extends Helper {
         case Opcodes.DRETURN:
           il.insertBefore(abstractInsnNode,
               getReturnTraceInstructions(methodId, cn, mn, returnType, listenersToUse,
-                  passArguments));
+                  passArgumentsToListener));
       }
     }
   }
 
   private static InsnList getVoidReturnTraceInstructions(int methodId, ClassNode cn, MethodNode mn,
-      ArrayList<Integer> listenersToUse, boolean passArguments) {
+      ArrayList<Integer> listenersToUse, boolean passArgumentsToListener) {
     InsnList il = new InsnList();
     for (int i = listenersToUse.size() - 1; i >= 0; i--) {
       Integer index = listenersToUse.get(i);
@@ -136,7 +136,7 @@ public class ReturnHelper extends Helper {
       }
       il.add(ASMUtils.getPushInstruction(index)); // hook id
 
-      if (passArguments) {
+      if (passArgumentsToListener) {
         pushMethodArgsArray(il, mn);
         il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
             "io/shiftleft/bctrace/runtime/Callback", "onFinishedReturn",

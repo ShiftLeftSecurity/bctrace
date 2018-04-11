@@ -56,30 +56,29 @@ public class NativeWrapperHelper extends Helper {
 
   public static void createWrapperImpl(ClassNode cn, MethodNode mn, String prefix,
       List<MethodNode> newMethods) {
-    cloneAndRenameNativeMethod(cn, mn, prefix, newMethods);
+    MethodNode clonedMethod = cloneAndRenameNativeMethod(cn, mn, prefix);
+    newMethods.add(clonedMethod);
     InsnList il = new InsnList();
     mn.instructions = il;
     mn.access = mn.access & ~Opcodes.ACC_NATIVE;
     pushArguments(il, mn);
+    int invokeOpCode;
     if (ASMUtils.isStatic(mn.access)) {
-      il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
-          cn.name, prefix + mn.name,
-          mn.desc, ASMUtils.isInterface(mn.access)));
+      invokeOpCode = Opcodes.INVOKESTATIC;
     } else {
-      il.add(new MethodInsnNode(Opcodes.INVOKESPECIAL,
-          cn.name, prefix + mn.name,
-          mn.desc, ASMUtils.isInterface(mn.access)));
+      invokeOpCode = Opcodes.INVOKESPECIAL;
     }
+    il.add(new MethodInsnNode(invokeOpCode, cn.name, prefix + mn.name, mn.desc,
+        ASMUtils.isInterface(mn.access)));
     Type returnType = Type.getReturnType(mn.desc);
-    if (returnType.getDescriptor().equals("V")) {
+    if (returnType.getDescriptor().equals("V")) { // if method returns void
       il.add(new InsnNode(Opcodes.RETURN));
     } else {
       il.add(ASMUtils.getReturnInst(returnType));
     }
   }
 
-  private static void cloneAndRenameNativeMethod(ClassNode cn, MethodNode mn, String prefix,
-      List<MethodNode> newMethods) {
+  private static MethodNode cloneAndRenameNativeMethod(ClassNode cn, MethodNode mn, String prefix) {
     MethodNode cloned = new MethodNode();
     cloned.name = prefix + mn.name;
 
@@ -104,7 +103,7 @@ public class NativeWrapperHelper extends Helper {
     cloned.visibleParameterAnnotations = mn.visibleParameterAnnotations;
     cloned.visibleTypeAnnotations = mn.visibleTypeAnnotations;
 
-    newMethods.add(cloned);
+    return cloned;
   }
 
   private static void pushArguments(InsnList il, MethodNode mn) {

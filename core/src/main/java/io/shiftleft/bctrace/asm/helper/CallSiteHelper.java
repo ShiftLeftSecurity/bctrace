@@ -41,22 +41,22 @@ import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
 /**
- * Inserts the bytecode instructions within method node, needed to communicate to the registered
- * listeners, the throwables directly thrown by the target method.
+ * Inserts into the method bytecodes, the instructions needed to notify the registered listeners of
+ * type BeforeCallSiteListener that a call site to the method that each listener is interested in,
+ * is about to be executed.
  *
- * This helper turns throw instructions like these:
+ * Suppose one listener interested in calls to <tt>System.arrayCopy(Object, int, Object, int,
+ * int)</tt> Then this helper turns a method with this call:
  * <br><pre>{@code
- * throw aException;
+ * System.arrayCopy(src, 0, target, 0, length);
  * }
  * </pre>
  * Into that:
  * <br><pre>{@code
- * // Notify listeners that apply to this method (methodId 1550)
- * Callback.onBeforeThrown(aException, 1550, clazz, this, 0);
- * Callback.onBeforeThrown(aException, 1550, clazz, this, 2);
- * Callback.onBeforeThrown(aException, 1550, clazz, this, 10);
- * ...
- * throw aException;
+ * // Notify the event to the listener that apply to this method (suppose methodId 1550)
+ * Callback.onBeforeCallSite(null, new Object[]{src, new Integer(0), target, new Integer(0), new
+ * Integer(length)}, 1550, clazz, this, listenerIndex);
+ * System.arrayCopy(src, 0, target, 0, length);
  * }
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
@@ -87,9 +87,11 @@ public class CallSiteHelper extends Helper {
           case Opcodes.INVOKESPECIAL:
           case Opcodes.INVOKEVIRTUAL:
           case Opcodes.INVOKESTATIC:
-            il.insertBefore(callSite,
-                getCallSiteInstructions(methodId, cn, mn, callSite, listenersToUse,
-                    callSiteInstVarIndex, callSiteArgsVarIndex));
+            InsnList callSiteInstructions = getCallSiteInstructions(methodId, cn, mn, callSite,
+                listenersToUse, callSiteInstVarIndex, callSiteArgsVarIndex);
+            if (callSiteInstructions != null) {
+              il.insertBefore(callSite, callSiteInstructions);
+            }
             break;
         }
       }
@@ -100,7 +102,6 @@ public class CallSiteHelper extends Helper {
       MethodInsnNode callSite, ArrayList<Integer> listenersToUse, int callSiteInstVarIndex,
       int callSiteArgsVarIndex) {
 
-    InsnList il = new InsnList();
     boolean matching = false;
     for (Integer index : listenersToUse) {
       BeforeCallSiteListener listener = (BeforeCallSiteListener) Bctrace.getInstance()
@@ -113,8 +114,9 @@ public class CallSiteHelper extends Helper {
       }
     }
     if (!matching) {
-      return il;
+      return null;
     }
+    InsnList il = new InsnList();
     il.add(createCallSiteVariables(mn, callSite, callSiteInstVarIndex, callSiteArgsVarIndex));
     for (Integer index : listenersToUse) {
       BeforeCallSiteListener listener = (BeforeCallSiteListener) Bctrace.getInstance()
@@ -123,7 +125,7 @@ public class CallSiteHelper extends Helper {
           listener.getCallSiteMethodName().equals(callSite.name) &&
           listener.getCallSiteMethodDescriptor().equals(callSite.desc)) {
 
-        if (callSite.getOpcode() == Opcodes.INVOKESTATIC) { // callsite instance
+        if (callSite.getOpcode() == Opcodes.INVOKESTATIC) { // call site instance
           il.add(new InsnNode(Opcodes.ACONST_NULL));
         } else {
           il.add(new VarInsnNode(Opcodes.ALOAD, callSiteInstVarIndex)); // call site instance

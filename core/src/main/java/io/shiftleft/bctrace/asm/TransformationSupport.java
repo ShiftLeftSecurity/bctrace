@@ -26,6 +26,7 @@ package io.shiftleft.bctrace.asm;
 
 import io.shiftleft.bctrace.Bctrace;
 import io.shiftleft.bctrace.Init;
+import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Enumeration;
@@ -58,7 +59,7 @@ public class TransformationSupport {
         }
       }
       return list.toArray(new String[list.size()]);
-    } catch (Exception ex) {
+    } catch (IOException ex) {
       throw new RuntimeException(ex);
     }
   }
