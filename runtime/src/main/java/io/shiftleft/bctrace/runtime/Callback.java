@@ -58,7 +58,7 @@ public final class Callback {
       NOTIFYING_FLAG.set(Boolean.TRUE);
       ((MinStartListener) listeners[i]).onStart(methodId);
     } finally {
-      NOTIFYING_FLAG.remove();
+      NOTIFYING_FLAG.set(Boolean.FALSE);
     }
   }
 
@@ -74,7 +74,7 @@ public final class Callback {
       NOTIFYING_FLAG.set(Boolean.TRUE);
       ((StartListener) listeners[i]).onStart(methodId, clazz, instance);
     } finally {
-      NOTIFYING_FLAG.remove();
+      NOTIFYING_FLAG.set(Boolean.FALSE);
     }
   }
 
@@ -90,7 +90,7 @@ public final class Callback {
       NOTIFYING_FLAG.set(Boolean.TRUE);
       ((StartArgumentsListener) listeners[i]).onStart(methodId, clazz, instance, args);
     } finally {
-      NOTIFYING_FLAG.remove();
+      NOTIFYING_FLAG.set(Boolean.FALSE);
     }
   }
 
@@ -107,7 +107,7 @@ public final class Callback {
       NOTIFYING_FLAG.set(Boolean.TRUE);
       return ((StartMutableListener) listeners[i]).onStart(methodId, clazz, instance, args);
     } finally {
-      NOTIFYING_FLAG.remove();
+      NOTIFYING_FLAG.set(Boolean.FALSE);
     }
   }
 
@@ -124,7 +124,7 @@ public final class Callback {
       NOTIFYING_FLAG.set(Boolean.TRUE);
       ((FinishReturnListener) listeners[i]).onFinishedReturn(methodId, clazz, instance, ret);
     } finally {
-      NOTIFYING_FLAG.remove();
+      NOTIFYING_FLAG.set(Boolean.FALSE);
     }
   }
 
@@ -142,7 +142,7 @@ public final class Callback {
       ((FinishReturnArgumentsListener) listeners[i])
           .onFinishedReturn(methodId, clazz, instance, args, ret);
     } finally {
-      NOTIFYING_FLAG.remove();
+      NOTIFYING_FLAG.set(Boolean.FALSE);
     }
   }
 
@@ -159,7 +159,7 @@ public final class Callback {
       NOTIFYING_FLAG.set(Boolean.TRUE);
       ((FinishThrowableListener) listeners[i]).onFinishedThrowable(methodId, clazz, instance, th);
     } finally {
-      NOTIFYING_FLAG.remove();
+      NOTIFYING_FLAG.set(Boolean.FALSE);
     }
   }
 
@@ -176,7 +176,7 @@ public final class Callback {
       NOTIFYING_FLAG.set(Boolean.TRUE);
       ((BeforeThrownListener) listeners[i]).onBeforeThrown(methodId, clazz, instance, th);
     } finally {
-      NOTIFYING_FLAG.remove();
+      NOTIFYING_FLAG.set(Boolean.FALSE);
     }
   }
 
@@ -193,7 +193,7 @@ public final class Callback {
       NOTIFYING_FLAG.set(Boolean.TRUE);
       ((BeforeCallSiteListener) listeners[i]).onBeforeCall(methodId, clazz, instance, callSiteInstance, callSiteArgs);
     } finally {
-      NOTIFYING_FLAG.remove();
+      NOTIFYING_FLAG.set(Boolean.FALSE);
     }
   }
 
