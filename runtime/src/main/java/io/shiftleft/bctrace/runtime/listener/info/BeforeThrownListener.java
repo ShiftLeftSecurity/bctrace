@@ -37,9 +37,10 @@ public interface BeforeThrownListener extends Listener {
    * throwable.
    *
    * @param methodId method id (as defined by MethodRegistry)
-   * @param instance instance where the method belongs. Null if the method is
+   * @param clazz class defining the method.
+   * @param instance instance where the method is invoked. Null if the method is static
    * @param th throwable to be thrown
    */
-  public void onBeforeThrown(int methodId, Object instance, Throwable th);
+  public void onBeforeThrown(int methodId, Class clazz, Object instance, Throwable th);
 
 }

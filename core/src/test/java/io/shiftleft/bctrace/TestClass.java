@@ -28,16 +28,26 @@ import io.shiftleft.bctrace.asm.util.ASMUtils;
 import java.io.InputStream;
 
 /**
- *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
 public class TestClass {
 
   public TestClass() {
   }
-  
+
   public TestClass(int i) {
     throw new TestRuntimeException("This constructor throws a Runtime Exception");
+  }
+
+  public void arrayCopyWrapper() {
+    char[] a = new char[]{'a', 'b', 'c'};
+    char[] b = new char[2];
+    System.arraycopy(a, 0, b, 0, 2);
+  }
+
+  public static void arrayCopyWrapper2() {
+    TestClass t = new TestClass();
+    t.arrayCopyWrapper();
   }
 
   public static long fact(long n) {

@@ -24,6 +24,8 @@
  */
 package io.shiftleft.bctrace.spi.hierarchy;
 
+import java.security.ProtectionDomain;
+
 /**
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
@@ -70,6 +72,11 @@ public class LoadedClassInfo extends HierarchyClassInfo {
   @Override
   public ClassLoader getClassLoader() {
     return this.clazz.getClassLoader();
+  }
+
+  @Override
+  public ProtectionDomain getProtectionDomain() {
+    return this.clazz.getProtectionDomain();
   }
 
   @Override

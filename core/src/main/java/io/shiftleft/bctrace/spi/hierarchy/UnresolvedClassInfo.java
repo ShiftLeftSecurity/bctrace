@@ -22,26 +22,52 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.runtime.listener.info;
+package io.shiftleft.bctrace.spi.hierarchy;
 
-import io.shiftleft.bctrace.runtime.listener.Listener;
+import java.security.ProtectionDomain;
 
 /**
- *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public interface FinishThrowableListener extends Listener {
+public class UnresolvedClassInfo extends HierarchyClassInfo {
 
-  /**
-   * Invoked by instrumented methods just before rising a throwable to the
-   * caller (if multiple plugins are registered, listener notification is
-   * performed according to their respective plugin <b>reverse</b>
-   * registration order).
-   *
-   * @param methodId method id (as defined by MethodRegistry)
-   * @param clazz class defining the method.
-   * @param instance instance where the method is invoked. Null if the method is static
-   * @param th thowable to be raised by the instrumented method
-   */
-  public void onFinishedThrowable(int methodId, Class clazz, Object instance, Throwable th);
+
+  private final String className;
+
+  public UnresolvedClassInfo(String className) {
+    this.className = className;
+  }
+
+
+  @Override
+  public HierarchyClassInfo getSuperClass() {
+    return null;
+  }
+
+  @Override
+  public HierarchyClassInfo[] getInterfaces() {
+    return null;
+  }
+
+  @Override
+  public String getName() {
+    return this.className;
+  }
+
+  @Override
+  public ClassLoader getClassLoader() {
+    return null;
+  }
+
+  @Override
+  public ProtectionDomain getProtectionDomain() {
+    return null;
+  }
+
+  @Override
+  public boolean isInterface() {
+    return false;
+  }
+
 }
+

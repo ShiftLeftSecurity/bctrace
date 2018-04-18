@@ -38,12 +38,13 @@ public interface FinishReturnListener extends Listener {
    * respective plugin <b>reverse</b> registration order).
    * 
    * @param methodId method id (as defined by MethodRegistry)
-   * @param instance instance where the method belongs. Null if the method is
+   * @param clazz class defining the method.
+   * @param instance instance where the method is invoked. Null if the method is static
    * @param ret Object being returned by the method. Wrapper type if the
    * original return type is primitive. <code>null</code> if the method return
    * type is <code>void</code>
    */
   
-  public void onFinishedReturn(int methodId, Object instance, Object ret);
+  public void onFinishedReturn(int methodId, Class clazz, Object instance, Object ret);
 
 }

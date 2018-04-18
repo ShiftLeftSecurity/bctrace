@@ -30,18 +30,22 @@ import io.shiftleft.bctrace.runtime.listener.Listener;
  *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public interface FinishThrowableListener extends Listener {
+public interface FinishReturnArgumentsListener extends Listener {
 
   /**
-   * Invoked by instrumented methods just before rising a throwable to the
-   * caller (if multiple plugins are registered, listener notification is
-   * performed according to their respective plugin <b>reverse</b>
-   * registration order).
-   *
+   * Invoked by instrumented methods just before return (if multiple plugins are
+   * registered, listener notification is performed according to their
+   * respective plugin <b>reverse</b> registration order).
+   * 
    * @param methodId method id (as defined by MethodRegistry)
    * @param clazz class defining the method.
    * @param instance instance where the method is invoked. Null if the method is static
-   * @param th thowable to be raised by the instrumented method
+   * @param args arguments passed to the method.
+   * @param ret Object being returned by the method. Wrapper type if the
+   * original return type is primitive. <code>null</code> if the method return
+   * type is <code>void</code>
    */
-  public void onFinishedThrowable(int methodId, Class clazz, Object instance, Throwable th);
+  
+  public void onFinishedReturn(int methodId, Class clazz, Object instance, Object[] args, Object ret);
+
 }

@@ -39,16 +39,8 @@ public class DebugInfo {
 
   private static final DebugInfo INSTANCE = new DebugInfo();
 
-  private static final boolean ENABLED;
-
-  static {
-    String prop = System.getProperty(SystemProperty.DEBUG_SERVER);
-    if (prop != null) {
-      ENABLED = Boolean.valueOf(prop);
-    } else {
-      ENABLED = false;
-    }
-  }
+  // Debug server is of type host:port
+  private static final boolean ENABLED = System.getProperty(SystemProperty.DEBUG_SERVER) != null;
 
   private final Set<ClassInfo> requestedToInstrument = Collections
       .synchronizedSet(new LinkedHashSet<ClassInfo>());

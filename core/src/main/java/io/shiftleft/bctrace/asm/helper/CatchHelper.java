@@ -28,6 +28,7 @@ import io.shiftleft.bctrace.asm.util.ASMUtils;
 import io.shiftleft.bctrace.runtime.listener.info.FinishThrowableListener;
 import java.util.ArrayList;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
@@ -50,14 +51,14 @@ import org.objectweb.asm.tree.VarInsnNode;
  * </pre>
  * Into that:
  * <br><pre>{@code
- *public Object foo(Object arg){
+ * public Object foo(Object arg){
  *   try{
  *     return void(args);
  *   } catch (Throwable th){
  *     // Notify listeners that apply to this method
- *     Callback.onFinishedThrowable(th, this, 0);
- *     Callback.onFinishedThrowable(th, this, 2);
- *     Callback.onFinishedThrowable(th, this, 10);
+ *     Callback.onFinishedThrowable(th, class, this, 0);
+ *     Callback.onFinishedThrowable(th, class, this, 2);
+ *     Callback.onFinishedThrowable(th, class, this, 10);
  *     // Throw the cathed instance
  *     throw th:
  *   }
@@ -76,7 +77,7 @@ public class CatchHelper extends Helper {
         FinishThrowableListener.class);
 
     LabelNode startNode = insertStartNode(mn, listenersToUse);
-    addTraceThrowableUncaught(methodId, mn, startNode, listenersToUse);
+    addTraceThrowableUncaught(methodId, cn, mn, startNode, listenersToUse);
   }
 
   private static LabelNode insertStartNode(MethodNode mn, ArrayList<Integer> listenersToUse) {
@@ -88,7 +89,8 @@ public class CatchHelper extends Helper {
     return ret;
   }
 
-  private static void addTraceThrowableUncaught(int methodId, MethodNode mn, LabelNode startNode,
+  private static void addTraceThrowableUncaught(int methodId, ClassNode cn, MethodNode mn,
+      LabelNode startNode,
       ArrayList<Integer> listenersToUse) {
     if (!isInstrumentationNeeded(listenersToUse)) {
       return;
@@ -99,16 +101,16 @@ public class CatchHelper extends Helper {
     LabelNode endNode = new LabelNode();
     il.add(endNode);
 
-    addCatchBlock(methodId, mn, startNode, endNode, listenersToUse);
+    addCatchBlock(methodId, cn, mn, startNode, endNode, listenersToUse);
   }
 
-  private static void addCatchBlock(int methodId, MethodNode mn, LabelNode startNode,
+  private static void addCatchBlock(int methodId, ClassNode cn, MethodNode mn, LabelNode startNode,
       LabelNode endNode, ArrayList<Integer> listenersToUse) {
 
     InsnList il = new InsnList();
     LabelNode handlerNode = new LabelNode();
     il.add(handlerNode);
-    il.add(getThrowableTraceInstructions(methodId, mn, listenersToUse));
+    il.add(getThrowableTraceInstructions(methodId, cn, mn, listenersToUse));
     il.add(new InsnNode(Opcodes.ATHROW));
 
     TryCatchBlockNode blockNode = new TryCatchBlockNode(startNode, endNode, handlerNode,
@@ -117,13 +119,14 @@ public class CatchHelper extends Helper {
     mn.instructions.add(il);
   }
 
-  private static InsnList getThrowableTraceInstructions(int methodId, MethodNode mn,
+  private static InsnList getThrowableTraceInstructions(int methodId, ClassNode cn, MethodNode mn,
       ArrayList<Integer> listenersToUse) {
     InsnList il = new InsnList();
     for (int i = listenersToUse.size() - 1; i >= 0; i--) {
       Integer index = listenersToUse.get(i);
       il.add(new InsnNode(Opcodes.DUP)); // dup throwable
       il.add(ASMUtils.getPushInstruction(methodId)); // method id
+      il.add(getClassConstantReference(Type.getObjectType(cn.name), cn.version));
       if (ASMUtils.isStatic(mn.access) || mn.name.equals("<init>")) { // instance
         il.add(new InsnNode(Opcodes.ACONST_NULL));
       } else {
@@ -132,7 +135,7 @@ public class CatchHelper extends Helper {
       il.add(ASMUtils.getPushInstruction(index)); // hook id
       il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
           "io/shiftleft/bctrace/runtime/Callback", "onFinishedThrowable",
-          "(Ljava/lang/Throwable;ILjava/lang/Object;I)V", false));
+          "(Ljava/lang/Throwable;ILjava/lang/Class;Ljava/lang/Object;I)V", false));
     }
     return il;
   }

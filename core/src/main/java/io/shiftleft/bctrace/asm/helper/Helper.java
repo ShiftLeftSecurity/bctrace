@@ -25,9 +25,18 @@
 package io.shiftleft.bctrace.asm.helper;
 
 import io.shiftleft.bctrace.Bctrace;
+import io.shiftleft.bctrace.asm.util.ASMUtils;
 import io.shiftleft.bctrace.runtime.listener.Listener;
 import io.shiftleft.bctrace.spi.Hook;
 import java.util.ArrayList;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
+import org.objectweb.asm.tree.InsnList;
+import org.objectweb.asm.tree.InsnNode;
+import org.objectweb.asm.tree.LdcInsnNode;
+import org.objectweb.asm.tree.MethodInsnNode;
+import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.TypeInsnNode;
 
 /**
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
@@ -55,6 +64,48 @@ public class Helper {
       }
     }
     return ret;
+  }
+
+  public static InsnList getClassConstantReference(Type type, int majorVersion) {
+    InsnList il = new InsnList();
+
+    if (majorVersion >= Opcodes.V1_5) {
+      il.add(new LdcInsnNode(type));
+
+    } else {
+      String fullyQualifiedName = type.getInternalName().replaceAll("/", ".");
+      il.add(new LdcInsnNode(fullyQualifiedName));
+      il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
+          "java/lang/Class", "forName",
+          "(Ljava/lang/String;)Ljava/lang/Class;", false));
+    }
+    return il;
+  }
+
+  /**
+   * Pushes the parameter object array reference on top of the operand stack
+   */
+  protected static void pushMethodArgsArray(InsnList il, MethodNode mn) {
+    Type[] methodArguments = Type.getArgumentTypes(mn.desc);
+    if (methodArguments.length == 0) {
+      il.add(new InsnNode(Opcodes.ACONST_NULL));
+    } else {
+      il.add(ASMUtils.getPushInstruction(methodArguments.length));
+      il.add(new TypeInsnNode(Opcodes.ANEWARRAY, "java/lang/Object"));
+      int index = ASMUtils.isStatic(mn.access) ? 0 : 1;
+      for (int i = 0; i < methodArguments.length; i++) {
+        il.add(new InsnNode(Opcodes.DUP));
+        il.add(ASMUtils.getPushInstruction(i));
+        il.add(ASMUtils.getLoadInst(methodArguments[i], index));
+        MethodInsnNode primitiveToWrapperInst = ASMUtils
+            .getPrimitiveToWrapperInst(methodArguments[i]);
+        if (primitiveToWrapperInst != null) {
+          il.add(primitiveToWrapperInst);
+        }
+        il.add(new InsnNode(Opcodes.AASTORE));
+        index += methodArguments[i].getSize();
+      }
+    }
   }
 
 }
