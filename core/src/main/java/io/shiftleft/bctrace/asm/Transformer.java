@@ -134,7 +134,7 @@ public class Transformer implements ClassFileTransformer {
       if (!transformed) {
         return ret;
       } else {
-        ClassWriter cw = new StaticClassWriter(cr, ClassWriter.COMPUTE_FRAMES, loader);
+        ClassWriter cw = new StaticClassWriter(cr, ClassWriter.COMPUTE_MAXS, loader);
         cn.accept(cw);
         ret = cw.toByteArray();
         return ret;
