@@ -38,7 +38,7 @@ public class ByteVector {
   /** The content of this vector. Only the first {@link #length} bytes contain real data. */
   byte[] data;
 
-  /** Actual number of bytes in this vector. */
+  /** The actual number of bytes in this vector. */
   int length;
 
   /** Constructs a new {@link ByteVector} with a default initial capacity. */
@@ -47,7 +47,7 @@ public class ByteVector {
   }
 
   /**
-   * Constructs a new {@link ByteVector ByteVector} with the given initial capacity.
+   * Constructs a new {@link ByteVector} with the given initial capacity.
    *
    * @param initialCapacity the initial capacity of the byte vector to be constructed.
    */
@@ -55,7 +55,11 @@ public class ByteVector {
     data = new byte[initialCapacity];
   }
 
-  /** Constructs a new {@link ByteVector} from the given initial data. */
+  /**
+   * Constructs a new {@link ByteVector} from the given initial data.
+   *
+   * @param data the initial data of the new byte vector.
+   */
   ByteVector(final byte[] data) {
     this.data = data;
     this.length = data.length;
@@ -84,7 +88,7 @@ public class ByteVector {
    * @param byteValue2 another byte.
    * @return this byte vector.
    */
-  ByteVector put11(final int byteValue1, final int byteValue2) {
+  final ByteVector put11(final int byteValue1, final int byteValue2) {
     int currentLength = length;
     if (currentLength + 2 > data.length) {
       enlarge(2);
@@ -122,13 +126,36 @@ public class ByteVector {
    * @param shortValue a short.
    * @return this byte vector.
    */
-  ByteVector put12(final int byteValue, final int shortValue) {
+  final ByteVector put12(final int byteValue, final int shortValue) {
     int currentLength = length;
     if (currentLength + 3 > data.length) {
       enlarge(3);
     }
     byte[] currentData = data;
     currentData[currentLength++] = (byte) byteValue;
+    currentData[currentLength++] = (byte) (shortValue >>> 8);
+    currentData[currentLength++] = (byte) shortValue;
+    length = currentLength;
+    return this;
+  }
+
+  /**
+   * Puts two bytes and a short into this byte vector. The byte vector is automatically enlarged if
+   * necessary.
+   *
+   * @param byteValue1 a byte.
+   * @param byteValue2 another byte.
+   * @param shortValue a short.
+   * @return this byte vector.
+   */
+  final ByteVector put112(final int byteValue1, final int byteValue2, final int shortValue) {
+    int currentLength = length;
+    if (currentLength + 4 > data.length) {
+      enlarge(4);
+    }
+    byte[] currentData = data;
+    currentData[currentLength++] = (byte) byteValue1;
+    currentData[currentLength++] = (byte) byteValue2;
     currentData[currentLength++] = (byte) (shortValue >>> 8);
     currentData[currentLength++] = (byte) shortValue;
     length = currentLength;
@@ -151,6 +178,30 @@ public class ByteVector {
     currentData[currentLength++] = (byte) (intValue >>> 16);
     currentData[currentLength++] = (byte) (intValue >>> 8);
     currentData[currentLength++] = (byte) intValue;
+    length = currentLength;
+    return this;
+  }
+
+  /**
+   * Puts one byte and two shorts into this byte vector. The byte vector is automatically enlarged
+   * if necessary.
+   *
+   * @param byteValue a byte.
+   * @param shortValue1 a short.
+   * @param shortValue2 another short.
+   * @return this byte vector.
+   */
+  final ByteVector put122(final int byteValue, final int shortValue1, final int shortValue2) {
+    int currentLength = length;
+    if (currentLength + 5 > data.length) {
+      enlarge(5);
+    }
+    byte[] currentData = data;
+    currentData[currentLength++] = (byte) byteValue;
+    currentData[currentLength++] = (byte) (shortValue1 >>> 8);
+    currentData[currentLength++] = (byte) shortValue1;
+    currentData[currentLength++] = (byte) (shortValue2 >>> 8);
+    currentData[currentLength++] = (byte) shortValue2;
     length = currentLength;
     return this;
   }
@@ -198,17 +249,15 @@ public class ByteVector {
       enlarge(2 + charLength);
     }
     byte[] currentData = data;
-    // optimistic algorithm: instead of computing the byte length and then
-    // serializing the string (which requires two loops), we assume the byte
-    // length is equal to char length (which is the most frequent case), and
-    // we start serializing the string right away. During the serialization,
-    // if we find that this assumption is wrong, we continue with the
-    // general method.
+    // Optimistic algorithm: instead of computing the byte length and then serializing the string
+    // (which requires two loops), we assume the byte length is equal to char length (which is the
+    // most frequent case), and we start serializing the string right away. During the
+    // serialization, if we find that this assumption is wrong, we continue with the general method.
     currentData[currentLength++] = (byte) (charLength >>> 8);
     currentData[currentLength++] = (byte) charLength;
     for (int i = 0; i < charLength; ++i) {
       char charValue = stringValue.charAt(i);
-      if (charValue >= '\001' && charValue <= '\177') {
+      if (charValue >= '\u0001' && charValue <= '\u007F') {
         currentData[currentLength++] = (byte) charValue;
       } else {
         length = currentLength;
@@ -222,7 +271,7 @@ public class ByteVector {
   /**
    * Puts an UTF8 string into this byte vector. The byte vector is automatically enlarged if
    * necessary. The string length is encoded in two bytes before the encoded characters, if there is
-   * space for that (i.e. if this.length - offset - 2 >= 0).
+   * space for that (i.e. if this.length - offset - 2 &gt;= 0).
    *
    * @param stringValue the String to encode.
    * @param offset the index of the first character to encode. The previous characters are supposed
@@ -231,17 +280,17 @@ public class ByteVector {
    *     encoded characters.
    * @return this byte vector.
    */
-  ByteVector encodeUTF8(final String stringValue, final int offset, final int maxByteLength) {
+  final ByteVector encodeUTF8(final String stringValue, final int offset, final int maxByteLength) {
     int charLength = stringValue.length();
     int byteLength = offset;
     for (int i = offset; i < charLength; ++i) {
       char charValue = stringValue.charAt(i);
-      if (charValue >= '\001' && charValue <= '\177') {
+      if (charValue >= '\u0001' && charValue <= '\u007F') {
         byteLength++;
-      } else if (charValue > '\u07FF') {
-        byteLength += 3;
-      } else {
+      } else if (charValue <= '\u07FF') {
         byteLength += 2;
+      } else {
+        byteLength += 3;
       }
     }
     if (byteLength > maxByteLength) {
@@ -259,14 +308,14 @@ public class ByteVector {
     int currentLength = length;
     for (int i = offset; i < charLength; ++i) {
       char charValue = stringValue.charAt(i);
-      if (charValue >= '\001' && charValue <= '\177') {
+      if (charValue >= '\u0001' && charValue <= '\u007F') {
         data[currentLength++] = (byte) charValue;
-      } else if (charValue > '\u07FF') {
-        data[currentLength++] = (byte) (0xE0 | charValue >> 12 & 0xF);
-        data[currentLength++] = (byte) (0x80 | charValue >> 6 & 0x3F);
+      } else if (charValue <= '\u07FF') {
+        data[currentLength++] = (byte) (0xC0 | charValue >> 6 & 0x1F);
         data[currentLength++] = (byte) (0x80 | charValue & 0x3F);
       } else {
-        data[currentLength++] = (byte) (0xC0 | charValue >> 6 & 0x1F);
+        data[currentLength++] = (byte) (0xE0 | charValue >> 12 & 0xF);
+        data[currentLength++] = (byte) (0x80 | charValue >> 6 & 0x3F);
         data[currentLength++] = (byte) (0x80 | charValue & 0x3F);
       }
     }
@@ -297,7 +346,7 @@ public class ByteVector {
   }
 
   /**
-   * Enlarge this byte vector so that it can receive 'size' more bytes.
+   * Enlarges this byte vector so that it can receive 'size' more bytes.
    *
    * @param size number of additional bytes that this byte vector should be able to receive.
    */

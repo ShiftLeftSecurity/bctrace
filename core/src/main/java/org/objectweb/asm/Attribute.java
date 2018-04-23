@@ -31,8 +31,10 @@ package org.objectweb.asm;
  * A non standard class, field, method or code attribute, as defined in the Java Virtual Machine
  * Specification (JVMS).
  *
- * @see https://docs.oracle.com/javase/specs/jvms/se9/html/jvms-4.html#jvms-4.7
- * @see https://docs.oracle.com/javase/specs/jvms/se9/html/jvms-4.html#jvms-4.7.3
+ * @see <a href="https://docs.oracle.com/javase/specs/jvms/se9/html/jvms-4.html#jvms-4.7">JVMS
+ *     4.7</a>
+ * @see <a href="https://docs.oracle.com/javase/specs/jvms/se9/html/jvms-4.html#jvms-4.7.3">JVMS
+ *     4.7.3</a>
  * @author Eric Bruneton
  * @author Eugene Kuleshov
  */
@@ -42,11 +44,11 @@ public class Attribute {
   public final String type;
 
   /**
-   * The raw content of this attribute, used only for unknown attributes (see {@link #isUnknown()}).
+   * The raw content of this attribute, only used for unknown attributes (see {@link #isUnknown()}).
    * The 6 header bytes of the attribute (attribute_name_index and attribute_length) are <i>not</i>
    * included.
    */
-  byte[] content;
+  private byte[] content;
 
   /**
    * The next attribute in this attribute list (Attribute instances can be linked via this field to
@@ -93,7 +95,7 @@ public class Attribute {
    *     code attribute that contains labels.
    */
   protected Label[] getLabels() {
-    return null;
+    return new Label[0];
   }
 
   /**
@@ -177,17 +179,16 @@ public class Attribute {
    * this attribute. This size includes the 6 header bytes (attribute_name_index and
    * attribute_length) per attribute. Also adds the attribute type names to the constant pool.
    *
-   * @param classWriter the class writer to be used to convert the attributes into byte arrays, with
-   *     the {@link #write} method.
+   * @param symbolTable where the constants used in the attributes must be stored.
    * @return the size of all the attributes in this attribute list. This size includes the size of
    *     the attribute headers.
    */
-  final int getAttributesSize(final ClassWriter classWriter) {
+  final int computeAttributesSize(final SymbolTable symbolTable) {
     final byte[] code = null;
     final int codeLength = 0;
     final int maxStack = -1;
     final int maxLocals = -1;
-    return getAttributesSize(classWriter, code, codeLength, maxStack, maxLocals);
+    return computeAttributesSize(symbolTable, code, codeLength, maxStack, maxLocals);
   }
 
   /**
@@ -195,8 +196,7 @@ public class Attribute {
    * this attribute. This size includes the 6 header bytes (attribute_name_index and
    * attribute_length) per attribute. Also adds the attribute type names to the constant pool.
    *
-   * @param classWriter the class writer to be used to convert the attributes into byte arrays, with
-   *     the {@link #write} method.
+   * @param symbolTable where the constants used in the attributes must be stored.
    * @param code the bytecode of the method corresponding to these code attributes, or <tt>null</tt>
    *     if they are not code attributes. Corresponds to the 'code' field of the Code attribute.
    * @param codeLength the length of the bytecode of the method corresponding to these code
@@ -209,16 +209,17 @@ public class Attribute {
    * @return the size of all the attributes in this attribute list. This size includes the size of
    *     the attribute headers.
    */
-  final int getAttributesSize(
-      final ClassWriter classWriter,
+  final int computeAttributesSize(
+      final SymbolTable symbolTable,
       final byte[] code,
       final int codeLength,
       final int maxStack,
       final int maxLocals) {
+    final ClassWriter classWriter = symbolTable.classWriter;
     int size = 0;
     Attribute attribute = this;
     while (attribute != null) {
-      classWriter.newUTF8(attribute.type);
+      symbolTable.addConstantUtf8(attribute.type);
       size += 6 + attribute.write(classWriter, code, codeLength, maxStack, maxLocals).length;
       attribute = attribute.nextAttribute;
     }
@@ -230,16 +231,15 @@ public class Attribute {
    * byte vector. This includes the 6 header bytes (attribute_name_index and attribute_length) per
    * attribute.
    *
-   * @param classWriter the class writer to be used to convert the attributes into byte arrays, with
-   *     the {@link #write} method.
+   * @param symbolTable where the constants used in the attributes must be stored.
    * @param output where the attributes must be written.
    */
-  final void putAttributes(final ClassWriter classWriter, final ByteVector output) {
+  final void putAttributes(final SymbolTable symbolTable, final ByteVector output) {
     final byte[] code = null;
     final int codeLength = 0;
     final int maxStack = -1;
     final int maxLocals = -1;
-    putAttributes(classWriter, code, codeLength, maxStack, maxLocals, output);
+    putAttributes(symbolTable, code, codeLength, maxStack, maxLocals, output);
   }
 
   /**
@@ -247,8 +247,7 @@ public class Attribute {
    * byte vector. This includes the 6 header bytes (attribute_name_index and attribute_length) per
    * attribute.
    *
-   * @param classWriter the class writer to be used to convert the attributes into byte arrays, with
-   *     the {@link #write} method.
+   * @param symbolTable where the constants used in the attributes must be stored.
    * @param code the bytecode of the method corresponding to these code attributes, or <tt>null</tt>
    *     if they are not code attributes. Corresponds to the 'code' field of the Code attribute.
    * @param codeLength the length of the bytecode of the method corresponding to these code
@@ -261,20 +260,64 @@ public class Attribute {
    * @param output where the attributes must be written.
    */
   final void putAttributes(
-      final ClassWriter classWriter,
+      final SymbolTable symbolTable,
       final byte[] code,
       final int codeLength,
       final int maxStack,
       final int maxLocals,
       final ByteVector output) {
+    final ClassWriter classWriter = symbolTable.classWriter;
     Attribute attribute = this;
     while (attribute != null) {
       ByteVector attributeContent =
           attribute.write(classWriter, code, codeLength, maxStack, maxLocals);
       // Put attribute_name_index and attribute_length.
-      output.putShort(classWriter.newUTF8(attribute.type)).putInt(attributeContent.length);
+      output.putShort(symbolTable.addConstantUtf8(attribute.type)).putInt(attributeContent.length);
       output.putByteArray(attributeContent.data, 0, attributeContent.length);
       attribute = attribute.nextAttribute;
+    }
+  }
+
+  /** A set of attribute prototypes (attributes with the same type are considered equal). */
+  static final class Set {
+
+    private static final int SIZE_INCREMENT = 6;
+
+    private int size;
+    private Attribute[] data = new Attribute[SIZE_INCREMENT];
+
+    void addAttributes(final Attribute attributeList) {
+      Attribute attribute = attributeList;
+      while (attribute != null) {
+        if (!contains(attribute)) {
+          add(attribute);
+        }
+        attribute = attribute.nextAttribute;
+      }
+    }
+
+    Attribute[] toArray() {
+      Attribute[] result = new Attribute[size];
+      System.arraycopy(data, 0, result, 0, size);
+      return result;
+    }
+
+    private boolean contains(final Attribute attribute) {
+      for (int i = 0; i < size; ++i) {
+        if (data[i].type.equals(attribute.type)) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    private void add(final Attribute attribute) {
+      if (size >= data.length) {
+        Attribute[] newData = new Attribute[data.length + SIZE_INCREMENT];
+        System.arraycopy(data, 0, newData, 0, size);
+        data = newData;
+      }
+      data[size++] = attribute;
     }
   }
 }

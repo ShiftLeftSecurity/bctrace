@@ -33,9 +33,9 @@ package org.objectweb.asm;
  *
  * @author Eric Bruneton
  */
-class Context {
+final class Context {
 
-  /** Prototypes of the attributes that must be parsed in this class. */
+  /** The prototypes of the attributes that must be parsed in this class. */
   Attribute[] attributePrototypes;
 
   /**
@@ -49,10 +49,11 @@ class Context {
   char[] charBuffer;
 
   /**
-   * The offsets, from the start of the class file structure, to the first byte of each element of
-   * the bootstrap_methods array (in the BootstrapMethod attribute).
+   * The start offsets in {@link ClassReader#b} of each element of the bootstrap_methods array (in
+   * the BootstrapMethod attribute).
    *
-   * @see https://docs.oracle.com/javase/specs/jvms/se9/html/jvms-4.html#jvms-4.7.23
+   * @see <a href="https://docs.oracle.com/javase/specs/jvms/se9/html/jvms-4.html#jvms-4.7.23">JVMS
+   *     4.7.23</a>
    */
   int[] bootstrapMethodOffsets;
 
@@ -60,13 +61,13 @@ class Context {
   // to {@link ClassReader#readMethod()}.
 
   /** The access flags of the current method. */
-  int currentMethodAccess;
+  int currentMethodAccessFlags;
 
   /** The name of the current method. */
   String currentMethodName;
 
   /** The descriptor of the current method. */
-  String currentMethodDesc;
+  String currentMethodDescriptor;
 
   /**
    * The labels of the current method, indexed by bytecode offset (only bytecode offsets for which a
@@ -104,8 +105,8 @@ class Context {
   int currentFrameOffset;
 
   /**
-   * The type of the current stack map frame. One of {@link Opcodes.F_FULL}, {@link
-   * Opcodes.F_APPEND}, {@link Opcodes.F_CHOP}, {@link Opcodes.F_SAME} or {@link Opcodes.F_SAME1}.
+   * The type of the current stack map frame. One of {@link Opcodes#F_FULL}, {@link
+   * Opcodes#F_APPEND}, {@link Opcodes#F_CHOP}, {@link Opcodes#F_SAME} or {@link Opcodes#F_SAME1}.
    */
   int currentFrameType;
 
@@ -125,7 +126,7 @@ class Context {
   /**
    * The types of the local variables in the current stack map frame. Each type is represented with
    * a single array element (even long and double), using the format described in {@link
-   * MethodVisitor#visitFrame()}. Depending on {@link #currentFrameType}, this contains the types of
+   * MethodVisitor#visitFrame}. Depending on {@link #currentFrameType}, this contains the types of
    * all the local variables, or only those of the additional ones (compared to the previous frame).
    */
   Object[] currentFrameLocalTypes;
@@ -139,7 +140,7 @@ class Context {
   /**
    * The types of the stack elements in the current stack map frame. Each type is represented with a
    * single array element (even long and double), using the format described in {@link
-   * MethodVisitor#visitFrame()}.
+   * MethodVisitor#visitFrame}.
    */
   Object[] currentFrameStackTypes;
 }

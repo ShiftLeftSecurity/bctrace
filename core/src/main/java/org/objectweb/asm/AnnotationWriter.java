@@ -31,18 +31,20 @@ package org.objectweb.asm;
  * An {@link AnnotationVisitor} that generates a corresponding 'annotation' or 'type_annotation'
  * structure, as defined in the Java Virtual Machine Specification (JVMS). AnnotationWriter
  * instances can be chained in a doubly linked list, from which Runtime[In]Visible[Type]Annotations
- * attributes can be generated with the {@link #putAnnotations()} method. Similarly, arrays of such
+ * attributes can be generated with the {@link #putAnnotations} method. Similarly, arrays of such
  * lists can be used to generate Runtime[In]VisibleParameterAnnotations attributes.
  *
- * @see https://docs.oracle.com/javase/specs/jvms/se9/html/jvms-4.html#jvms-4.7.16
- * @see https://docs.oracle.com/javase/specs/jvms/se9/html/jvms-4.html#jvms-4.7.20
+ * @see <a href="https://docs.oracle.com/javase/specs/jvms/se9/html/jvms-4.html#jvms-4.7.16">JVMS
+ *     4.7.16</a>
+ * @see <a href="https://docs.oracle.com/javase/specs/jvms/se9/html/jvms-4.html#jvms-4.7.20">JVMS
+ *     4.7.20</a>
  * @author Eric Bruneton
  * @author Eugene Kuleshov
  */
 final class AnnotationWriter extends AnnotationVisitor {
 
-  /** The ClassWriter to which this AnnotationWriter belongs. */
-  private final ClassWriter parentClassWriter;
+  /** Where the constants used in this AnnotationWriter must be stored. */
+  private final SymbolTable symbolTable;
 
   /**
    * Whether values are named or not. AnnotationWriter instances used for annotation default and
@@ -61,7 +63,7 @@ final class AnnotationWriter extends AnnotationVisitor {
    *
    * <p>Note: as an exception to the above rules, for AnnotationDefault attributes (which contain a
    * single element_value by definition), this ByteVector is initially empty when passed to the
-   * constructor, and numElementValuePairsOffset is set to -1.
+   * constructor, and {@link #numElementValuePairsOffset} is set to -1.
    */
   private final ByteVector annotation;
 
@@ -88,14 +90,14 @@ final class AnnotationWriter extends AnnotationVisitor {
    */
   private AnnotationWriter nextAnnotation;
 
-  // ------------------------------------------------------------------------
+  // -----------------------------------------------------------------------------------------------
   // Constructors
-  // ------------------------------------------------------------------------
+  // -----------------------------------------------------------------------------------------------
 
   /**
    * Constructs a new {@link AnnotationWriter}.
    *
-   * @param parentClassWriter the ClassWriter to which this AnnotationWriter belongs.
+   * @param symbolTable where the constants used in this AnnotationWriter must be stored.
    * @param useNamedValues whether values are named or not. AnnotationDefault and annotation arrays
    *     use unnamed values.
    * @param annotation where the 'annotation' or 'type_annotation' JVMS structure corresponding to
@@ -106,12 +108,12 @@ final class AnnotationWriter extends AnnotationVisitor {
    *     other cases (e.g. nested or array annotations).
    */
   AnnotationWriter(
-      final ClassWriter parentClassWriter,
+      final SymbolTable symbolTable,
       final boolean useNamedValues,
       final ByteVector annotation,
       final AnnotationWriter previousAnnotation) {
     super(Opcodes.ASM6);
-    this.parentClassWriter = parentClassWriter;
+    this.symbolTable = symbolTable;
     this.useNamedValues = useNamedValues;
     this.annotation = annotation;
     // By hypothesis, num_element_value_pairs is stored in the last unsigned short of 'annotation'.
@@ -125,7 +127,7 @@ final class AnnotationWriter extends AnnotationVisitor {
   /**
    * Constructs a new {@link AnnotationWriter} using named values.
    *
-   * @param parentClassWriter the ClassWriter to which this AnnotationWriter belongs.
+   * @param symbolTable where the constants used in this AnnotationWriter must be stored.
    * @param annotation where the 'annotation' or 'type_annotation' JVMS structure corresponding to
    *     the visited content must be stored. This ByteVector must already contain all the fields of
    *     the structure except the last one (the element_value_pairs array).
@@ -134,15 +136,15 @@ final class AnnotationWriter extends AnnotationVisitor {
    *     other cases (e.g. nested or array annotations).
    */
   AnnotationWriter(
-      final ClassWriter parentClassWriter,
+      final SymbolTable symbolTable,
       final ByteVector annotation,
       final AnnotationWriter previousAnnotation) {
-    this(parentClassWriter, /* useNamedValues = */ true, annotation, previousAnnotation);
+    this(symbolTable, /* useNamedValues = */ true, annotation, previousAnnotation);
   }
 
-  // ------------------------------------------------------------------------
+  // -----------------------------------------------------------------------------------------------
   // Implementation of the AnnotationVisitor abstract class
-  // ------------------------------------------------------------------------
+  // -----------------------------------------------------------------------------------------------
 
   @Override
   public void visit(final String name, final Object value) {
@@ -150,99 +152,99 @@ final class AnnotationWriter extends AnnotationVisitor {
     // See https://docs.oracle.com/javase/specs/jvms/se9/html/jvms-4.html#jvms-4.7.16.1.
     ++numElementValuePairs;
     if (useNamedValues) {
-      annotation.putShort(parentClassWriter.newUTF8(name));
+      annotation.putShort(symbolTable.addConstantUtf8(name));
     }
     if (value instanceof String) {
-      annotation.put12('s', parentClassWriter.newUTF8((String) value));
+      annotation.put12('s', symbolTable.addConstantUtf8((String) value));
     } else if (value instanceof Byte) {
-      annotation.put12('B', parentClassWriter.newInteger(((Byte) value).byteValue()).index);
+      annotation.put12('B', symbolTable.addConstantInteger(((Byte) value).byteValue()).index);
     } else if (value instanceof Boolean) {
       int booleanValue = ((Boolean) value).booleanValue() ? 1 : 0;
-      annotation.put12('Z', parentClassWriter.newInteger(booleanValue).index);
+      annotation.put12('Z', symbolTable.addConstantInteger(booleanValue).index);
     } else if (value instanceof Character) {
-      annotation.put12('C', parentClassWriter.newInteger(((Character) value).charValue()).index);
+      annotation.put12('C', symbolTable.addConstantInteger(((Character) value).charValue()).index);
     } else if (value instanceof Short) {
-      annotation.put12('S', parentClassWriter.newInteger(((Short) value).shortValue()).index);
+      annotation.put12('S', symbolTable.addConstantInteger(((Short) value).shortValue()).index);
     } else if (value instanceof Type) {
-      annotation.put12('c', parentClassWriter.newUTF8(((Type) value).getDescriptor()));
+      annotation.put12('c', symbolTable.addConstantUtf8(((Type) value).getDescriptor()));
     } else if (value instanceof byte[]) {
       byte[] byteArray = (byte[]) value;
       annotation.put12('[', byteArray.length);
       for (byte byteValue : byteArray) {
-        annotation.put12('B', parentClassWriter.newInteger(byteValue).index);
+        annotation.put12('B', symbolTable.addConstantInteger(byteValue).index);
       }
     } else if (value instanceof boolean[]) {
       boolean[] booleanArray = (boolean[]) value;
       annotation.put12('[', booleanArray.length);
       for (boolean booleanValue : booleanArray) {
-        annotation.put12('Z', parentClassWriter.newInteger(booleanValue ? 1 : 0).index);
+        annotation.put12('Z', symbolTable.addConstantInteger(booleanValue ? 1 : 0).index);
       }
     } else if (value instanceof short[]) {
       short[] shortArray = (short[]) value;
       annotation.put12('[', shortArray.length);
       for (short shortValue : shortArray) {
-        annotation.put12('S', parentClassWriter.newInteger(shortValue).index);
+        annotation.put12('S', symbolTable.addConstantInteger(shortValue).index);
       }
     } else if (value instanceof char[]) {
       char[] charArray = (char[]) value;
       annotation.put12('[', charArray.length);
       for (char charValue : charArray) {
-        annotation.put12('C', parentClassWriter.newInteger(charValue).index);
+        annotation.put12('C', symbolTable.addConstantInteger(charValue).index);
       }
     } else if (value instanceof int[]) {
       int[] intArray = (int[]) value;
       annotation.put12('[', intArray.length);
       for (int intValue : intArray) {
-        annotation.put12('I', parentClassWriter.newInteger(intValue).index);
+        annotation.put12('I', symbolTable.addConstantInteger(intValue).index);
       }
     } else if (value instanceof long[]) {
       long[] longArray = (long[]) value;
       annotation.put12('[', longArray.length);
       for (long longValue : longArray) {
-        annotation.put12('J', parentClassWriter.newLong(longValue).index);
+        annotation.put12('J', symbolTable.addConstantLong(longValue).index);
       }
     } else if (value instanceof float[]) {
       float[] floatArray = (float[]) value;
       annotation.put12('[', floatArray.length);
       for (float floatValue : floatArray) {
-        annotation.put12('F', parentClassWriter.newFloat(floatValue).index);
+        annotation.put12('F', symbolTable.addConstantFloat(floatValue).index);
       }
     } else if (value instanceof double[]) {
       double[] doubleArray = (double[]) value;
       annotation.put12('[', doubleArray.length);
       for (double doubleValue : doubleArray) {
-        annotation.put12('D', parentClassWriter.newDouble(doubleValue).index);
+        annotation.put12('D', symbolTable.addConstantDouble(doubleValue).index);
       }
     } else {
-      Item constItem = parentClassWriter.newConstItem(value);
-      annotation.put12(".s.IFJDCS".charAt(constItem.type), constItem.index);
+      Symbol symbol = symbolTable.addConstant(value);
+      annotation.put12(".s.IFJDCS".charAt(symbol.tag), symbol.index);
     }
   }
 
   @Override
-  public void visitEnum(final String name, final String desc, final String value) {
+  public void visitEnum(final String name, final String descriptor, final String value) {
     // Case of an element_value with an enum_const_value field.
     // See https://docs.oracle.com/javase/specs/jvms/se9/html/jvms-4.html#jvms-4.7.16.1.
     ++numElementValuePairs;
     if (useNamedValues) {
-      annotation.putShort(parentClassWriter.newUTF8(name));
+      annotation.putShort(symbolTable.addConstantUtf8(name));
     }
     annotation
-        .put12('e', parentClassWriter.newUTF8(desc))
-        .putShort(parentClassWriter.newUTF8(value));
+        .put12('e', symbolTable.addConstantUtf8(descriptor))
+        .putShort(symbolTable.addConstantUtf8(value));
   }
 
   @Override
-  public AnnotationVisitor visitAnnotation(final String name, final String desc) {
+  public AnnotationVisitor visitAnnotation(final String name, final String descriptor) {
     // Case of an element_value with an annotation_value field.
     // See https://docs.oracle.com/javase/specs/jvms/se9/html/jvms-4.html#jvms-4.7.16.1.
     ++numElementValuePairs;
     if (useNamedValues) {
-      annotation.putShort(parentClassWriter.newUTF8(name));
+      annotation.putShort(symbolTable.addConstantUtf8(name));
     }
     // Write tag and type_index, and reserve 2 bytes for num_element_value_pairs.
-    annotation.put12('@', parentClassWriter.newUTF8(desc)).putShort(0);
-    return new AnnotationWriter(parentClassWriter, annotation, null);
+    annotation.put12('@', symbolTable.addConstantUtf8(descriptor)).putShort(0);
+    return new AnnotationWriter(symbolTable, annotation, null);
   }
 
   @Override
@@ -251,7 +253,7 @@ final class AnnotationWriter extends AnnotationVisitor {
     // https://docs.oracle.com/javase/specs/jvms/se9/html/jvms-4.html#jvms-4.7.16.1
     ++numElementValuePairs;
     if (useNamedValues) {
-      annotation.putShort(parentClassWriter.newUTF8(name));
+      annotation.putShort(symbolTable.addConstantUtf8(name));
     }
     // Write tag, and reserve 2 bytes for num_values. Here we take advantage of the fact that the
     // end of an element_value of array type is similar to the end of an 'annotation' structure: an
@@ -261,7 +263,7 @@ final class AnnotationWriter extends AnnotationVisitor {
     // visit the array elements. Its num_element_value_pairs will correspond to the number of array
     // elements and will be stored in what is in fact num_values.
     annotation.put12('[', 0);
-    return new AnnotationWriter(parentClassWriter, /* useNamedValues = */ false, annotation, null);
+    return new AnnotationWriter(symbolTable, /* useNamedValues = */ false, annotation, null);
   }
 
   @Override
@@ -273,9 +275,9 @@ final class AnnotationWriter extends AnnotationVisitor {
     }
   }
 
-  // ------------------------------------------------------------------------
+  // -----------------------------------------------------------------------------------------------
   // Utility methods
-  // ------------------------------------------------------------------------
+  // -----------------------------------------------------------------------------------------------
 
   /**
    * Returns the size of a Runtime[In]Visible[Type]Annotations attribute containing this annotation
@@ -287,9 +289,9 @@ final class AnnotationWriter extends AnnotationVisitor {
    *     annotation and all its predecessors. This includes the size of the attribute_name_index and
    *     attribute_length fields.
    */
-  int getAnnotationsSize(final String attributeName) {
+  int computeAnnotationsSize(final String attributeName) {
     if (attributeName != null) {
-      parentClassWriter.newUTF8(attributeName);
+      symbolTable.addConstantUtf8(attributeName);
     }
     // The attribute_name_index, attribute_length and num_annotations fields use 8 bytes.
     int attributeSize = 8;
@@ -341,23 +343,26 @@ final class AnnotationWriter extends AnnotationVisitor {
    * @param attributeName one of "Runtime[In]VisibleParameterAnnotations".
    * @param annotationWriters an array of AnnotationWriter lists (designated by their <i>last</i>
    *     element).
-   * @param off the start offset of the sub-array of annotationWriters to consider in this method.
+   * @param annotableParameterCount the number of elements in annotationWriters to take into account
+   *     (elements [0..annotableParameterCount[ are taken into account).
    * @return the size in bytes of a Runtime[In]VisibleParameterAnnotations attribute corresponding
    *     to the given sub-array of AnnotationWriter lists. This includes the size of the
    *     attribute_name_index and attribute_length fields.
    */
-  static int getParameterAnnotationsSize(
-      final String attributeName, final AnnotationWriter[] annotationWriters, final int off) {
-    // Note: attributeName is added to the constant pool by the call to getAnnotationsSize below.
-    // This assumes that there is at least one non-null element in the annotationWriters sub-array
-    // (which is ensured by the lazy instantiation of this array in MethodWriter).
+  static int computeParameterAnnotationsSize(
+      final String attributeName,
+      final AnnotationWriter[] annotationWriters,
+      final int annotableParameterCount) {
+    // Note: attributeName is added to the constant pool by the call to computeAnnotationsSize
+    // below. This assumes that there is at least one non-null element in the annotationWriters
+    // sub-array (which is ensured by the lazy instantiation of this array in MethodWriter).
     // The attribute_name_index, attribute_length and num_parameters fields use 7 bytes, and each
     // element of the parameter_annotations array uses 2 bytes for its num_annotations field.
-    int attributeSize = 7 + 2 * (annotationWriters.length - off);
-    for (int i = off; i < annotationWriters.length; ++i) {
+    int attributeSize = 7 + 2 * annotableParameterCount;
+    for (int i = 0; i < annotableParameterCount; ++i) {
       AnnotationWriter annotationWriter = annotationWriters[i];
       attributeSize +=
-          annotationWriter == null ? 0 : annotationWriter.getAnnotationsSize(attributeName) - 8;
+          annotationWriter == null ? 0 : annotationWriter.computeAnnotationsSize(attributeName) - 8;
     }
     return attributeSize;
   }
@@ -370,26 +375,27 @@ final class AnnotationWriter extends AnnotationVisitor {
    *     Runtime[In]VisibleParameterAnnotations).
    * @param annotationWriters an array of AnnotationWriter lists (designated by their <i>last</i>
    *     element).
-   * @param off the start offset of the sub-array of annotationWriters to consider in this method.
+   * @param annotableParameterCount the number of elements in annotationWriters to put (elements
+   *     [0..annotableParameterCount[ are put).
    * @param output where the attribute must be put.
    */
   static void putParameterAnnotations(
       final int attributeNameIndex,
       final AnnotationWriter[] annotationWriters,
-      final int off,
+      final int annotableParameterCount,
       final ByteVector output) {
     // The num_parameters field uses 1 byte, and each element of the parameter_annotations array
     // uses 2 bytes for its num_annotations field.
-    int attributeLength = 1 + 2 * (annotationWriters.length - off);
-    for (int i = off; i < annotationWriters.length; ++i) {
+    int attributeLength = 1 + 2 * annotableParameterCount;
+    for (int i = 0; i < annotableParameterCount; ++i) {
       AnnotationWriter annotationWriter = annotationWriters[i];
       attributeLength +=
-          annotationWriter == null ? 0 : annotationWriter.getAnnotationsSize(null) - 8;
+          annotationWriter == null ? 0 : annotationWriter.computeAnnotationsSize(null) - 8;
     }
     output.putShort(attributeNameIndex);
     output.putInt(attributeLength);
-    output.putByte(annotationWriters.length - off);
-    for (int i = off; i < annotationWriters.length; ++i) {
+    output.putByte(annotableParameterCount);
+    for (int i = 0; i < annotableParameterCount; ++i) {
       AnnotationWriter annotationWriter = annotationWriters[i];
       AnnotationWriter firstAnnotation = null;
       int numAnnotations = 0;

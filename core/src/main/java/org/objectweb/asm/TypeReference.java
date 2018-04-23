@@ -167,8 +167,8 @@ public class TypeReference {
    * The target_type and target_info structures - as defined in the Java Virtual Machine
    * Specification (JVMS) - corresponding to this type reference. target_type uses one byte, and all
    * the target_info union fields use up to 3 bytes (except localvar_target, handled with the
-   * specific method {@link MethodVisitor#visitLocalVariableAnnotation()}). Thus, both structures
-   * can be stored in an int.
+   * specific method {@link MethodVisitor#visitLocalVariableAnnotation}). Thus, both structures can
+   * be stored in an int.
    *
    * <p>This int field stores target_type (called the TypeReference 'sort' in the public API of this
    * class) in its most significant byte, followed by the target_info fields. Depending on
@@ -176,16 +176,19 @@ public class TypeReference {
    * fields which reference bytecode offsets are set to 0 (these offsets are ignored in ClassReader,
    * and recomputed in MethodWriter).
    *
-   * @see https://docs.oracle.com/javase/specs/jvms/se9/html/jvms-4.html#jvms-4.7.20
-   * @see https://docs.oracle.com/javase/specs/jvms/se9/html/jvms-4.html#jvms-4.7.20.1
+   * @see <a href="https://docs.oracle.com/javase/specs/jvms/se9/html/jvms-4.html#jvms-4.7.20">JVMS
+   *     4.7.20</a>
+   * @see <a
+   *     href="https://docs.oracle.com/javase/specs/jvms/se9/html/jvms-4.html#jvms-4.7.20.1">JVMS
+   *     4.7.20.1</a>
    */
   private final int targetTypeAndInfo;
 
   /**
-   * Creates a new TypeReference.
+   * Constructs a new TypeReference.
    *
    * @param typeRef the int encoded value of the type reference, as received in a visit method
-   *     related to type annotations, such as {@link ClassVisitor#visitTypeAnnotation()}.
+   *     related to type annotations, such as {@link ClassVisitor#visitTypeAnnotation}.
    */
   public TypeReference(final int typeRef) {
     this.targetTypeAndInfo = typeRef;
@@ -427,7 +430,7 @@ public class TypeReference {
         output.put12(targetTypeAndInfo >>> 24, (targetTypeAndInfo & 0xFFFF00) >> 8);
         break;
       default:
-        throw new AssertionError();
+        throw new IllegalArgumentException();
     }
   }
 }
