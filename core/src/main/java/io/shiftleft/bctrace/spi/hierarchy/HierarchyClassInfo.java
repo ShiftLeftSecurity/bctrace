@@ -28,6 +28,7 @@ import io.shiftleft.bctrace.Bctrace;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.ProtectionDomain;
+import java.util.List;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.ClassNode;
 
@@ -67,26 +68,31 @@ public abstract class HierarchyClassInfo {
         clazz = getClassIfLoadedByClassLoaderAncestors(name, cl);
       }
       if (clazz == null) {
-        try {
-          clazz = Class.forName(name, false, cl);
-        } catch (ClassNotFoundException e) {
-          // Caused by application ClassNotFoundException, so not our problem
-          return new UnresolvedClassInfo(name);
+        List<ClassLoader> cls = Bctrace.getInstance().getInstrumentation()
+            .getClassLoadersLoading(name);
+        if (cls.size() == 1) {
+          clazz = Bctrace.getInstance().getInstrumentation()
+              .getClassIfLoadedByClassLoader(name, cls.get(0));
         }
       }
-      if (clazz != null) {
-        return new LoadedClassInfo(clazz);
+      if (clazz == null) {
+        return new UnresolvedClassInfo(name);
       }
+      return new LoadedClassInfo(clazz);
     }
 
     ClassLoaderEntry entry = readClassResource(name.replace('.', '/') + ".class", cl);
-    if (entry == null) {
+    if (entry == null)
+
+    {
       Bctrace.getAgentLogger()
           .warning("Could not obtain class bytecode for unloaded class " + name);
       return new UnresolvedClassInfo(name);
     }
     // Cannot know the protection domain of an unloaded class (other than the being-instrumented one)
-    return new UnloadedClassInfo(createClassNode(entry.is), entry.cl);
+    return new
+
+        UnloadedClassInfo(createClassNode(entry.is), entry.cl);
   }
 
   private static Class getClassIfLoadedByClassLoaderAncestors(String name, ClassLoader cl) {
@@ -163,6 +169,7 @@ public abstract class HierarchyClassInfo {
       this.is = is;
       this.cl = cl;
     }
+
   }
 
   public final boolean isSubclassOf(HierarchyClassInfo other) {

@@ -24,18 +24,12 @@
  */
 package io.shiftleft.bctrace.asm;
 
-import io.shiftleft.bctrace.Bctrace;
-import io.shiftleft.bctrace.spi.hierarchy.HierarchyClassInfo;
-import java.io.IOException;
-import java.io.InputStream;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
 
 /**
- * A {@link ClassWriter} that looks for static class data in the classpath when
- * the classes are not available at runtime, using the HierarchyClassInfo tree.
+ * A {@link ClassWriter} that looks for static class data in the classpath when the classes are not
+ * available at runtime, using the HierarchyClassInfo tree.
  *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
@@ -61,23 +55,7 @@ class StaticClassWriter extends ClassWriter {
   @Override
   protected String getCommonSuperClass(
       final String type1, final String type2) {
-    HierarchyClassInfo ci1 = HierarchyClassInfo.from(type1.replace('/', '.'), classLoader);
-    HierarchyClassInfo ci2 = HierarchyClassInfo.from(type2.replace('/', '.'), classLoader);
-    if (ci1.isAssignableFrom(ci2)) {
-      return type1;
-    }
-    if (ci2.isAssignableFrom(ci1)) {
-      return type2;
-    }
-    if (ci1.isInterface() || ci2.isInterface()) {
-      return "java/lang/Object";
-    }
-
-    do {
-      // Should never be null, because if ci1 were the Object class
-      // or an interface, it would have been caught above.
-      ci1 = ci1.getSuperClass();
-    } while (!ci1.isAssignableFrom(ci2));
-    return ci1.getJVMName();
+    // This design is faulty. We can not get at runtime the common superclass in a reliable way
+    throw new AssertionError();
   }
 }

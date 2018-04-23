@@ -35,16 +35,11 @@ import io.shiftleft.bctrace.runtime.listener.info.BeforeCallSiteListener;
 import io.shiftleft.bctrace.runtime.listener.info.BeforeThrownListener;
 import io.shiftleft.bctrace.runtime.listener.info.FinishReturnArgumentsListener;
 import io.shiftleft.bctrace.runtime.listener.info.FinishReturnListener;
-import io.shiftleft.bctrace.runtime.listener.info.FinishThrowableListener;
 import io.shiftleft.bctrace.runtime.listener.info.StartListener;
-import io.shiftleft.bctrace.runtime.listener.mut.StartMutableListener;
 import io.shiftleft.bctrace.spi.Filter;
 import io.shiftleft.bctrace.spi.Hook;
-import io.shiftleft.bctrace.spi.hierarchy.UnloadedClassInfo;
 import java.lang.reflect.InvocationTargetException;
-import java.security.ProtectionDomain;
 import org.junit.Test;
-import org.objectweb.asm.tree.MethodNode;
 
 /**
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
@@ -214,91 +209,6 @@ public class FeatureTest extends BcTraceTest {
     assertEquals("012", steps.toString());
   }
 
-
-  @Test
-  public void testMutableStartLong() throws Exception {
-    final StringBuilder steps = new StringBuilder();
-    final long aLong = System.currentTimeMillis();
-    Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
-        new Hook() {
-          @Override
-          public Filter getFilter() {
-            return new Filter() {
-              @Override
-              public boolean instrumentClass(String className, ProtectionDomain protectionDomain,
-                  ClassLoader cl) {
-                return true;
-              }
-
-              @Override
-              public boolean instrumentMethod(UnloadedClassInfo classInfo, MethodNode mn) {
-                return mn.name.equals("getLong");
-              }
-            };
-          }
-
-          @Override
-          public Listener getListener() {
-            return new StartMutableListener() {
-
-              @Override
-              public Return onStart(int methodId, Class clazz, Object instance, Object[] args) {
-                assertEquals(clazz.getName(), TestClass.class.getName());
-                steps.append("1");
-                return new Return(aLong);
-              }
-            };
-          }
-        }
-    });
-    Long ret = (Long) clazz.getMethod("getLong").invoke(null);
-    assertEquals(aLong, ret.longValue());
-    System.out.println(clazz.getClassLoader());
-    assertEquals("1", steps.toString());
-  }
-
-  @Test
-  public void testMutableStartRef() throws Exception {
-    final StringBuilder steps = new StringBuilder();
-    final Object aObject = "5";
-    Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
-        new Hook() {
-          @Override
-          public Filter getFilter() {
-            return new Filter() {
-              @Override
-              public boolean instrumentClass(String className, ProtectionDomain protectionDomain,
-                  ClassLoader cl) {
-                return true;
-              }
-
-              @Override
-              public boolean instrumentMethod(UnloadedClassInfo classInfo, MethodNode mn) {
-                return mn.name.equals("getObject");
-              }
-            };
-          }
-
-          @Override
-          public Listener getListener() {
-            return new StartMutableListener() {
-
-              @Override
-              public Return onStart(int methodId, Class clazz, Object instance, Object[] args) {
-                assertEquals(clazz.getName(), TestClass.class.getName());
-                steps.append("1");
-                return new Return(aObject);
-              }
-            };
-          }
-        }
-    });
-    Object ret = (Object) clazz.getMethod("getObject").invoke(null);
-    assertEquals(aObject, ret);
-    System.out.println(clazz.getClassLoader());
-    assertEquals("1", steps.toString());
-  }
-
   @Test
   public void testConstructor() throws Exception {
     Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
@@ -315,60 +225,6 @@ public class FeatureTest extends BcTraceTest {
         }
     });
     clazz.newInstance();
-  }
-
-  //@Test
-  public void testConstructor2() throws Exception {
-    final StringBuilder steps = new StringBuilder();
-    Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
-        new Hook() {
-          @Override
-          public Filter getFilter() {
-            return new AllFilter();
-          }
-
-          @Override
-          public Listener getListener() {
-            return new FinishThrowableListener() {
-              @Override
-              public void onFinishedThrowable(int methodId, Class clazz, Object instance,
-                  Throwable th) {
-                assertEquals(clazz.getName(), TestClass.class.getName());
-                assertTrue(th instanceof TestRuntimeException);
-                steps.append("2");
-              }
-            };
-          }
-        },
-        new Hook() {
-          @Override
-          public Filter getFilter() {
-            return new AllFilter();
-          }
-
-          @Override
-          public Listener getListener() {
-            return new BeforeThrownListener() {
-              @Override
-              public void onBeforeThrown(int methodId, Class clazz, Object instance, Throwable th) {
-                assertEquals(clazz.getName(), TestClass.class.getName());
-                assertTrue(th instanceof TestRuntimeException);
-                steps.append("1");
-              }
-            };
-          }
-        }
-    });
-    boolean captured = false;
-    try {
-      clazz.getConstructor(int.class).newInstance(3);
-    } catch (InvocationTargetException ite) {
-      if (ite.getTargetException() instanceof TestRuntimeException) {
-        captured = true;
-        assertEquals("12", steps.toString());
-      }
-    }
-    assertTrue("Expected exception", captured);
   }
 
   @Test

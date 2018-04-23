@@ -29,12 +29,9 @@ import io.shiftleft.bctrace.runtime.listener.info.BeforeCallSiteListener;
 import io.shiftleft.bctrace.runtime.listener.info.BeforeThrownListener;
 import io.shiftleft.bctrace.runtime.listener.info.FinishReturnArgumentsListener;
 import io.shiftleft.bctrace.runtime.listener.info.FinishReturnListener;
-import io.shiftleft.bctrace.runtime.listener.info.FinishThrowableListener;
 import io.shiftleft.bctrace.runtime.listener.info.StartArgumentsListener;
 import io.shiftleft.bctrace.runtime.listener.info.StartListener;
 import io.shiftleft.bctrace.runtime.listener.min.MinStartListener;
-import io.shiftleft.bctrace.runtime.listener.mut.StartMutableListener;
-import io.shiftleft.bctrace.runtime.listener.mut.StartMutableListener.Return;
 
 /**
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
@@ -95,23 +92,6 @@ public final class Callback {
   }
 
   @SuppressWarnings("BoxedValueEquality")
-  public static Return onMutableStart(Object[] args, int methodId, Class clazz, Object instance,
-      int i) {
-    if (!isThreadNotificationEnabled()) {
-      return null;
-    }
-    if (Boolean.TRUE == NOTIFYING_FLAG.get()) {
-      return null;
-    }
-    try {
-      NOTIFYING_FLAG.set(Boolean.TRUE);
-      return ((StartMutableListener) listeners[i]).onStart(methodId, clazz, instance, args);
-    } finally {
-      NOTIFYING_FLAG.set(Boolean.FALSE);
-    }
-  }
-
-  @SuppressWarnings("BoxedValueEquality")
   public static void onFinishedReturn(Object ret, int methodId, Class clazz, Object instance,
       int i) {
     if (!isThreadNotificationEnabled()) {
@@ -141,23 +121,6 @@ public final class Callback {
       NOTIFYING_FLAG.set(Boolean.TRUE);
       ((FinishReturnArgumentsListener) listeners[i])
           .onFinishedReturn(methodId, clazz, instance, args, ret);
-    } finally {
-      NOTIFYING_FLAG.set(Boolean.FALSE);
-    }
-  }
-
-  @SuppressWarnings("BoxedValueEquality")
-  public static void onFinishedThrowable(Throwable th, int methodId, Class clazz, Object instance,
-      int i) {
-    if (!isThreadNotificationEnabled()) {
-      return;
-    }
-    if (Boolean.TRUE == NOTIFYING_FLAG.get()) {
-      return;
-    }
-    try {
-      NOTIFYING_FLAG.set(Boolean.TRUE);
-      ((FinishThrowableListener) listeners[i]).onFinishedThrowable(methodId, clazz, instance, th);
     } finally {
       NOTIFYING_FLAG.set(Boolean.FALSE);
     }

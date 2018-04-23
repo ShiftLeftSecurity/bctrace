@@ -28,19 +28,14 @@ import io.shiftleft.bctrace.asm.util.ASMUtils;
 import io.shiftleft.bctrace.runtime.listener.info.StartArgumentsListener;
 import io.shiftleft.bctrace.runtime.listener.info.StartListener;
 import io.shiftleft.bctrace.runtime.listener.min.MinStartListener;
-import io.shiftleft.bctrace.runtime.listener.mut.StartMutableListener;
 import java.util.ArrayList;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
-import org.objectweb.asm.tree.JumpInsnNode;
-import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
-import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
 /**
@@ -57,7 +52,6 @@ public class StartHelper extends Helper {
     addMinTraceStart(methodId, cn, mn, hooksToUse);
     addTraceStart(methodId, cn, mn, hooksToUse);
     addTraceStartWithArguments(methodId, cn, mn, hooksToUse);
-    addMutableTraceStartWithArguments(methodId, cn, mn, hooksToUse);
   }
 
   /**
@@ -193,95 +187,6 @@ public class StartHelper extends Helper {
       il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
           "io/shiftleft/bctrace/runtime/Callback", "onStart",
           "([Ljava/lang/Object;ILjava/lang/Class;Ljava/lang/Object;I)V", false));
-    }
-    mn.instructions.insert(il);
-  }
-
-  /**
-   * Depending on the {@link StartMutableListener} listeners that apply to this method,  this helper
-   * turns the method node instructions of a method like this:
-   * <br><pre>{@code
-   * public Object foo(Object arg1, Object arg2, ..., Object argn){
-   *   return void(arg1, arg2, ..., argn);
-   * }
-   * }
-   * </pre>
-   * Into that:
-   * <br><pre>{@code
-   * public Object foo(Object args){
-   *   Object[] args = new Object[]{arg1, arg2, ..., argn};
-   *   Object ret = void(args);
-   *   // Notify listeners that apply to this method (methodId 1550)
-   *   Return ret0 = Callback.onStart(args, 1550, clazz, this, 0);
-   *   if(ret0 != null){
-   *     return ret0.value;
-   *   }
-   *   Callback.onStart(args, 1550, clazz, this, 2);
-   *   if(ret2 != null){
-   *     return ret2.value;
-   *   }
-   *   Callback.onStart(args, 1550, clazz, this, 10);
-   *   if(ret10 != null){
-   *     return ret10.value;
-   *   }
-   *   return void(arg1, arg2, ..., argn);
-   * }
-   * }
-   * </pre>
-   */
-  private static void addMutableTraceStartWithArguments(int methodId, ClassNode cn, MethodNode mn,
-      ArrayList<Integer> hooksToUse) {
-    ArrayList<Integer> listenersToUse = getListenersOfType(hooksToUse, StartMutableListener.class);
-    if (!isInstrumentationNeeded(listenersToUse)) {
-      return;
-    }
-    if (mn.name.equals("<init>")) {
-      throw new UnsupportedOperationException("Skipping constructor execution is not supported");
-    }
-    InsnList il = new InsnList();
-    pushMethodArgsArray(il, mn);
-
-    for (int i = 0; i < listenersToUse.size(); i++) {
-      Integer index = listenersToUse.get(i);
-      if (i < listenersToUse.size() - 1) {
-        il.add(new InsnNode(Opcodes.DUP));
-      }
-      il.add(ASMUtils.getPushInstruction(methodId));
-      il.add(getClassConstantReference(Type.getObjectType(cn.name), cn.version));
-      if (ASMUtils.isStatic(mn.access) || mn.name.equals("<init>")) {
-        il.add(new InsnNode(Opcodes.ACONST_NULL));
-      } else {
-        il.add(new VarInsnNode(Opcodes.ALOAD, 0));
-      }
-      il.add(ASMUtils.getPushInstruction(index));
-      il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
-          "io/shiftleft/bctrace/runtime/Callback", "onMutableStart",
-          "([Ljava/lang/Object;ILjava/lang/Class;Ljava/lang/Object;I)Lio/shiftleft/bctrace/runtime/listener/mut/StartMutableListener$Return;",
-          false));
-      il.add(new InsnNode(Opcodes.DUP));
-      LabelNode returnBlock = new LabelNode();
-      il.add(new JumpInsnNode(Opcodes.IFNULL, returnBlock));
-      Type returnType = Type.getReturnType(mn.desc);
-      if (returnType.getDescriptor().equals("V")) {
-        il.add(new InsnNode(Opcodes.POP));
-        il.add(new InsnNode(Opcodes.RETURN));
-      } else {
-        il.add(new FieldInsnNode(Opcodes.GETFIELD,
-            "io/shiftleft/bctrace/runtime/listener/mut/StartMutableListener$Return", "value",
-            "Ljava/lang/Object;"));
-        MethodInsnNode wrapperToPrimitiveInst = ASMUtils.getWrapperToPrimitiveInst(returnType);
-        if (wrapperToPrimitiveInst != null) {
-          il.add(new TypeInsnNode(Opcodes.CHECKCAST, ASMUtils.getWrapper(returnType)));
-          il.add(wrapperToPrimitiveInst);
-          il.add(ASMUtils.getReturnInst(returnType));
-        } else {
-          il.add(new TypeInsnNode(Opcodes.CHECKCAST, returnType.getInternalName()));
-          il.add(new InsnNode(Opcodes.ARETURN));
-        }
-      }
-      il.add(returnBlock);
-      il.add(new InsnNode(Opcodes.POP));
-
     }
     mn.instructions.insert(il);
   }

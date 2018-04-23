@@ -26,7 +26,6 @@ package io.shiftleft.bctrace.asm;
 
 import io.shiftleft.bctrace.Bctrace;
 import io.shiftleft.bctrace.asm.helper.CallSiteHelper;
-import io.shiftleft.bctrace.asm.helper.CatchHelper;
 import io.shiftleft.bctrace.asm.helper.NativeWrapperHelper;
 import io.shiftleft.bctrace.asm.helper.ReturnHelper;
 import io.shiftleft.bctrace.asm.helper.StartHelper;
@@ -134,7 +133,7 @@ public class Transformer implements ClassFileTransformer {
       if (!transformed) {
         return ret;
       } else {
-        ClassWriter cw = new StaticClassWriter(cr, ClassWriter.COMPUTE_FRAMES, loader);
+        ClassWriter cw = new StaticClassWriter(cr, ClassWriter.COMPUTE_MAXS, loader);
         cn.accept(cw);
         ret = cw.toByteArray();
         return ret;
@@ -263,6 +262,5 @@ public class Transformer implements ClassFileTransformer {
     ReturnHelper.addByteCodeInstructions(methodId, cn, mn, hooksToUse);
     ThrowHelper.addByteCodeInstructions(methodId, cn, mn, hooksToUse);
     CallSiteHelper.addByteCodeInstructions(methodId, cn, mn, hooksToUse);
-    CatchHelper.addByteCodeInstructions(methodId, cn, mn, hooksToUse);
   }
 }
