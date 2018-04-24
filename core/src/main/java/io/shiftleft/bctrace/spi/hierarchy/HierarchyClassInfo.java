@@ -82,9 +82,7 @@ public abstract class HierarchyClassInfo {
     }
 
     ClassLoaderEntry entry = readClassResource(name.replace('.', '/') + ".class", cl);
-    if (entry == null)
-
-    {
+    if (entry == null) {
       Bctrace.getAgentLogger()
           .warning("Could not obtain class bytecode for unloaded class " + name);
       return new UnresolvedClassInfo(name);
