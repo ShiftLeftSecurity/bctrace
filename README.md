@@ -19,7 +19,7 @@ The [java instrumentation package](http://docs.oracle.com/javase/6/docs/api/java
 
 Since Java version 1.6 these agents can perform also dynamic instrumentation; that is, retransforming the bytecode of classes already loaded. 
 
-This library provides an configurable agent ([io.shiftleft.btrace.Init](src/main/java/io/shiftleft/bctrace/Init.java)) (to be used as an external dependency by extending agent implementations) aimed at injecting custom [hooks](src/main/java/o/shiftleft/bctrace/spi/Hook.java) into the code of the specified methods of the target application.
+This library provides an configurable agent ([io.shiftleft.btrace.Init](src/main/java/io/shiftleft/bctrace/Init.java)) (to be used as an external dependency by extending agent implementations) aimed at injecting custom [hooks](src/main/java/io/shiftleft/bctrace/spi/Hook.java) into the code of the specified methods of the target application.
 
 
 From a simplified point of view, the dynamic transformation turns a method like this: 
