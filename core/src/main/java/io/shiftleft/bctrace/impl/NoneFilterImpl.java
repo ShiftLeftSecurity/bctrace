@@ -34,7 +34,7 @@ import org.objectweb.asm.tree.MethodNode;
  *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public class NoneFilterImpl implements Filter {
+public class NoneFilterImpl extends Filter {
 
   @Override
   public boolean instrumentClass(String className, ProtectionDomain protectionDomain,
