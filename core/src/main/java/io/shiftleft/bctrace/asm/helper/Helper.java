@@ -66,9 +66,9 @@ public class Helper {
     return ret;
   }
 
-  public static InsnList getClassConstantReference(Type type, int majorVersion) {
+  public static InsnList getClassConstantReference(Type type, int version) {
     InsnList il = new InsnList();
-
+    short majorVersion = (short) version;
     if (majorVersion >= Opcodes.V1_5) {
       il.add(new LdcInsnNode(type));
 
