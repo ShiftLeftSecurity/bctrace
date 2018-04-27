@@ -252,13 +252,13 @@ public class Transformer implements ClassFileTransformer {
         transformed = true;
         if (DebugInfo.getInstance() != null) {
           Integer methodId = MethodRegistry.getInstance()
-              .getMethodId(ci.getClassLoader(), cn.name, mn.name, mn.desc);
+              .getMethodId(cn.name, mn.name, mn.desc);
           DebugInfo.getInstance().setInstrumented(methodId, true);
         }
       } else {
         if (DebugInfo.getInstance() != null) {
           Integer methodId = MethodRegistry.getInstance()
-              .getMethodId(ci.getClassLoader(), cn.name, mn.name, mn.desc);
+              .getMethodId(cn.name, mn.name, mn.desc);
           DebugInfo.getInstance().setInstrumented(methodId, false);
         }
       }
