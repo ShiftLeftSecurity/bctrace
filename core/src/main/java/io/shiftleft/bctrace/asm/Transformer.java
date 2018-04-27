@@ -118,7 +118,8 @@ public class Transformer implements ClassFileTransformer {
       if (!TransformationSupport.isTransformable(className, loader)) {
         return ret;
       }
-      ArrayList<Integer> matchingHooks = getMatchingHooks(className, protectionDomain, loader);
+      ArrayList<Integer> matchingHooks = getMatchingHooksByName(className, protectionDomain,
+          loader);
       if (matchingHooks == null || matchingHooks.isEmpty()) {
         return ret;
       }
@@ -129,7 +130,9 @@ public class Transformer implements ClassFileTransformer {
 
       UnloadedClassInfo ci = new UnloadedClassInfo(cn, protectionDomain, loader);
 
-      transformed = transformMethods(ci, matchingHooks, loader);
+      matchingHooks = getMatchingHooksByClassInfo(matchingHooks, ci, protectionDomain, loader);
+
+      transformed = transformMethods(ci, matchingHooks);
       if (!transformed) {
         return ret;
       } else {
@@ -177,7 +180,8 @@ public class Transformer implements ClassFileTransformer {
     }
   }
 
-  private ArrayList<Integer> getMatchingHooks(String className, ProtectionDomain protectionDomain,
+  private ArrayList<Integer> getMatchingHooksByName(String className,
+      ProtectionDomain protectionDomain,
       ClassLoader loader) {
 
     Hook[] hooks = Bctrace.getInstance().getHooks();
@@ -191,6 +195,24 @@ public class Transformer implements ClassFileTransformer {
         ret.add(i);
       }
     }
+    return ret;
+  }
+
+  private ArrayList<Integer> getMatchingHooksByClassInfo(ArrayList<Integer> candidateHooks,
+      UnloadedClassInfo classInfo, ProtectionDomain protectionDomain,
+      ClassLoader loader) {
+
+    Hook[] hooks = Bctrace.getInstance().getHooks();
+    if (hooks == null) {
+      return null;
+    }
+    ArrayList<Integer> ret = new ArrayList<Integer>(hooks.length);
+    for (int i = 0; i < candidateHooks.size(); i++) {
+      Integer hookIndex = candidateHooks.get(i);
+      if (hooks[hookIndex].getFilter().instrumentClass(classInfo, protectionDomain, loader)) {
+        ret.add(hookIndex);
+      }
+    }
     // Add additional hooks (those who have a null filter and apply only where others are registered)
     if (!ret.isEmpty()) {
       for (int i = 0; i < hooks.length; i++) {
@@ -202,8 +224,7 @@ public class Transformer implements ClassFileTransformer {
     return ret;
   }
 
-  private boolean transformMethods(UnloadedClassInfo ci, ArrayList<Integer> matchingHooks,
-      ClassLoader cl) {
+  private boolean transformMethods(UnloadedClassInfo ci, ArrayList<Integer> matchingHooks) {
     ClassNode cn = ci.getRawClassNode();
     List<MethodNode> methods = cn.methods;
     boolean transformed = false;
@@ -227,15 +248,17 @@ public class Transformer implements ClassFileTransformer {
             hooksToUse.add(i);
           }
         }
-        modifyMethod(cn, mn, hooksToUse, newMethods);
+        modifyMethod(ci.getClassLoader(), cn, mn, hooksToUse, newMethods);
         transformed = true;
         if (DebugInfo.getInstance() != null) {
-          Integer methodId = MethodRegistry.getInstance().getMethodId(cn.name, mn.name, mn.desc);
+          Integer methodId = MethodRegistry.getInstance()
+              .getMethodId(ci.getClassLoader(), cn.name, mn.name, mn.desc);
           DebugInfo.getInstance().setInstrumented(methodId, true);
         }
       } else {
         if (DebugInfo.getInstance() != null) {
-          Integer methodId = MethodRegistry.getInstance().getMethodId(cn.name, mn.name, mn.desc);
+          Integer methodId = MethodRegistry.getInstance()
+              .getMethodId(ci.getClassLoader(), cn.name, mn.name, mn.desc);
           DebugInfo.getInstance().setInstrumented(methodId, false);
         }
       }
@@ -244,7 +267,8 @@ public class Transformer implements ClassFileTransformer {
     return transformed;
   }
 
-  private void modifyMethod(ClassNode cn, MethodNode mn, ArrayList<Integer> hooksToUse,
+  private void modifyMethod(ClassLoader cl, ClassNode cn, MethodNode mn,
+      ArrayList<Integer> hooksToUse,
       List<MethodNode> newMethods) {
 
     Integer methodId = MethodRegistry.getInstance().registerMethodId(MethodInfo.from(cn, mn));
