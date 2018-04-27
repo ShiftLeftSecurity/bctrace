@@ -167,7 +167,24 @@ public abstract class HierarchyClassInfo {
       this.is = is;
       this.cl = cl;
     }
+  }
 
+  public final boolean isHierarchyResolved() {
+    if (this.getSuperClass() == null) {
+      return true;
+    }
+    if (!(getSuperClass() instanceof LoadedClassInfo && getSuperClass().isHierarchyResolved())) {
+      return false;
+    }
+    HierarchyClassInfo[] interfaces = getInterfaces();
+    if (interfaces != null) {
+      for (int i = 0; i < interfaces.length; i++) {
+        if (!(interfaces[i] instanceof LoadedClassInfo && interfaces[i].isHierarchyResolved())) {
+          return false;
+        }
+      }
+    }
+    return true;
   }
 
   public final boolean isSubclassOf(HierarchyClassInfo other) {
