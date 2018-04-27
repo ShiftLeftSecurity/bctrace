@@ -226,7 +226,8 @@ public final class InstrumentationImpl implements Instrumentation {
         }
       }
     } catch (ClassNotFoundException e) {
-      throw new AssertionError();
+      // some classes like sun.reflect.GeneratedMethodAccessor can not be loaded again
+      return null;
     }
     return null;
   }
