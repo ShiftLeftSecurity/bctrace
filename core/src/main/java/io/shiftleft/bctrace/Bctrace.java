@@ -34,6 +34,8 @@ import io.shiftleft.bctrace.spi.AgentLoggerFactory;
 import io.shiftleft.bctrace.spi.Hook;
 import io.shiftleft.bctrace.spi.Instrumentation;
 import io.shiftleft.bctrace.spi.SystemProperty;
+import java.net.URL;
+import java.security.ProtectionDomain;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -48,7 +50,8 @@ public final class Bctrace {
   static Bctrace instance;
 
   private static final Logger LOGGER = createLogger();
-  private static final String NATIVE_WRAPPER_PREFIX = "$$$Bctrace_Wrapper_" + System.currentTimeMillis() + "$$$_";
+  private static final String NATIVE_WRAPPER_PREFIX =
+      "$$$Bctrace_Wrapper_" + System.currentTimeMillis() + "$$$_";
 
   private final Transformer transformer;
   private final InstrumentationImpl instrumentation;
@@ -77,7 +80,8 @@ public final class Bctrace {
 
       if (instrumentation != null && instrumentation.getJavaInstrumentation() != null) {
         instrumentation.getJavaInstrumentation().addTransformer(transformer, true);
-        instrumentation.getJavaInstrumentation().setNativeMethodPrefix(transformer, NATIVE_WRAPPER_PREFIX);
+        instrumentation.getJavaInstrumentation()
+            .setNativeMethodPrefix(transformer, NATIVE_WRAPPER_PREFIX);
       }
 
       for (int i = 0; i < hooks.length; i++) {
@@ -124,6 +128,16 @@ public final class Bctrace {
 
   public Hook[] getHooks() {
     return this.hooks;
+  }
+
+  public static URL getCodeSource(ProtectionDomain protectionDomain) {
+    if (protectionDomain == null) {
+      return null;
+    }
+    if (protectionDomain.getCodeSource() == null) {
+      return null;
+    }
+    return protectionDomain.getCodeSource().getLocation();
   }
 
   public static Logger getAgentLogger() {
