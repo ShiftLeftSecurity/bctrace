@@ -30,7 +30,6 @@ import java.net.JarURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
-import java.util.List;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.ClassNode;
 
@@ -63,26 +62,21 @@ public abstract class HierarchyClassInfo {
     if (name == null) {
       return null;
     }
+
+    //If the class has been loaded try to create a LoadedClassInfo implementation
     if (Bctrace.getInstance().getInstrumentation().isLoadedByAnyClassLoader(name)) {
+      // First check if the class has been loaded by this classloader
       Class clazz = Bctrace.getInstance().getInstrumentation()
           .getClassIfLoadedByClassLoader(name, cl);
       if (clazz == null) {
+        // Then check if the class has been loaded by an ancestor
         clazz = getClassIfLoadedByClassLoaderAncestors(name, cl);
       }
-      if (clazz == null) {
-        List<ClassLoader> cls = Bctrace.getInstance().getInstrumentation()
-            .getClassLoadersLoading(name);
-        if (cls.size() == 1) {
-          clazz = Bctrace.getInstance().getInstrumentation()
-              .getClassIfLoadedByClassLoader(name, cls.get(0));
-        }
+      if (clazz != null) {
+        return new LoadedClassInfo(clazz);
       }
-      if (clazz == null) {
-        return new UnresolvedClassInfo(name);
-      }
-      return new LoadedClassInfo(clazz);
     }
-
+    // If here then try to create a UnloadedClassInfo implementation (read bytecoode as a resource)
     ClassLoaderEntry entry = readClassResource(name.replace('.', '/') + ".class", cl);
     if (entry == null) {
       Bctrace.getAgentLogger()
@@ -260,7 +254,8 @@ public abstract class HierarchyClassInfo {
     ClassLoaderEntry ce = readClassResource(clazz.getName().replace('.', '/') + ".class",
         clazz.getClassLoader());
     System.out.println(clazz.getProtectionDomain().getCodeSource().getLocation());
-    System.out.println(clazz.getProtectionDomain().getCodeSource().getLocation().equals(ce.codeSource));
+    System.out
+        .println(clazz.getProtectionDomain().getCodeSource().getLocation().equals(ce.codeSource));
 
     System.out.println(ce.codeSource);
 
