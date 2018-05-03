@@ -60,7 +60,7 @@ public abstract class Filter {
   }
 
   /**
-   * Whether or not instrument the specified method.
+   * Returns a boolean condition that determines whether to instrument the specified method
    */
   public abstract boolean instrumentMethod(UnloadedClassInfo classInfo, MethodNode mn);
 }
