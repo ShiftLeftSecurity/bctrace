@@ -230,16 +230,4 @@ public abstract class HierarchyClassInfo {
     }
     return false;
   }
-
-  public static void main(String[] args) throws Exception {
-    Class clazz = HierarchyClassInfo.class;
-    ClassLoaderEntry ce = readClassResource(clazz.getName().replace('.', '/') + ".class",
-        clazz.getClassLoader());
-    System.out.println(clazz.getProtectionDomain().getCodeSource().getLocation());
-    System.out
-        .println(clazz.getProtectionDomain().getCodeSource().getLocation().equals(ce.codeSource));
-
-    System.out.println(ce.codeSource);
-
-  }
 }
