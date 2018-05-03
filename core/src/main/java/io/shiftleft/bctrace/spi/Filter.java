@@ -52,7 +52,7 @@ public abstract class Filter {
   }
 
   /**
-   * Second query once the class has been parser. Whether or not instrument the methods of a class.
+   * Second query once the class has been parsed. Whether or not instrument the methods of a class.
    */
   public boolean instrumentClass(UnloadedClassInfo classInfo, ProtectionDomain protectionDomain,
       ClassLoader cl) {
