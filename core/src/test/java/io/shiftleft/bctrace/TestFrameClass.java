@@ -24,8 +24,6 @@
  */
 package io.shiftleft.bctrace;
 
-import io.shiftleft.bctrace.asm.util.ASMUtils;
-import java.io.InputStream;
 import java.io.PrintWriter;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.util.CheckClassAdapter;
@@ -37,7 +35,7 @@ public class TestFrameClass {
 
   public static void doFrames() {
     Number num;
-    if(System.currentTimeMillis() % 2 == 0 ){
+    if (System.currentTimeMillis() % 2 == 0) {
       num = new Integer(3);
     } else {
       num = new Long(4);
