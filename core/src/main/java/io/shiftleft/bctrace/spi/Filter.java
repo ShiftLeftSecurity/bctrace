@@ -33,10 +33,10 @@ import org.objectweb.asm.tree.MethodNode;
  * transformable, the framework performs an initial query to the {@link #instrumentClass(String,
  * ProtectionDomain, ClassLoader) instrumentClass} method. If this return <code>true</code> the
  * class bytecode is parsed and the filter {@link #instrumentClass(UnloadedClassInfo,
- * ProtectionDomain, ClassLoader) instrumentMethod} is called. It this other returns true the the
- * filter {@link #instrumentMethod(UnloadedClassInfo, MethodNode) instrumentMethod} method will be
- * invoked once per non abstract nor native method in the class. Invocations returning
- * <code>true</code> lead to a hook insertions into the bytecode of the method.
+ * ProtectionDomain, ClassLoader) instrumentMethod} is called. It this other returns true the filter
+ * {@link #instrumentMethod(UnloadedClassInfo, MethodNode) instrumentMethod} method will be invoked
+ * once per non abstract nor native method in the class. Invocations returning <code>true</code>
+ * lead to a hook insertions into the bytecode of the method.
  *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
