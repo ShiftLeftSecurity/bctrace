@@ -68,7 +68,14 @@ public class Helper {
 
   public static InsnList getClassConstantReference(Type type, int version) {
     InsnList il = new InsnList();
+    /*
+     * The class version. The minor version is stored in the 16 most significant bits, and the major
+     * version in the 16 least significant bits.
+     */
     short majorVersion = (short) version;
+    /*
+     * A change in the way of referencing class literals was introduced in version 1.5
+     */
     if (majorVersion >= Opcodes.V1_5) {
       il.add(new LdcInsnNode(type));
 
