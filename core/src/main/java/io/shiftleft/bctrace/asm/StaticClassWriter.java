@@ -50,12 +50,23 @@ class StaticClassWriter extends ClassWriter {
   }
 
   /**
-   * {@inheritDoc}
+   * This method is used when merging stack map frames (if we add branching statements) in order to
+   * recompute them (COMPUTE_FRAMES). This API is flawed, since at runtime you dont necessarily have
+   * means for knowing the class hierarchy of a type (due to lazy loading). By the time being we
+   * just removed features adding branching (like conditional overwriting the return value of a
+   * method or the try-catch listener) that we are not actually needing in the agent.
+   *
+   * So now we just want to be sure that our assumption about this feature not being used holds,
+   * hence that implementation. The problem is solvable btw, the API should provide means for only
+   * adding needed information and reusing already known stack map frames. This could be a cool
+   * contribution to ASM
+   *
+   * http://chrononsystems.com/blog/java-7-design-flaw-leads-to-huge-backward-step-for-the-jvm
    */
   @Override
   protected String getCommonSuperClass(
       final String type1, final String type2) {
-    // This design is faulty. We can not get at runtime the common superclass in a reliable way
+
     throw new AssertionError();
   }
 }
