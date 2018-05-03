@@ -118,8 +118,7 @@ public class Transformer implements ClassFileTransformer {
       if (!TransformationSupport.isTransformable(className, loader)) {
         return ret;
       }
-      ArrayList<Integer> matchingHooks = getMatchingHooksByName(className, protectionDomain,
-          loader);
+      ArrayList<Integer> matchingHooks = getMatchingHooksByName(className, protectionDomain, loader);
       if (matchingHooks == null || matchingHooks.isEmpty()) {
         return ret;
       }
@@ -198,17 +197,17 @@ public class Transformer implements ClassFileTransformer {
     return ret;
   }
 
-  private ArrayList<Integer> getMatchingHooksByClassInfo(ArrayList<Integer> candidateHooks,
+  private ArrayList<Integer> getMatchingHooksByClassInfo(ArrayList<Integer> candidateHookIndexes,
       UnloadedClassInfo classInfo, ProtectionDomain protectionDomain,
       ClassLoader loader) {
 
-    Hook[] hooks = Bctrace.getInstance().getHooks();
-    if (hooks == null) {
+    if (candidateHookIndexes == null) {
       return null;
     }
+    Hook[] hooks = Bctrace.getInstance().getHooks();
     ArrayList<Integer> ret = new ArrayList<Integer>(hooks.length);
-    for (int i = 0; i < candidateHooks.size(); i++) {
-      Integer hookIndex = candidateHooks.get(i);
+    for (int i = 0; i < candidateHookIndexes.size(); i++) {
+      Integer hookIndex = candidateHookIndexes.get(i);
       if (hooks[hookIndex].getFilter().instrumentClass(classInfo, protectionDomain, loader)) {
         ret.add(hookIndex);
       }
