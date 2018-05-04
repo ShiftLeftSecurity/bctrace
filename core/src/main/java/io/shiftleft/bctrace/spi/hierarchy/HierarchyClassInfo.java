@@ -26,8 +26,10 @@ package io.shiftleft.bctrace.spi.hierarchy;
 
 import io.shiftleft.bctrace.Bctrace;
 import java.io.IOException;
-import java.io.InputStream;
-import java.security.ProtectionDomain;
+import java.net.JarURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLConnection;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.ClassNode;
 
@@ -47,7 +49,7 @@ public abstract class HierarchyClassInfo {
 
   public abstract ClassLoader getClassLoader();
 
-  public abstract ProtectionDomain getProtectionDomain();
+  public abstract URL getCodeSource();
 
   public abstract boolean isInterface();
 
@@ -60,25 +62,21 @@ public abstract class HierarchyClassInfo {
     if (name == null) {
       return null;
     }
+
+    //If the class has been loaded try to create a LoadedClassInfo implementation
     if (Bctrace.getInstance().getInstrumentation().isLoadedByAnyClassLoader(name)) {
+      // First check if the class has been loaded by this classloader
       Class clazz = Bctrace.getInstance().getInstrumentation()
           .getClassIfLoadedByClassLoader(name, cl);
       if (clazz == null) {
+        // Then check if the class has been loaded by an ancestor
         clazz = getClassIfLoadedByClassLoaderAncestors(name, cl);
-      }
-      if (clazz == null) {
-        try {
-          clazz = Class.forName(name, false, cl);
-        } catch (ClassNotFoundException e) {
-          // Caused by application ClassNotFoundException, so not our problem
-          return new UnresolvedClassInfo(name);
-        }
       }
       if (clazz != null) {
         return new LoadedClassInfo(clazz);
       }
     }
-
+    // If here then try to create a UnloadedClassInfo implementation (read bytecoode as a resource)
     ClassLoaderEntry entry = readClassResource(name.replace('.', '/') + ".class", cl);
     if (entry == null) {
       Bctrace.getAgentLogger()
@@ -86,7 +84,7 @@ public abstract class HierarchyClassInfo {
       return new UnresolvedClassInfo(name);
     }
     // Cannot know the protection domain of an unloaded class (other than the being-instrumented one)
-    return new UnloadedClassInfo(createClassNode(entry.is), entry.cl);
+    return new UnloadedClassInfo(createClassNode(entry.url), entry.codeSource, entry.cl);
   }
 
   private static Class getClassIfLoadedByClassLoaderAncestors(String name, ClassLoader cl) {
@@ -102,9 +100,9 @@ public abstract class HierarchyClassInfo {
     return null;
   }
 
-  private static ClassNode createClassNode(InputStream is) {
+  private static ClassNode createClassNode(URL url) {
     try {
-      ClassReader cr = new ClassReader(is);
+      ClassReader cr = new ClassReader(url.openStream());
       ClassNode cn = new ClassNode();
       cr.accept(cn, 0);
       return cn;
@@ -116,19 +114,53 @@ public abstract class HierarchyClassInfo {
   private static ClassLoaderEntry readClassResource(String classResource,
       ClassLoader loader) {
     if (loader == null) {
-      InputStream is = ClassLoader.getSystemResourceAsStream(classResource);
-      if (is == null) {
+      URL url = ClassLoader.getSystemResource(classResource);
+      URL codeSource = getCodeSource(classResource, url);
+      if (codeSource == null) {
         return null;
       } else {
-        return new ClassLoaderEntry(is, loader);
+        return new ClassLoaderEntry(url, codeSource, loader);
       }
     } else {
-      InputStream is = loader.getResourceAsStream(classResource);
-      if (is == null) {
-        return readClassResource(classResource, loader.getParent());
-      } else {
-        return new ClassLoaderEntry(is, loader);
+      // parent delegation
+      ClassLoaderEntry cle = readClassResource(classResource, loader.getParent());
+      if (cle != null) {
+        return cle;
       }
+      URL url = loader.getResource(classResource);
+      URL codeSource = getCodeSource(classResource, url);
+      if (codeSource == null) {
+        return null;
+      } else {
+        return new ClassLoaderEntry(url, codeSource, loader);
+      }
+    }
+  }
+
+  private static URL getCodeSource(String resourceName, URL resourceUrl) {
+    if (resourceUrl == null) {
+      return null;
+    }
+    URLConnection urlConnection;
+    try {
+      urlConnection = resourceUrl.openConnection();
+    } catch (IOException ex) {
+      throw new RuntimeException(ex);
+    }
+    if (urlConnection instanceof JarURLConnection) {
+      JarURLConnection jarURLConnection = (JarURLConnection) urlConnection;
+      return jarURLConnection.getJarFileURL();
+    }
+    String str = resourceUrl.toString().replace(resourceName, "");
+    if (str.endsWith("!/")) {
+      str = str.substring(0, str.length() - 2);
+    } else if (str.endsWith("!")) {
+      str = str.substring(0, str.length() - 1);
+    }
+    try {
+      return new URL(str);
+    } catch (MalformedURLException ex) {
+      throw new AssertionError();
     }
   }
 
@@ -156,11 +188,13 @@ public abstract class HierarchyClassInfo {
 
   private static class ClassLoaderEntry {
 
-    InputStream is;
+    URL url;
+    URL codeSource;
     ClassLoader cl;
 
-    public ClassLoaderEntry(InputStream is, ClassLoader cl) {
-      this.is = is;
+    public ClassLoaderEntry(URL url, URL codeSource, ClassLoader cl) {
+      this.url = url;
+      this.codeSource = codeSource;
       this.cl = cl;
     }
   }

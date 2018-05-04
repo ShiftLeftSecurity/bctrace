@@ -24,7 +24,7 @@
  */
 package io.shiftleft.bctrace.spi.hierarchy;
 
-import java.security.ProtectionDomain;
+import java.net.URL;
 
 /**
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
@@ -60,7 +60,7 @@ public class UnresolvedClassInfo extends HierarchyClassInfo {
   }
 
   @Override
-  public ProtectionDomain getProtectionDomain() {
+  public URL getCodeSource() {
     return null;
   }
 

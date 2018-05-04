@@ -22,23 +22,37 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.asm.util;
+package io.shiftleft.bctrace;
 
-import java.io.File;
+import java.io.PrintWriter;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.util.CheckClassAdapter;
 
 /**
- *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public class Utils {
+public class TestFrameClass {
 
-  public static void deleteRecursively(File file) {
-    File[] contents = file.listFiles();
-    if (contents != null) {
-      for (File f : contents) {
-        deleteRecursively(f);
-      }
+  public static void doFrames() {
+    Number num;
+    if (System.currentTimeMillis() % 2 == 0) {
+      num = new Integer(3);
+    } else {
+      num = new Long(4);
     }
-    file.delete();
+    sout(num);
   }
+
+  public static void sout(Number num) {
+    System.out.println(num.intValue());
+  }
+
+  public static void main(String[] args) throws Exception {
+    Class clazz = TestFrameClass.class;
+    String className = clazz.getCanonicalName();
+    String resourceName = className.replace('.', '/') + ".class";
+    ClassReader cr = new ClassReader(clazz.getClassLoader().getResourceAsStream(resourceName));
+    CheckClassAdapter.verify(cr, true, new PrintWriter(System.err));
+  }
+
 }

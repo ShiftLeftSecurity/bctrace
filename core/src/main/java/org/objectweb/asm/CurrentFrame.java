@@ -34,7 +34,11 @@ package org.objectweb.asm;
  *
  * @author Eric Bruneton
  */
-class CurrentFrame extends Frame {
+final class CurrentFrame extends Frame {
+
+  CurrentFrame(final Label owner) {
+    super(owner);
+  }
 
   /**
    * Sets this CurrentFrame to the input stack map frame of the next "current" instruction, i.e. the
@@ -42,11 +46,11 @@ class CurrentFrame extends Frame {
    * method is called is the stack map frame status just before the given instruction is executed.
    */
   @Override
-  void execute(int opcode, int arg, ClassWriter cw, Item item) {
-    super.execute(opcode, arg, cw, item);
-    Frame successor = new Frame();
-    merge(cw, successor, 0);
-    set(successor);
-    owner.inputStackTop = 0;
+  void execute(
+      final int opcode, final int arg, final Symbol symbolArg, final SymbolTable symbolTable) {
+    super.execute(opcode, arg, symbolArg, symbolTable);
+    Frame successor = new Frame(null);
+    merge(symbolTable, successor, 0);
+    copyFrom(successor);
   }
 }

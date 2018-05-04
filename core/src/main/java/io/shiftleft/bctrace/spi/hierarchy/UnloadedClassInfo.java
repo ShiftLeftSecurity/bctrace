@@ -25,7 +25,7 @@
 package io.shiftleft.bctrace.spi.hierarchy;
 
 import io.shiftleft.bctrace.asm.util.ASMUtils;
-import java.security.ProtectionDomain;
+import java.net.URL;
 import java.util.List;
 import org.objectweb.asm.tree.ClassNode;
 
@@ -36,22 +36,14 @@ public class UnloadedClassInfo extends HierarchyClassInfo {
 
   private final ClassNode cn;
   private final ClassLoader cl;
-  private final ProtectionDomain protectionDomain;
+  private final URL codeSource;
   private final HierarchyClassInfo superClass;
   private final HierarchyClassInfo[] interfaces;
 
-  private boolean passedProtectionDomain;
-
-  public UnloadedClassInfo(ClassNode cn, ClassLoader cl) {
-    this(cn, null, cl);
-    this.passedProtectionDomain = false;
-  }
-
-  public UnloadedClassInfo(ClassNode cn, ProtectionDomain protectionDomain, ClassLoader cl) {
+  public UnloadedClassInfo(ClassNode cn, URL codeSource, ClassLoader cl) {
     this.cn = cn;
     this.cl = cl;
-    this.protectionDomain = protectionDomain;
-    this.passedProtectionDomain = true;
+    this.codeSource = codeSource;
     if (this.cn.superName == null) {
       this.superClass = null;
     } else {
@@ -91,11 +83,8 @@ public class UnloadedClassInfo extends HierarchyClassInfo {
   }
 
   @Override
-  public ProtectionDomain getProtectionDomain() {
-    if (!passedProtectionDomain) {
-      throw new IllegalStateException("Protection domain has not been passed");
-    }
-    return this.protectionDomain;
+  public URL getCodeSource() {
+    return codeSource;
   }
 
   @Override

@@ -31,7 +31,8 @@ package org.objectweb.asm;
  * An edge in the control flow graph of a method. Each node of this graph is a basic block,
  * represented with the Label corresponding to its first instruction. Each edge goes from one node
  * to another, i.e. from one basic block to another (called the predecessor and successor blocks,
- * respectively). An edge corresponds either to a jump instruction or to an exception handler.
+ * respectively). An edge corresponds either to a jump or ret instruction or to an exception
+ * handler.
  *
  * @see Label
  * @author Eric Bruneton
@@ -39,13 +40,13 @@ package org.objectweb.asm;
 final class Edge {
 
   /**
-   * Denotes a control flow graph edge corresponding to a jump instruction. Only used with {@link
+   * A control flow graph edge corresponding to a jump or ret instruction. Only used with {@link
    * ClassWriter#COMPUTE_FRAMES}.
    */
   static final int JUMP = 0;
 
   /**
-   * Denotes a control flow graph edge corresponding to an exception handler. Only used with {@link
+   * A control flow graph edge corresponding to an exception handler. Only used with {@link
    * ClassWriter#COMPUTE_MAXS}.
    */
   static final int EXCEPTION = 0x7FFFFFFF;
@@ -75,7 +76,13 @@ final class Edge {
    */
   Edge nextEdge;
 
-  /** Creates a new Edge. */
+  /**
+   * Constructs a new Edge.
+   *
+   * @param info see {@link #info}.
+   * @param successor see {@link #successor}.
+   * @param nextEdge see {@link #nextEdge}.
+   */
   Edge(final int info, final Label successor, final Edge nextEdge) {
     this.info = info;
     this.successor = successor;

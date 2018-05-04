@@ -77,6 +77,11 @@ public class TestClass {
     return 1;
   }
 
+  public static void doFrames() {
+    Number num = (System.currentTimeMillis() % 2 == 0 ? new Integer(3) : new Long(4));
+    System.out.println(num.intValue());
+  }
+
   public static long getLong() {
     return 2;
   }

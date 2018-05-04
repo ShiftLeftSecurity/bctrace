@@ -34,10 +34,11 @@ import org.objectweb.asm.tree.MethodNode;
  *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public class NonBootstrapFilter implements Filter {
+public class NonBootstrapFilter extends Filter {
 
   @Override
-  public boolean instrumentClass(String className, ProtectionDomain protectionDomain, ClassLoader cl) {
+  public boolean instrumentClass(String className, ProtectionDomain protectionDomain,
+      ClassLoader cl) {
     return cl != Object.class.getClassLoader();
   }
 

@@ -53,7 +53,9 @@ public class TypePath {
    * Specification (JVMS) - corresponding to this TypePath is stored. The first byte of the
    * structure in this array is given by {@link #typePathOffset}.
    *
-   * @see https://docs.oracle.com/javase/specs/jvms/se9/html/jvms-4.html#jvms-4.7.20.2
+   * @see <a
+   *     href="https://docs.oracle.com/javase/specs/jvms/se9/html/jvms-4.html#jvms-4.7.20.2">JVMS
+   *     4.7.20.2</a>
    */
   private final byte[] typePathContainer;
 
@@ -61,7 +63,7 @@ public class TypePath {
   private final int typePathOffset;
 
   /**
-   * Creates a new TypePath.
+   * Constructs a new TypePath.
    *
    * @param typePathContainer a byte array containing a type_path JVMS structure.
    * @param typePathOffset the offset of the first byte of the type_path structure in
@@ -121,8 +123,9 @@ public class TypePath {
     int typePathLength = typePath.length();
     ByteVector output = new ByteVector(typePathLength);
     output.putByte(0);
-    for (int i = 0; i < typePathLength; ) {
-      char c = typePath.charAt(i++);
+    int typePathIndex = 0;
+    while (typePathIndex < typePathLength) {
+      char c = typePath.charAt(typePathIndex++);
       if (c == '[') {
         output.put11(ARRAY_ELEMENT, 0);
       } else if (c == '.') {
@@ -131,14 +134,19 @@ public class TypePath {
         output.put11(WILDCARD_BOUND, 0);
       } else if (c >= '0' && c <= '9') {
         int typeArg = c - '0';
-        while (i < typePathLength && (c = typePath.charAt(i)) >= '0' && c <= '9') {
-          typeArg = typeArg * 10 + c - '0';
-          i += 1;
-        }
-        if (i < typePathLength && typePath.charAt(i) == ';') {
-          i += 1;
+        while (typePathIndex < typePathLength) {
+          c = typePath.charAt(typePathIndex++);
+          if (c >= '0' && c <= '9') {
+            typeArg = typeArg * 10 + c - '0';
+          } else if (c == ';') {
+            break;
+          } else {
+            throw new IllegalArgumentException();
+          }
         }
         output.put11(TYPE_ARGUMENT, typeArg);
+      } else {
+        throw new IllegalArgumentException();
       }
     }
     output.data[0] = (byte) (output.length / 2);
