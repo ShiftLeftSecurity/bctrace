@@ -77,7 +77,7 @@ public class LoadedClassInfo extends HierarchyClassInfo {
 
   @Override
   public URL getCodeSource() {
-    return Bctrace.getCodeSource(this.clazz.getProtectionDomain());
+    return Bctrace.getCodeSource(this.clazz);
   }
 
   @Override

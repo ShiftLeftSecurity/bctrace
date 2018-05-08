@@ -127,7 +127,7 @@ public class Transformer implements ClassFileTransformer {
       ClassNode cn = new ClassNode();
       cr.accept(cn, 0);
 
-      UnloadedClassInfo ci = new UnloadedClassInfo(cn, Bctrace.getCodeSource(protectionDomain), loader);
+      UnloadedClassInfo ci = new UnloadedClassInfo(cn, Bctrace.getCodeSource(className, protectionDomain, loader), loader);
 
       matchingHooks = getMatchingHooksByClassInfo(matchingHooks, ci, protectionDomain, loader);
 

@@ -26,10 +26,7 @@ package io.shiftleft.bctrace.spi.hierarchy;
 
 import io.shiftleft.bctrace.Bctrace;
 import java.io.IOException;
-import java.net.JarURLConnection;
-import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.URLConnection;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.ClassNode;
 
@@ -115,11 +112,10 @@ public abstract class HierarchyClassInfo {
       ClassLoader loader) {
     if (loader == null) {
       URL url = ClassLoader.getSystemResource(classResource);
-      URL codeSource = getCodeSource(classResource, url);
-      if (codeSource == null) {
+      if (url == null) {
         return null;
       } else {
-        return new ClassLoaderEntry(url, codeSource, loader);
+        return new ClassLoaderEntry(url, null, loader);
       }
     } else {
       // parent delegation
@@ -128,39 +124,11 @@ public abstract class HierarchyClassInfo {
         return cle;
       }
       URL url = loader.getResource(classResource);
-      URL codeSource = getCodeSource(classResource, url);
-      if (codeSource == null) {
+      if (url == null) {
         return null;
       } else {
-        return new ClassLoaderEntry(url, codeSource, loader);
+        return new ClassLoaderEntry(url, Bctrace.getCodeSource(classResource, url), loader);
       }
-    }
-  }
-
-  private static URL getCodeSource(String resourceName, URL resourceUrl) {
-    if (resourceUrl == null) {
-      return null;
-    }
-    URLConnection urlConnection;
-    try {
-      urlConnection = resourceUrl.openConnection();
-    } catch (IOException ex) {
-      throw new RuntimeException(ex);
-    }
-    if (urlConnection instanceof JarURLConnection) {
-      JarURLConnection jarURLConnection = (JarURLConnection) urlConnection;
-      return jarURLConnection.getJarFileURL();
-    }
-    String str = resourceUrl.toString().replace(resourceName, "");
-    if (str.endsWith("!/")) {
-      str = str.substring(0, str.length() - 2);
-    } else if (str.endsWith("!")) {
-      str = str.substring(0, str.length() - 1);
-    }
-    try {
-      return new URL(str);
-    } catch (MalformedURLException ex) {
-      throw new AssertionError();
     }
   }
 
