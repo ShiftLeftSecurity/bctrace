@@ -127,7 +127,7 @@ public class Transformer implements ClassFileTransformer {
       ClassNode cn = new ClassNode();
       cr.accept(cn, 0);
 
-      UnloadedClassInfo ci = new UnloadedClassInfo(cn, Bctrace.getCodeSource(protectionDomain), loader);
+      UnloadedClassInfo ci = new UnloadedClassInfo(cn, Bctrace.getCodeSource(className, protectionDomain, loader), loader);
 
       matchingHooks = getMatchingHooksByClassInfo(matchingHooks, ci, protectionDomain, loader);
 
@@ -229,9 +229,6 @@ public class Transformer implements ClassFileTransformer {
     boolean transformed = false;
     List<MethodNode> newMethods = new ArrayList<MethodNode>();
     for (MethodNode mn : methods) {
-      if (ASMUtils.isAbstract(mn.access)) {
-        continue;
-      }
       ArrayList<Integer> hooksToUse = new ArrayList<Integer>(matchingHooks.size());
       Hook[] hooks = Bctrace.getInstance().getHooks();
       for (Integer i : matchingHooks) {
@@ -239,6 +236,9 @@ public class Transformer implements ClassFileTransformer {
             .instrumentMethod(ci, mn)) {
           hooksToUse.add(i);
         }
+      }
+      if (ASMUtils.isAbstract(mn.access)) {
+        continue;
       }
       if (!hooksToUse.isEmpty()) {
         // Add additional hooks

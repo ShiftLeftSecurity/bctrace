@@ -25,13 +25,13 @@
 package io.shiftleft.bctrace;
 
 import io.shiftleft.bctrace.debug.DebugHttpServer;
+import io.shiftleft.bctrace.spi.Hook;
 import java.io.IOException;
 import java.lang.instrument.Instrumentation;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.Scanner;
-import io.shiftleft.bctrace.spi.Hook;
 
 /**
  * Framework entry point.
@@ -40,6 +40,8 @@ import io.shiftleft.bctrace.spi.Hook;
  */
 public class Init {
 
+  private static final String OSGI_PACKAGE_DELEGATION_PROP = "org.osgi.framework.bootdelegation";
+  private static final String OSGI_PACKAGE_DELEGATION_VALUE = "io.shiftleft.*";
   private static final String DESCRIPTOR_NAME = ".bctrace";
 
   public static void premain(final String arg, Instrumentation inst) throws Exception {
@@ -54,6 +56,7 @@ public class Init {
     if (Bctrace.instance != null) {
       throw new IllegalStateException("Bctrace has been already loaded");
     }
+    updateOsgiDelegationSystemProperty();
     String[] hookClassNames = readHookClassNamesFromDescriptors();
     if (hookClassNames == null || hookClassNames.length == 0) {
       throw new Error("No hooks found in classpath resource " + DESCRIPTOR_NAME);
@@ -65,6 +68,15 @@ public class Init {
     Bctrace.instance = new Bctrace(inst, hooks);
     Bctrace.instance.init();
     DebugHttpServer.init();
+  }
+
+  private static void updateOsgiDelegationSystemProperty() {
+    String prop = System.getProperty(OSGI_PACKAGE_DELEGATION_PROP);
+    if (prop == null) {
+      System.setProperty(OSGI_PACKAGE_DELEGATION_PROP, OSGI_PACKAGE_DELEGATION_VALUE);
+    } else {
+      System.setProperty(OSGI_PACKAGE_DELEGATION_PROP, prop + "," + OSGI_PACKAGE_DELEGATION_VALUE);
+    }
   }
 
   private static String[] readHookClassNamesFromDescriptors() throws IOException {

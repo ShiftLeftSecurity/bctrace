@@ -34,7 +34,11 @@ import io.shiftleft.bctrace.spi.AgentLoggerFactory;
 import io.shiftleft.bctrace.spi.Hook;
 import io.shiftleft.bctrace.spi.Instrumentation;
 import io.shiftleft.bctrace.spi.SystemProperty;
+import java.io.IOException;
+import java.net.JarURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLConnection;
 import java.security.ProtectionDomain;
 import java.util.logging.Handler;
 import java.util.logging.Level;
@@ -130,15 +134,50 @@ public final class Bctrace {
     return this.hooks;
   }
 
-  public static URL getCodeSource(ProtectionDomain protectionDomain) {
-    if (protectionDomain == null) {
+  public static URL getCodeSource(String className, ProtectionDomain protectionDomain,
+      ClassLoader cl) {
+    if (protectionDomain != null && protectionDomain.getCodeSource() != null) {
+      return protectionDomain.getCodeSource().getLocation();
+    }
+    if (cl == null) {
       return null;
     }
-    if (protectionDomain.getCodeSource() == null) {
-      return null;
-    }
-    return protectionDomain.getCodeSource().getLocation();
+    String resourceName = className.replace('.', '/') + ".class";
+    URL url = cl.getResource(className.replace('.', '/') + ".class");
+    return getCodeSource(resourceName, url);
   }
+
+  public static URL getCodeSource(Class clazz) {
+    return getCodeSource(clazz.getName(), clazz.getProtectionDomain(), clazz.getClassLoader());
+  }
+
+  public static URL getCodeSource(String resourceName, URL resourceUrl) {
+    if (resourceUrl == null) {
+      return null;
+    }
+    URLConnection urlConnection;
+    try {
+      urlConnection = resourceUrl.openConnection();
+    } catch (IOException ex) {
+      throw new RuntimeException(ex);
+    }
+    if (urlConnection instanceof JarURLConnection) {
+      JarURLConnection jarURLConnection = (JarURLConnection) urlConnection;
+      return jarURLConnection.getJarFileURL();
+    }
+    String str = resourceUrl.toString().replace(resourceName, "");
+    if (str.endsWith("!/")) {
+      str = str.substring(0, str.length() - 2);
+    } else if (str.endsWith("!")) {
+      str = str.substring(0, str.length() - 1);
+    }
+    try {
+      return new URL(str);
+    } catch (MalformedURLException ex) {
+      throw new AssertionError();
+    }
+  }
+
 
   public static Logger getAgentLogger() {
     return LOGGER;
