@@ -42,8 +42,8 @@ public final class MethodInfo {
 
   private String packageName;
 
-  public static MethodInfo from(ClassNode cn, MethodNode mn) {
-    return new MethodInfo(cn.name, mn.name, mn.desc, mn.access);
+  public static MethodInfo from(String className, MethodNode mn) {
+    return new MethodInfo(className, mn.name, mn.desc, mn.access);
   }
 
   public MethodInfo(String binaryClassName, String methodName, String methodDescriptor, int modifiers) {

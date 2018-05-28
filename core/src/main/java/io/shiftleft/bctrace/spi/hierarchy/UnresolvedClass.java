@@ -24,50 +24,29 @@
  */
 package io.shiftleft.bctrace.spi.hierarchy;
 
-import java.net.URL;
-
 /**
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public class UnresolvedClassInfo extends HierarchyClassInfo {
+public class UnresolvedClass extends BctraceClass {
 
 
-  private final String className;
-
-  public UnresolvedClassInfo(String className) {
-    this.className = className;
+  UnresolvedClass(String name, ClassLoader cl) {
+    super(name, cl);
   }
 
-
   @Override
-  public HierarchyClassInfo getSuperClass() {
+  protected String getSuperClassName() {
     return null;
   }
 
   @Override
-  public HierarchyClassInfo[] getInterfaces() {
+  protected String[] getInterfaceNames() {
     return null;
   }
 
   @Override
-  public String getName() {
-    return this.className;
+  public int getModifiers() {
+    return 0;
   }
-
-  @Override
-  public ClassLoader getClassLoader() {
-    return null;
-  }
-
-  @Override
-  public URL getCodeSource() {
-    return null;
-  }
-
-  @Override
-  public boolean isInterface() {
-    return false;
-  }
-
 }
 

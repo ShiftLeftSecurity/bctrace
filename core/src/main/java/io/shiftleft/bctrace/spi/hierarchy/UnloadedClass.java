@@ -24,69 +24,67 @@
  */
 package io.shiftleft.bctrace.spi.hierarchy;
 
-import io.shiftleft.bctrace.Bctrace;
+import java.io.IOException;
 import java.net.URL;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.tree.ClassNode;
 
 /**
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public class LoadedClassInfo extends HierarchyClassInfo {
+public class UnloadedClass extends BctraceClass {
 
-  private final Class clazz;
-  private final HierarchyClassInfo superClass;
-  private final HierarchyClassInfo[] interfaces;
+  private final ClassNode cn;
 
-  LoadedClassInfo(Class clazz) {
-    if (clazz == null) {
-      throw new IllegalArgumentException("Class instance is required");
+  UnloadedClass(String name, ClassLoader cl) throws ClassNotFoundException {
+    super(name, cl);
+    this.cn = createClassNode(getURL());
+  }
+
+  public UnloadedClass(String name, ClassLoader cl, ClassNode cn) {
+    super(name, cl);
+    this.cn = cn;
+  }
+
+  private static ClassNode createClassNode(URL url) throws ClassNotFoundException {
+    if (url == null) {
+      throw new ClassNotFoundException();
     }
-    this.clazz = clazz;
-    if (clazz.getSuperclass() == null) {
-      this.superClass = null;
+    try {
+      ClassReader cr = new ClassReader(url.openStream());
+      ClassNode cn = new ClassNode();
+      cr.accept(cn, 0);
+      return cn;
+    } catch (IOException ex) {
+      throw new RuntimeException(ex);
+    }
+  }
+
+  public ClassNode getRawClassNode() {
+    return cn;
+  }
+
+  @Override
+  protected String getSuperClassName() {
+    if (this.cn.superName == null) {
+      return null;
     } else {
-      this.superClass = new LoadedClassInfo(clazz.getSuperclass());
-    }
-    Class[] interfaces = clazz.getInterfaces();
-    this.interfaces = new HierarchyClassInfo[interfaces.length];
-    int i = 0;
-    for (Class cl : interfaces) {
-      this.interfaces[i] = new LoadedClassInfo(cl);
-      i++;
+      return this.cn.superName.replace('/', '.');
     }
   }
 
   @Override
-  public HierarchyClassInfo getSuperClass() {
-    return this.superClass;
+  protected String[] getInterfaceNames() {
+    String[] ret = new String[this.cn.interfaces.size()];
+    for (int i = 0; i < this.cn.interfaces.size(); i++) {
+      ret[i] = this.cn.interfaces.get(i).replace('/', '.');
+    }
+    return ret;
   }
 
   @Override
-  public HierarchyClassInfo[] getInterfaces() {
-    return this.interfaces;
+  public int getModifiers() {
+    return this.cn.access;
   }
-
-  @Override
-  public String getName() {
-    return clazz.getName();
-  }
-
-  @Override
-  public ClassLoader getClassLoader() {
-    return this.clazz.getClassLoader();
-  }
-
-  @Override
-  public URL getCodeSource() {
-    return Bctrace.getCodeSource(this.clazz);
-  }
-
-  @Override
-  public boolean isInterface() {
-    return this.clazz.isInterface();
-  }
-
-  public Class getClazz() {
-    return clazz;
-  }
-
 }
+
