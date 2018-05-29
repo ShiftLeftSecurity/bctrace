@@ -24,7 +24,8 @@
  */
 package io.shiftleft.bctrace.spi;
 
-import io.shiftleft.bctrace.spi.hierarchy.UnloadedClassInfo;
+import io.shiftleft.bctrace.spi.hierarchy.BctraceClass;
+import io.shiftleft.bctrace.spi.hierarchy.UnloadedClass;
 import java.security.ProtectionDomain;
 import org.objectweb.asm.tree.MethodNode;
 
@@ -32,9 +33,9 @@ import org.objectweb.asm.tree.MethodNode;
  * A filter determines which classes and methods are instrumented. <br><br> If the class is
  * transformable, the framework performs an initial query to the {@link #instrumentClass(String,
  * ProtectionDomain, ClassLoader) instrumentClass} method. If this return <code>true</code> the
- * class bytecode is parsed and the filter {@link #instrumentClass(UnloadedClassInfo,
+ * class bytecode is parsed and the filter {@link #instrumentClass(BctraceClass,
  * ProtectionDomain, ClassLoader) instrumentMethod} is called. It this other returns true the filter
- * {@link #instrumentMethod(UnloadedClassInfo, MethodNode) instrumentMethod} method will be invoked
+ * {@link #instrumentMethod(UnloadedClass, MethodNode) instrumentMethod} method will be invoked
  * once per non abstract nor native method in the class. Invocations returning <code>true</code>
  * lead to a hook insertions into the bytecode of the method.
  *
@@ -54,7 +55,7 @@ public abstract class Filter {
   /**
    * Second query once the class has been parsed. Whether or not instrument the methods of a class.
    */
-  public boolean instrumentClass(UnloadedClassInfo classInfo, ProtectionDomain protectionDomain,
+  public boolean instrumentClass(BctraceClass clazz, ProtectionDomain protectionDomain,
       ClassLoader cl) {
     return true;
   }
@@ -62,5 +63,5 @@ public abstract class Filter {
   /**
    * Returns a boolean condition that determines whether to instrument the specified method
    */
-  public abstract boolean instrumentMethod(UnloadedClassInfo classInfo, MethodNode mn);
+  public abstract boolean instrumentMethod(BctraceClass clazz, MethodNode mn);
 }

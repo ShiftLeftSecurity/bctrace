@@ -24,73 +24,47 @@
  */
 package io.shiftleft.bctrace.spi.hierarchy;
 
-import io.shiftleft.bctrace.asm.util.ASMUtils;
-import java.net.URL;
-import java.util.List;
-import org.objectweb.asm.tree.ClassNode;
-
 /**
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public class UnloadedClassInfo extends HierarchyClassInfo {
+public class LoadedClass extends BctraceClass {
 
-  private final ClassNode cn;
-  private final ClassLoader cl;
-  private final URL codeSource;
-  private final HierarchyClassInfo superClass;
-  private final HierarchyClassInfo[] interfaces;
+  private final Class clazz;
 
-  public UnloadedClassInfo(ClassNode cn, URL codeSource, ClassLoader cl) {
-    this.cn = cn;
-    this.cl = cl;
-    this.codeSource = codeSource;
-    if (this.cn.superName == null) {
-      this.superClass = null;
+  LoadedClass(Class clazz) {
+    super(clazz.getName(), clazz.getClassLoader());
+    this.clazz = clazz;
+  }
+
+  @Override
+  protected String getSuperClassName() {
+    if (clazz.getSuperclass() == null) {
+      return null;
     } else {
-      this.superClass = HierarchyClassInfo.from(this.cn.superName.replace('/', '.'), this.cl);
-    }
-    List<String> ifaces = this.cn.interfaces;
-    this.interfaces = new HierarchyClassInfo[ifaces.size()];
-    int i = 0;
-    for (String interfaceName : ifaces) {
-      this.interfaces[i] = HierarchyClassInfo.from(interfaceName.replace('/', '.'), cl);
-      i++;
+      return clazz.getSuperclass().getName();
     }
   }
 
-  public ClassNode getRawClassNode() {
-    return cn;
+  @Override
+  protected String[] getInterfaceNames() {
+    Class[] interfaces = clazz.getInterfaces();
+    if (interfaces == null) {
+      return null;
+    }
+    String[] ret = new String[interfaces.length];
+    for (int i = 0; i < ret.length; i++) {
+      ret[i] = interfaces[i].getName();
+    }
+    return ret;
   }
 
   @Override
-  public HierarchyClassInfo getSuperClass() {
-    return this.superClass;
+  public int getModifiers() {
+    return this.clazz.getModifiers();
   }
 
-  @Override
-  public HierarchyClassInfo[] getInterfaces() {
-    return this.interfaces;
-  }
-
-  @Override
-  public String getName() {
-    return cn.name;
-  }
-
-  @Override
-  public ClassLoader getClassLoader() {
-    return this.cl;
-  }
-
-  @Override
-  public URL getCodeSource() {
-    return codeSource;
-  }
-
-  @Override
-  public boolean isInterface() {
-    return ASMUtils.isInterface(this.cn.access);
+  public Class getClazz() {
+    return clazz;
   }
 
 }
-

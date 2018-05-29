@@ -25,7 +25,7 @@
 package io.shiftleft.bctrace.impl;
 
 import io.shiftleft.bctrace.spi.Filter;
-import io.shiftleft.bctrace.spi.hierarchy.UnloadedClassInfo;
+import io.shiftleft.bctrace.spi.hierarchy.BctraceClass;
 import java.security.ProtectionDomain;
 import org.objectweb.asm.tree.MethodNode;
 
@@ -42,7 +42,7 @@ public class AllFilter extends Filter {
   }
 
   @Override
-  public boolean instrumentMethod(UnloadedClassInfo classInfo, MethodNode mn) {
+  public boolean instrumentMethod(BctraceClass clazz, MethodNode mn) {
     return true;
   }
 }
