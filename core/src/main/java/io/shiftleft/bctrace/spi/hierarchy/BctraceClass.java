@@ -26,6 +26,7 @@ package io.shiftleft.bctrace.spi.hierarchy;
 
 import io.shiftleft.bctrace.Bctrace;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
+import io.shiftleft.bctrace.logging.Level;
 import java.net.URL;
 
 /**
@@ -162,7 +163,7 @@ public abstract class BctraceClass {
       ret = new UnloadedClass(name, cl);
     } catch (ClassNotFoundException ex) {
       Bctrace.getAgentLogger()
-          .warning("Could not obtain class bytecode for unloaded class " + name);
+          .log(Level.WARNING, "Could not obtain class bytecode for unloaded class " + name);
       ret = new UnresolvedClass(name, cl);
     }
     return ret;

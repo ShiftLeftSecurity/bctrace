@@ -27,6 +27,7 @@ package io.shiftleft.bctrace.debug;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import io.shiftleft.bctrace.Bctrace;
+import io.shiftleft.bctrace.logging.Level;
 import io.shiftleft.bctrace.spi.MethodInfo;
 import io.shiftleft.bctrace.spi.MethodRegistry;
 import io.shiftleft.bctrace.spi.SystemProperty;
@@ -43,7 +44,7 @@ public class DebugHttpServer {
     String debugServer = System.getProperty(SystemProperty.DEBUG_SERVER);
     if (debugServer != null) {
       try {
-        Bctrace.getAgentLogger().warning("Starting debug server at http://" + debugServer
+        Bctrace.getAgentLogger().log(Level.WARNING,"Starting debug server at http://" + debugServer
             + " (this adds a significant overhead and should only be used for debugging purposes)");
         String[] tokens = debugServer.split(":");
         if (tokens.length != 2) {

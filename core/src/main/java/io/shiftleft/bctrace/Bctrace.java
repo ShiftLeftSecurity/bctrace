@@ -28,11 +28,13 @@ import io.shiftleft.bctrace.asm.Transformer;
 import io.shiftleft.bctrace.debug.CallCounterHook;
 import io.shiftleft.bctrace.debug.DebugInfo;
 import io.shiftleft.bctrace.impl.InstrumentationImpl;
+import io.shiftleft.bctrace.logging.Level;
 import io.shiftleft.bctrace.runtime.Callback;
 import io.shiftleft.bctrace.runtime.listener.Listener;
 import io.shiftleft.bctrace.spi.AgentLoggerFactory;
 import io.shiftleft.bctrace.spi.Hook;
 import io.shiftleft.bctrace.spi.Instrumentation;
+import io.shiftleft.bctrace.logging.Logger;
 import io.shiftleft.bctrace.spi.SystemProperty;
 import java.io.IOException;
 import java.net.JarURLConnection;
@@ -40,9 +42,6 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.security.ProtectionDomain;
-import java.util.logging.Handler;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * Framework entry point.
@@ -98,14 +97,8 @@ public final class Bctrace {
     Logger logger = AgentLoggerFactory.getInstance().getLogger();
     String logLevel = System.getProperty(SystemProperty.LOG_LEVEL);
     if (logLevel != null) {
-      Level level = Level.parse(logLevel);
+      Level level = Level.valueOf(logLevel);
       logger.setLevel(level);
-      Handler[] handlers = logger.getHandlers();
-      if (handlers != null) {
-        for (Handler handler : handlers) {
-          handler.setLevel(level);
-        }
-      }
     }
     return logger;
   }
@@ -177,7 +170,6 @@ public final class Bctrace {
       throw new AssertionError();
     }
   }
-
 
   public static Logger getAgentLogger() {
     return LOGGER;

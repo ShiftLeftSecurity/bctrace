@@ -34,6 +34,7 @@ import io.shiftleft.bctrace.asm.util.ASMUtils;
 import io.shiftleft.bctrace.debug.DebugInfo;
 import io.shiftleft.bctrace.impl.InstrumentationImpl;
 import io.shiftleft.bctrace.spi.Hook;
+import io.shiftleft.bctrace.logging.Level;
 import io.shiftleft.bctrace.spi.MethodInfo;
 import io.shiftleft.bctrace.spi.MethodRegistry;
 import io.shiftleft.bctrace.spi.SystemProperty;
@@ -46,7 +47,6 @@ import java.security.ProtectionDomain;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Level;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.ClassNode;
@@ -143,7 +143,7 @@ public class Transformer implements ClassFileTransformer {
       }
     } catch (Throwable th) {
       Bctrace.getAgentLogger()
-          .log(Level.SEVERE, "Error found instrumenting class " + className, th);
+          .log(Level.ERROR, "Error found instrumenting class " + className, th);
       return ret;
     } finally {
       Bctrace.enableThreadNotification();
@@ -176,7 +176,7 @@ public class Transformer implements ClassFileTransformer {
       }
     } catch (Exception ex) {
       Bctrace.getAgentLogger()
-          .log(Level.SEVERE, "Error dumping to disk instrumenting class " + className, ex);
+          .log(Level.ERROR, "Error dumping to disk instrumenting class " + className, ex);
     }
   }
 

@@ -24,16 +24,16 @@
  */
 package io.shiftleft.bctrace.spi;
 
+import io.shiftleft.bctrace.logging.Logger;
+import io.shiftleft.bctrace.logging.Level;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ServiceLoader;
-import java.util.logging.ConsoleHandler;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
- *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
 public abstract class AgentLoggerFactory {
@@ -41,7 +41,8 @@ public abstract class AgentLoggerFactory {
   private static AgentLoggerFactory instance;
 
   static {
-    ServiceLoader<AgentLoggerFactory> sl = ServiceLoader.load(AgentLoggerFactory.class, AgentLoggerFactory.class.getClassLoader());
+    ServiceLoader<AgentLoggerFactory> sl = ServiceLoader
+        .load(AgentLoggerFactory.class, AgentLoggerFactory.class.getClassLoader());
     Iterator<AgentLoggerFactory> it = sl.iterator();
     List<AgentLoggerFactory> instances = new ArrayList<AgentLoggerFactory>();
     while (it.hasNext()) {
@@ -51,7 +52,7 @@ public abstract class AgentLoggerFactory {
       instance = new DefaultLoggerFactory();
     } else if (instances.size() > 1) {
       throw new Error(
-              "Multiple '" + AgentLoggerFactory.class.getSimpleName() + "' service providers found: "
+          "Multiple '" + AgentLoggerFactory.class.getSimpleName() + "' service providers found: "
               + instances);
     } else {
       instance = instances.get(0);
@@ -69,11 +70,28 @@ public abstract class AgentLoggerFactory {
     private static final Logger LOGGER = createLogger();
 
     private static Logger createLogger() {
-      Logger logger = Logger.getAnonymousLogger();
-      logger.setLevel(Level.ALL);
-      logger.addHandler(new ConsoleHandler());
-      logger.setUseParentHandlers(false);
-      logger.info("Starting bctrace agent");
+      Logger logger = new Logger() {
+        @Override
+        protected void doLog(Level level, String message) {
+          synchronized (System.err) {
+            System.err.println(message);
+          }
+        }
+
+        @Override
+        protected void doLog(Level level, String message, Throwable th) {
+          StringBuilder sb = new StringBuilder(message);
+          sb.append("\n");
+          StringWriter stack = new StringWriter();
+          th.printStackTrace(new PrintWriter(stack));
+          sb.append(stack.toString());
+          synchronized (System.err) {
+            System.err.println(sb.toString());
+          }
+        }
+      };
+      logger.setLevel(Level.INFO);
+      logger.log(Level.INFO, "Starting bctrace agent");
       return logger;
     }
 
