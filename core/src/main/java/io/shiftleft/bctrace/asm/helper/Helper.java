@@ -42,19 +42,25 @@ import org.objectweb.asm.tree.TypeInsnNode;
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
 public class Helper {
+  
+  protected Bctrace bctrace;
 
-  protected static boolean isInstrumentationNeeded(ArrayList<Integer> listenersToUse) {
+  public void setBctrace(Bctrace bctrace) {
+    this.bctrace = bctrace;
+  }
+
+  protected boolean isInstrumentationNeeded(ArrayList<Integer> listenersToUse) {
     if (listenersToUse == null) {
       return false;
     }
     return listenersToUse.size() > 0;
   }
 
-  protected static ArrayList<Integer> getListenersOfType(ArrayList<Integer> hooksToUse,
+  protected ArrayList<Integer> getListenersOfType(ArrayList<Integer> hooksToUse,
       Class<? extends Listener> clazz) {
     ArrayList<Integer> ret = null;
     for (Integer i : hooksToUse) {
-      Hook[] hooks = Bctrace.getInstance().getHooks();
+      Hook[] hooks = bctrace.getHooks();
       if (hooks[i].getListener() != null &&
           clazz.isAssignableFrom(hooks[i].getListener().getClass())) {
         if (ret == null) {
@@ -66,7 +72,7 @@ public class Helper {
     return ret;
   }
 
-  public static InsnList getClassConstantReference(Type type, int version) {
+  public InsnList getClassConstantReference(Type type, int version) {
     InsnList il = new InsnList();
     /*
      * The class version. The minor version is stored in the 16 most significant bits, and the major
@@ -92,7 +98,7 @@ public class Helper {
   /**
    * Pushes the parameter object array reference on top of the operand stack
    */
-  protected static void pushMethodArgsArray(InsnList il, MethodNode mn) {
+  protected void pushMethodArgsArray(InsnList il, MethodNode mn) {
     Type[] methodArguments = Type.getArgumentTypes(mn.desc);
     if (methodArguments.length == 0) {
       il.add(new InsnNode(Opcodes.ACONST_NULL));

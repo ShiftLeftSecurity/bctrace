@@ -22,25 +22,25 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.runtime.listener.info;
+package io.shiftleft.bctrace.runtime.listener.generic;
 
 import io.shiftleft.bctrace.runtime.listener.Listener;
 
 /**
+ *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public interface StartArgumentsListener extends Listener {
+public interface BeforeThrownListener extends Listener {
 
-/**
-   * Invoked by instrumented methods before any of its original instructions (if
-   * multiple plugins are registered, listener notification is performed
-   * according to their respective plugin registration order).
+  /**
+   * Invoked by instrumented methods just before the actual method throws a
+   * throwable.
    *
    * @param methodId method id (as defined by MethodRegistry)
    * @param clazz class defining the method.
    * @param instance instance where the method is invoked. Null if the method is static
-   * @param args arguments passed to the method. 
-   * returns false;
+   * @param th throwable to be thrown
    */
-  public void onStart(int methodId, Class clazz, Object instance, Object[] args);
+  public void onBeforeThrown(int methodId, Class clazz, Object instance, Throwable th);
+
 }

@@ -24,7 +24,6 @@
  */
 package io.shiftleft.bctrace.asm;
 
-import io.shiftleft.bctrace.Bctrace;
 import io.shiftleft.bctrace.asm.helper.CallSiteHelper;
 import io.shiftleft.bctrace.asm.helper.NativeWrapperHelper;
 import io.shiftleft.bctrace.asm.helper.ReturnHelper;
@@ -33,6 +32,10 @@ import io.shiftleft.bctrace.asm.helper.ThrowHelper;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
 import io.shiftleft.bctrace.debug.DebugInfo;
 import io.shiftleft.bctrace.impl.InstrumentationImpl;
+import io.shiftleft.bctrace.runtime.Callback;
+import io.shiftleft.bctrace.runtime.listener.Listener;
+import io.shiftleft.bctrace.Bctrace;
+import io.shiftleft.bctrace.spi.DynamicHook;
 import io.shiftleft.bctrace.spi.Hook;
 import io.shiftleft.bctrace.spi.MethodInfo;
 import io.shiftleft.bctrace.spi.MethodRegistry;
@@ -40,11 +43,15 @@ import io.shiftleft.bctrace.spi.SystemProperty;
 import io.shiftleft.bctrace.spi.hierarchy.UnloadedClassInfo;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
+import java.lang.reflect.Method;
 import java.security.ProtectionDomain;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import org.objectweb.asm.ClassReader;
@@ -63,6 +70,12 @@ public class Transformer implements ClassFileTransformer {
   private static final File DUMP_FOLDER;
   private final String nativeWrapperPrefix;
 
+  private final StartHelper startHelper = new StartHelper();
+  private final ReturnHelper returnHelper = new ReturnHelper();
+  private final ThrowHelper throwHelper = new ThrowHelper();
+  private final CallSiteHelper callSiteHelper = new CallSiteHelper();
+  private final NativeWrapperHelper nativeWrapperHelper = new NativeWrapperHelper();
+
   static {
     if (System.getProperty(SystemProperty.DUMP_FOLDER) != null) {
       File file = new File(System.getProperty(SystemProperty.DUMP_FOLDER));
@@ -79,11 +92,22 @@ public class Transformer implements ClassFileTransformer {
   }
 
   private final InstrumentationImpl instrumentation;
+  private final Hook[] hooks;
+  private final Bctrace bctrace;
   private final AtomicInteger TRANSFORMATION_COUNTER = new AtomicInteger();
 
-  public Transformer(InstrumentationImpl instrumentation, String nativeWrapperPrefix) {
+  public Transformer(InstrumentationImpl instrumentation, String nativeWrapperPrefix,
+      Bctrace bctrace) {
     this.instrumentation = instrumentation;
     this.nativeWrapperPrefix = nativeWrapperPrefix;
+    this.bctrace = bctrace;
+    this.hooks = bctrace.getHooks();
+    this.startHelper.setBctrace(bctrace);
+    this.returnHelper.setBctrace(bctrace);
+    this.throwHelper.setBctrace(bctrace);
+    this.callSiteHelper.setBctrace(bctrace);
+    this.nativeWrapperHelper.setBctrace(bctrace);
+
   }
 
   @Override
@@ -108,7 +132,7 @@ public class Transformer implements ClassFileTransformer {
     byte[] ret = null;
     boolean transformed = false;
     try {
-      Bctrace.disableThreadNotification();
+      Callback.disableThreadNotification();
       if (classfileBuffer == null) {
         return ret;
       }
@@ -118,7 +142,8 @@ public class Transformer implements ClassFileTransformer {
       if (!TransformationSupport.isTransformable(className, loader)) {
         return ret;
       }
-      ArrayList<Integer> matchingHooks = getMatchingHooksByName(className, protectionDomain, loader);
+      ArrayList<Integer> matchingHooks = getMatchingHooksByName(className, protectionDomain,
+          loader);
       if (matchingHooks == null || matchingHooks.isEmpty()) {
         return ret;
       }
@@ -127,7 +152,8 @@ public class Transformer implements ClassFileTransformer {
       ClassNode cn = new ClassNode();
       cr.accept(cn, 0);
 
-      UnloadedClassInfo ci = new UnloadedClassInfo(cn, Bctrace.getCodeSource(className, protectionDomain, loader), loader);
+      UnloadedClassInfo ci = new UnloadedClassInfo(cn,
+          Bctrace.getCodeSource(className, protectionDomain, loader), loader, bctrace);
 
       matchingHooks = getMatchingHooksByClassInfo(matchingHooks, ci, protectionDomain, loader);
 
@@ -145,7 +171,7 @@ public class Transformer implements ClassFileTransformer {
           .log(Level.SEVERE, "Error found instrumenting class " + className, th);
       return ret;
     } finally {
-      Bctrace.enableThreadNotification();
+      Callback.enableThreadNotification();
       if (DUMP_FOLDER != null) {
         dump(counter, className, classfileBuffer, ret);
       }
@@ -182,9 +208,7 @@ public class Transformer implements ClassFileTransformer {
   private ArrayList<Integer> getMatchingHooksByName(String className,
       ProtectionDomain protectionDomain,
       ClassLoader loader) {
-
-    Hook[] hooks = Bctrace.getInstance().getHooks();
-    if (hooks == null) {
+    if (this.hooks == null) {
       return null;
     }
     ArrayList<Integer> ret = new ArrayList<Integer>(hooks.length);
@@ -204,7 +228,6 @@ public class Transformer implements ClassFileTransformer {
     if (candidateHookIndexes == null) {
       return null;
     }
-    Hook[] hooks = Bctrace.getInstance().getHooks();
     ArrayList<Integer> ret = new ArrayList<Integer>(hooks.length);
     for (int i = 0; i < candidateHookIndexes.size(); i++) {
       Integer hookIndex = candidateHookIndexes.get(i);
@@ -223,14 +246,14 @@ public class Transformer implements ClassFileTransformer {
     return ret;
   }
 
-  private boolean transformMethods(UnloadedClassInfo ci, ArrayList<Integer> matchingHooks) {
+  private boolean transformMethods(UnloadedClassInfo ci,
+      ArrayList<Integer> matchingHooks) {
     ClassNode cn = ci.getRawClassNode();
     List<MethodNode> methods = cn.methods;
     boolean transformed = false;
     List<MethodNode> newMethods = new ArrayList<MethodNode>();
     for (MethodNode mn : methods) {
       ArrayList<Integer> hooksToUse = new ArrayList<Integer>(matchingHooks.size());
-      Hook[] hooks = Bctrace.getInstance().getHooks();
       for (Integer i : matchingHooks) {
         if (hooks[i] != null && hooks[i].getFilter() != null && hooks[i].getFilter()
             .instrumentMethod(ci, mn)) {
@@ -277,13 +300,13 @@ public class Transformer implements ClassFileTransformer {
     }
 
     if (ASMUtils.isNative(mn.access)) {
-      NativeWrapperHelper.createWrapperImpl(cn, mn, nativeWrapperPrefix, newMethods);
+      nativeWrapperHelper.createWrapperImpl(cn, mn, nativeWrapperPrefix, newMethods);
     }
 
     // These are the actual bytecode modifications performed by Bctrace:
-    StartHelper.addByteCodeInstructions(methodId, cn, mn, hooksToUse);
-    ReturnHelper.addByteCodeInstructions(methodId, cn, mn, hooksToUse);
-    ThrowHelper.addByteCodeInstructions(methodId, cn, mn, hooksToUse);
-    CallSiteHelper.addByteCodeInstructions(methodId, cn, mn, hooksToUse);
+    startHelper.addByteCodeInstructions(methodId, cn, mn, hooksToUse);
+    returnHelper.addByteCodeInstructions(methodId, cn, mn, hooksToUse);
+    throwHelper.addByteCodeInstructions(methodId, cn, mn, hooksToUse);
+    callSiteHelper.addByteCodeInstructions(methodId, cn, mn, hooksToUse);
   }
 }

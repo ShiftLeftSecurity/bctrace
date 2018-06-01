@@ -55,19 +55,19 @@ public abstract class HierarchyClassInfo {
    *
    * @param name class name according to the Java Language Specification (dot separated)
    */
-  public static HierarchyClassInfo from(String name, ClassLoader cl) {
+  public static HierarchyClassInfo from(String name, ClassLoader cl, Bctrace bctrace) {
     if (name == null) {
       return null;
     }
 
     //If the class has been loaded try to create a LoadedClassInfo implementation
-    if (Bctrace.getInstance().getInstrumentation().isLoadedByAnyClassLoader(name)) {
+    if (bctrace.getInstrumentation().isLoadedByAnyClassLoader(name)) {
       // First check if the class has been loaded by this classloader
-      Class clazz = Bctrace.getInstance().getInstrumentation()
+      Class clazz = bctrace.getInstrumentation()
           .getClassIfLoadedByClassLoader(name, cl);
       if (clazz == null) {
         // Then check if the class has been loaded by an ancestor
-        clazz = getClassIfLoadedByClassLoaderAncestors(name, cl);
+        clazz = getClassIfLoadedByClassLoaderAncestors(bctrace, name, cl);
       }
       if (clazz != null) {
         return new LoadedClassInfo(clazz);
@@ -81,17 +81,17 @@ public abstract class HierarchyClassInfo {
       return new UnresolvedClassInfo(name);
     }
     // Cannot know the protection domain of an unloaded class (other than the being-instrumented one)
-    return new UnloadedClassInfo(createClassNode(entry.url), entry.codeSource, entry.cl);
+    return new UnloadedClassInfo(createClassNode(entry.url), entry.codeSource, entry.cl, bctrace);
   }
 
-  private static Class getClassIfLoadedByClassLoaderAncestors(String name, ClassLoader cl) {
+  private static Class getClassIfLoadedByClassLoaderAncestors(Bctrace bctrace, String name, ClassLoader cl) {
     if (cl != null && cl.getParent() != null) {
-      Class clazz = Bctrace.getInstance().getInstrumentation()
+      Class clazz = bctrace.getInstrumentation()
           .getClassIfLoadedByClassLoader(name, cl.getParent());
       if (clazz != null) {
         return clazz;
       } else {
-        return getClassIfLoadedByClassLoaderAncestors(name, cl.getParent());
+        return getClassIfLoadedByClassLoaderAncestors(bctrace, name, cl.getParent());
       }
     }
     return null;

@@ -25,8 +25,7 @@
 package io.shiftleft.bctrace.asm.helper;
 
 import io.shiftleft.bctrace.asm.util.ASMUtils;
-import io.shiftleft.bctrace.runtime.listener.info.FinishReturnArgumentsListener;
-import io.shiftleft.bctrace.runtime.listener.info.FinishReturnListener;
+import io.shiftleft.bctrace.runtime.listener.generic.FinishReturnListener;
 import java.util.ArrayList;
 import java.util.Iterator;
 import org.objectweb.asm.Opcodes;
@@ -69,33 +68,23 @@ import org.objectweb.asm.tree.VarInsnNode;
 public class ReturnHelper extends Helper {
 
 
-  public static void addByteCodeInstructions(int methodId, ClassNode cn, MethodNode mn,
+  public void addByteCodeInstructions(int methodId, ClassNode cn, MethodNode mn,
       ArrayList<Integer> hooksToUse) {
 
-    addReturnTraceWithoutArguments(methodId, cn, mn, hooksToUse);
     addReturnTraceWithArguments(methodId, cn, mn, hooksToUse);
   }
 
-  private static void addReturnTraceWithoutArguments(int methodId, ClassNode cn, MethodNode mn,
-      ArrayList<Integer> hooksToUse) {
-    ArrayList<Integer> listenersToUse = getListenersOfType(hooksToUse, FinishReturnListener.class);
-    if (!isInstrumentationNeeded(listenersToUse)) {
-      return;
-    }
-    addReturnTrace(methodId, cn, mn, listenersToUse, false);
-  }
-
-  private static void addReturnTraceWithArguments(int methodId, ClassNode cn, MethodNode mn,
+  private void addReturnTraceWithArguments(int methodId, ClassNode cn, MethodNode mn,
       ArrayList<Integer> hooksToUse) {
     ArrayList<Integer> listenersToUse = getListenersOfType(hooksToUse,
-        FinishReturnArgumentsListener.class);
+        FinishReturnListener.class);
     if (!isInstrumentationNeeded(listenersToUse)) {
       return;
     }
     addReturnTrace(methodId, cn, mn, listenersToUse, true);
   }
 
-  private static void addReturnTrace(int methodId, ClassNode cn, MethodNode mn,
+  private void addReturnTrace(int methodId, ClassNode cn, MethodNode mn,
       ArrayList<Integer> listenersToUse, boolean passArgumentsToListener) {
     InsnList il = mn.instructions;
     Iterator<AbstractInsnNode> it = il.iterator();
@@ -121,7 +110,7 @@ public class ReturnHelper extends Helper {
     }
   }
 
-  private static InsnList getVoidReturnTraceInstructions(int methodId, ClassNode cn, MethodNode mn,
+  private InsnList getVoidReturnTraceInstructions(int methodId, ClassNode cn, MethodNode mn,
       ArrayList<Integer> listenersToUse, boolean passArgumentsToListener) {
     InsnList il = new InsnList();
     for (int i = listenersToUse.size() - 1; i >= 0; i--) {
@@ -151,7 +140,7 @@ public class ReturnHelper extends Helper {
     return il;
   }
 
-  private static InsnList getReturnTraceInstructions(int methodId, ClassNode cn, MethodNode mn,
+  private InsnList getReturnTraceInstructions(int methodId, ClassNode cn, MethodNode mn,
       Type returnType, ArrayList<Integer> listenersToUse, boolean passArguments) {
     InsnList il = new InsnList();
     for (int i = listenersToUse.size() - 1; i >= 0; i--) {

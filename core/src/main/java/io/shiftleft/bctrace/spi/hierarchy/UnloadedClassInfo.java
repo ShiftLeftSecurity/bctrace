@@ -25,6 +25,7 @@
 package io.shiftleft.bctrace.spi.hierarchy;
 
 import io.shiftleft.bctrace.asm.util.ASMUtils;
+import io.shiftleft.bctrace.Bctrace;
 import java.net.URL;
 import java.util.List;
 import org.objectweb.asm.tree.ClassNode;
@@ -40,20 +41,20 @@ public class UnloadedClassInfo extends HierarchyClassInfo {
   private final HierarchyClassInfo superClass;
   private final HierarchyClassInfo[] interfaces;
 
-  public UnloadedClassInfo(ClassNode cn, URL codeSource, ClassLoader cl) {
+  public UnloadedClassInfo(ClassNode cn, URL codeSource, ClassLoader cl, Bctrace bctrace) {
     this.cn = cn;
     this.cl = cl;
     this.codeSource = codeSource;
     if (this.cn.superName == null) {
       this.superClass = null;
     } else {
-      this.superClass = HierarchyClassInfo.from(this.cn.superName.replace('/', '.'), this.cl);
+      this.superClass = HierarchyClassInfo.from(this.cn.superName.replace('/', '.'), this.cl, bctrace);
     }
     List<String> ifaces = this.cn.interfaces;
     this.interfaces = new HierarchyClassInfo[ifaces.size()];
     int i = 0;
     for (String interfaceName : ifaces) {
-      this.interfaces[i] = HierarchyClassInfo.from(interfaceName.replace('/', '.'), cl);
+      this.interfaces[i] = HierarchyClassInfo.from(interfaceName.replace('/', '.'), cl, bctrace);
       i++;
     }
   }

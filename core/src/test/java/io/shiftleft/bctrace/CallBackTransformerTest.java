@@ -24,48 +24,47 @@
  */
 package io.shiftleft.bctrace;
 
-import io.shiftleft.bctrace.asm.Transformer;
+import static org.junit.Assert.assertEquals;
+
+import io.shiftleft.bctrace.asm.CallbackTransformer;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
-import io.shiftleft.bctrace.spi.Agent;
-import java.io.InputStream;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.List;
+import io.shiftleft.bctrace.impl.TargetedFilter;
 import io.shiftleft.bctrace.runtime.Callback;
-import io.shiftleft.bctrace.impl.InstrumentationImpl;
 import io.shiftleft.bctrace.runtime.listener.Listener;
+import io.shiftleft.bctrace.runtime.listener.specific.DirectListener;
+import io.shiftleft.bctrace.spi.Agent;
 import io.shiftleft.bctrace.spi.Hook;
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.InsnList;
-import org.objectweb.asm.tree.MethodNode;
-import org.objectweb.asm.util.Printer;
-import org.objectweb.asm.util.Textifier;
-import org.objectweb.asm.util.TraceMethodVisitor;
+import io.shiftleft.bctrace.spi.TargetedHook;
+import java.io.InputStream;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import org.junit.Test;
 
 /**
- *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public abstract class BcTraceTest {
+public class CallBackTransformerTest {
 
-  public static Class getInstrumentClass(Class clazz, final Hook[] hooks) throws Exception {
+  public static Class getCallBackClass(final Hook[] hooks) throws Exception {
     Agent agent = new Agent() {
       @Override
       public void init(Bctrace bctrace) {
       }
+
       @Override
       public void afterRegistration() {
       }
+
       @Override
       public Hook[] getHooks() {
         return hooks;
       }
     };
     Bctrace bctrace = new Bctrace(null, agent);
-    String className = clazz.getCanonicalName();
+    String className = "io/shiftleft/bctrace/runtime/Callback";
     String resourceName = className.replace('.', '/') + ".class";
-    InputStream is = clazz.getClassLoader().getResourceAsStream(resourceName);
+    InputStream is = CallBackTransformerTest.class.getClassLoader()
+        .getResourceAsStream(resourceName);
     byte[] bytes = ASMUtils.toByteArray(is);
     bctrace.init();
     Listener[] listeners = new Listener[hooks.length];
@@ -73,30 +72,11 @@ public abstract class BcTraceTest {
       listeners[i] = hooks[i].getListener();
     }
     Callback.listeners = listeners;
-    Transformer transformer = new Transformer(new InstrumentationImpl(null), "BctraceNativePrefix", bctrace);
-    byte[] newBytes = transformer.transform(null, className, clazz, null, bytes);
+    CallbackTransformer transformer = new CallbackTransformer(hooks);
+    byte[] newBytes = transformer.transform(null, className, null, null, bytes);
+    BcTraceTest.viewByteCode(newBytes);
     ByteClassLoader cl = new ByteClassLoader();
-    return cl.loadClass(className, newBytes);
-  }
-
-  public static void viewByteCode(byte[] bytecode) {
-    ClassReader cr = new ClassReader(bytecode);
-    ClassNode cn = new ClassNode();
-    cr.accept(cn, 0);
-    final List<MethodNode> mns = cn.methods;
-    Printer printer = new Textifier();
-    TraceMethodVisitor mp = new TraceMethodVisitor(printer);
-    for (MethodNode mn : mns) {
-      InsnList inList = mn.instructions;
-      System.out.println(mn.name);
-      for (int i = 0; i < inList.size(); i++) {
-        inList.get(i).accept(mp);
-        StringWriter sw = new StringWriter();
-        printer.print(new PrintWriter(sw));
-        printer.getText().clear();
-        System.out.print(sw.toString());
-      }
-    }
+    return cl.loadClass(className.replace('/', '.'), newBytes);
   }
 
   private static class ByteClassLoader extends ClassLoader {
@@ -105,4 +85,44 @@ public abstract class BcTraceTest {
       return super.defineClass(name, byteCode, 0, byteCode.length);
     }
   }
+
+  @Test
+  public void testDynamic() throws Exception {
+
+    final long aLong = System.currentTimeMillis();
+    DirectListener listener = new SampleListener();
+    Hook[] hooks = new Hook[]{
+        new TargetedHook(new TargetedFilter("io/shiftleft/bctrace/TestClass", "fact", "(J)J"),
+            listener)};
+
+    Class callBackClass = getCallBackClass(hooks);
+    Field listenersField = callBackClass.getField("listeners");
+    listenersField.set(null, new Listener[]{listener});
+
+    Method[] declaredMethods = callBackClass.getDeclaredMethods();
+    for (Method m : declaredMethods) {
+      if (m.getName().endsWith("onEvent")) {
+        m.invoke(null, 0, 0, null, null, aLong);
+        break;
+      }
+    }
+    assertEquals(listener.toString(), Long.toString(aLong));
+  }
+
+  public static class SampleListener implements DirectListener {
+
+    final StringBuilder sb = new StringBuilder();
+
+    @ListenerMethod(type = ListenerType.onStart)
+    public void onEvent(int methodId, Class clazz, Object instance, long n) {
+      sb.append(n);
+    }
+
+    @Override
+    public String toString() {
+      return sb.toString();
+    }
+  }
+
+  ;
 }

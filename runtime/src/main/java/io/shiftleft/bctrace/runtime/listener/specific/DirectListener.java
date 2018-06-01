@@ -22,23 +22,55 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.runtime.listener.min;
+package io.shiftleft.bctrace.runtime.listener.specific;
 
 import io.shiftleft.bctrace.runtime.listener.Listener;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
+ * DirectListener instances are notified directly from the instrumented method without creating
+ * intermediate object instance. They are used for high performance notification.
+ *
+ * DirectListener does not define a fixed interface. They are used in TargetedHooks, and they must
+ * define a single method (with name defined in the ListenerType enum) whose signature matches the
+ * signature of the TargetedFilter of the hook in the following way:
+ *
+ * Suppose the instrumented method defined by the filter being foo(Integer arg1, String arg2), then
+ * a valid direct listener method for receiving start events would be:
  *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
+ * @ListenerMethod public void onStart(Class clazz, Object instance, Integer arg1, String arg2)
  */
-public interface MinStartListener extends Listener {
+public interface DirectListener extends Listener {
 
   /**
-   * Invoked by instrumented methods before any of its original instructions (if
-   * multiple plugins are registered, listener notification is performed
-   * according to their respective plugin registration order).
-   *
-   * @param methodId method id (as defined by MethodRegistry)
+   * Defines the valid names for the listener method, and its fixed first arguments
    */
-  public void onStart(int methodId);
+  public static enum ListenerType {
 
+    // Method id, Instrumented class, instrumented instance
+    onStart(int.class, Class.class, Object.class),
+    // Method id, caller class, caller instance, callee class, callee instance
+    onBeforeCall(int.class, Class.class, Object.class, Class.class, Object.class);
+
+    private Class[] fixedArgs;
+
+    ListenerType(Class... fixedArgs) {
+      this.fixedArgs = fixedArgs;
+    }
+
+    public Class[] getFixedArgs() {
+      return fixedArgs;
+    }
+  }
+
+  @Retention(RetentionPolicy.RUNTIME)
+  @Target(ElementType.METHOD)
+  public static @interface ListenerMethod {
+
+    public ListenerType type();
+  }
 }

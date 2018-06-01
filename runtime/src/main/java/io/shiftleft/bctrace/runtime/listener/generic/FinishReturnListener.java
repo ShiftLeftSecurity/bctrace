@@ -22,7 +22,7 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.runtime.listener.info;
+package io.shiftleft.bctrace.runtime.listener.generic;
 
 import io.shiftleft.bctrace.runtime.listener.Listener;
 
@@ -40,11 +40,12 @@ public interface FinishReturnListener extends Listener {
    * @param methodId method id (as defined by MethodRegistry)
    * @param clazz class defining the method.
    * @param instance instance where the method is invoked. Null if the method is static
+   * @param args arguments passed to the method.
    * @param ret Object being returned by the method. Wrapper type if the
    * original return type is primitive. <code>null</code> if the method return
    * type is <code>void</code>
    */
   
-  public void onFinishedReturn(int methodId, Class clazz, Object instance, Object ret);
+  public void onFinishedReturn(int methodId, Class clazz, Object instance, Object[] args, Object ret);
 
 }

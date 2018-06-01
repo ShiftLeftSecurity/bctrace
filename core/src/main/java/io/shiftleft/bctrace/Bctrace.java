@@ -24,12 +24,14 @@
  */
 package io.shiftleft.bctrace;
 
+import io.shiftleft.bctrace.asm.CallbackTransformer;
 import io.shiftleft.bctrace.asm.Transformer;
 import io.shiftleft.bctrace.debug.CallCounterHook;
 import io.shiftleft.bctrace.debug.DebugInfo;
 import io.shiftleft.bctrace.impl.InstrumentationImpl;
 import io.shiftleft.bctrace.runtime.Callback;
 import io.shiftleft.bctrace.runtime.listener.Listener;
+import io.shiftleft.bctrace.spi.Agent;
 import io.shiftleft.bctrace.spi.AgentLoggerFactory;
 import io.shiftleft.bctrace.spi.Hook;
 import io.shiftleft.bctrace.spi.Instrumentation;
@@ -40,6 +42,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.security.ProtectionDomain;
+import java.util.Arrays;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -51,46 +54,45 @@ import java.util.logging.Logger;
  */
 public final class Bctrace {
 
-  static Bctrace instance;
-
   private static final Logger LOGGER = createLogger();
   private static final String NATIVE_WRAPPER_PREFIX =
       "$$$Bctrace_Wrapper_" + System.currentTimeMillis() + "$$$_";
 
-  private final Transformer transformer;
   private final InstrumentationImpl instrumentation;
   private final Hook[] hooks;
+  private final Agent agent;
 
-  Bctrace(java.lang.instrument.Instrumentation javaInstrumentation, Hook[] hooks) {
+  Bctrace(java.lang.instrument.Instrumentation javaInstrumentation, Agent agent) {
+    this.agent = agent;
     this.instrumentation = new InstrumentationImpl(javaInstrumentation);
-    this.transformer = new Transformer(this.instrumentation, NATIVE_WRAPPER_PREFIX);
     if (DebugInfo.isEnabled()) {
-      this.hooks = new Hook[hooks.length + 1];
-      System.arraycopy(hooks, 0, this.hooks, 0, hooks.length);
-      this.hooks[hooks.length] = new CallCounterHook();
+      this.hooks = new Hook[agent.getHooks().length + 1];
+      System.arraycopy(agent.getHooks(), 0, this.hooks, 0, agent.getHooks().length);
+      this.hooks[agent.getHooks().length] = new CallCounterHook();
     } else {
-      this.hooks = hooks;
+      this.hooks = agent.getHooks();
     }
   }
 
-  void init() {
-    if (hooks != null) {
+  public void init() {
+    if (agent != null) {
+      agent.init(this);
       Listener[] listeners = new Listener[hooks.length];
       for (int i = 0; i < hooks.length; i++) {
-        hooks[i].init(this.instrumentation);
         listeners[i] = this.hooks[i].getListener();
       }
-      Callback.listeners = listeners;
-
       if (instrumentation != null && instrumentation.getJavaInstrumentation() != null) {
+        instrumentation.getJavaInstrumentation()
+            .addTransformer(new CallbackTransformer(hooks), false);
+        Callback.listeners = listeners;
+        System.out.println(Arrays.toString(Callback.class.getDeclaredMethods()));
+        Transformer transformer = new Transformer(this.instrumentation, NATIVE_WRAPPER_PREFIX,
+            this);
         instrumentation.getJavaInstrumentation().addTransformer(transformer, true);
         instrumentation.getJavaInstrumentation()
             .setNativeMethodPrefix(transformer, NATIVE_WRAPPER_PREFIX);
       }
-
-      for (int i = 0; i < hooks.length; i++) {
-        hooks[i].afterRegistration();
-      }
+      agent.afterRegistration();
     }
   }
 
@@ -110,24 +112,8 @@ public final class Bctrace {
     return logger;
   }
 
-  public static Bctrace getInstance() {
-    return instance;
-  }
-
   public Instrumentation getInstrumentation() {
     return this.instrumentation;
-  }
-
-  public static boolean isThreadNotificationEnabled() {
-    return Callback.isThreadNotificationEnabled();
-  }
-
-  public static void enableThreadNotification() {
-    Callback.enableThreadNotification();
-  }
-
-  public static void disableThreadNotification() {
-    Callback.disableThreadNotification();
   }
 
   public Hook[] getHooks() {

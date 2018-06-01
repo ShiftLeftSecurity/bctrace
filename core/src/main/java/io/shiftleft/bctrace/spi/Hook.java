@@ -32,53 +32,14 @@ import io.shiftleft.bctrace.runtime.listener.Listener;
  *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public abstract class Hook {
-
-  protected Instrumentation instrumentation;
-
-  private final String jvmPackage;
-
-  public Hook() {
-    this.jvmPackage = getClass().getPackage().getName().replace('.', '/') + "/";
-  }
-
-  /**
-   * Initializes the plugin. Called once at startup before initial instrumentation is performed.
-   *
-   * @param instrumentation Intrumentation callback, allowing triggering retransformations
-   */
-  public final void init(Instrumentation instrumentation) {
-    this.instrumentation = instrumentation;
-    doInit();
-  }
-
-  /**
-   * Allows subclasses to implement initialization logic.
-   */
-  public void doInit() {
-  }
-
-  /**
-   * Callback method invoked after the transformer is registered
-   */
-  public void afterRegistration() {
-  }
-
-  public final Instrumentation getInstrumentation() {
-    return instrumentation;
-  }
-
-  public final String getJvmPackage() {
-    return jvmPackage;
-  }
-
+public interface Hook<F extends Filter, L extends Listener> {
   /**
    * Returns the filter, deciding what methods to instrument.
    */
-  public abstract Filter getFilter();
+  public abstract F getFilter();
 
   /**
    * Returns the listener invoked by the instrumented method hooks.
    */
-  public abstract Listener getListener();
+  public abstract L getListener();
 }

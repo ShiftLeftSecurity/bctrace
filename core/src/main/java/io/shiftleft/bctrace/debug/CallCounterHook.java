@@ -25,18 +25,18 @@
 package io.shiftleft.bctrace.debug;
 
 import io.shiftleft.bctrace.runtime.listener.Listener;
-import io.shiftleft.bctrace.runtime.listener.min.MinStartListener;
+import io.shiftleft.bctrace.runtime.listener.generic.StartListener;
 import io.shiftleft.bctrace.spi.Filter;
 import io.shiftleft.bctrace.spi.Hook;
 
 /**
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public class CallCounterHook extends Hook {
+public class CallCounterHook implements Hook {
 
-  private final Listener listener = new MinStartListener() {
+  private final Listener listener = new StartListener() {
     @Override
-    public void onStart(int methodId) {
+    public void onStart(int methodId, Class clazz, Object instance, Object[] args) {
       DebugInfo.getInstance().increaseCallCounter(methodId);
     }
   };

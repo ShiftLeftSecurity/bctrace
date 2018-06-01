@@ -34,6 +34,7 @@ import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.IntInsnNode;
 import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
+import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
 /**
@@ -284,6 +285,33 @@ public class ASMUtils {
     return new VarInsnNode(opCode, position);
   }
 
+  public static MethodNode cloneMethod(MethodNode mn) {
+    MethodNode cloned = new MethodNode();
+    cloned.name = mn.name;
+    cloned.access = mn.access;
+    cloned.instructions = mn.instructions;
+    cloned.desc = mn.desc;
+    cloned.signature = mn.signature;
+    cloned.annotationDefault = mn.annotationDefault;
+    cloned.attrs = mn.attrs;
+    cloned.exceptions = mn.exceptions;
+    cloned.invisibleAnnotations = mn.invisibleAnnotations;
+    cloned.invisibleParameterAnnotations = mn.invisibleParameterAnnotations;
+    cloned.invisibleLocalVariableAnnotations = mn.invisibleLocalVariableAnnotations;
+    cloned.invisibleTypeAnnotations = mn.invisibleTypeAnnotations;
+    cloned.localVariables = mn.localVariables;
+    cloned.maxLocals = mn.maxLocals;
+    cloned.maxStack = mn.maxStack;
+    cloned.parameters = mn.parameters;
+    cloned.tryCatchBlocks = mn.tryCatchBlocks;
+    cloned.visibleAnnotations = mn.visibleAnnotations;
+    cloned.visibleLocalVariableAnnotations = mn.visibleLocalVariableAnnotations;
+    cloned.visibleParameterAnnotations = mn.visibleParameterAnnotations;
+    cloned.visibleTypeAnnotations = mn.visibleTypeAnnotations;
+
+    return cloned;
+  }
+
   public static AbstractInsnNode getPushInstruction(int value) {
 
     if (value == -1) {
@@ -320,5 +348,14 @@ public class ASMUtils {
       out.write(buffer, 0, r);
     }
     return out.toByteArray();
+  }
+
+  public static void main(String[] args) {
+    int mod = Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_PRIVATE;
+    mod = mod & ~Opcodes.ACC_PRIVATE;
+    System.out.println(isPublic(mod));
+    System.out.println(isStatic(mod));
+    System.out.println(isProtected(mod));
+    System.out.println(isPrivate(mod));
   }
 }
