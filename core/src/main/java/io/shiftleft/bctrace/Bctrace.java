@@ -38,6 +38,7 @@ import io.shiftleft.bctrace.spi.AgentLoggerFactory;
 import io.shiftleft.bctrace.spi.Hook;
 import io.shiftleft.bctrace.spi.Instrumentation;
 import io.shiftleft.bctrace.spi.SystemProperty;
+import java.util.Arrays;
 
 /**
  * Framework entry point.

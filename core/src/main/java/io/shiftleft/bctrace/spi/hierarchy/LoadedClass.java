@@ -24,6 +24,8 @@
  */
 package io.shiftleft.bctrace.spi.hierarchy;
 
+import io.shiftleft.bctrace.Bctrace;
+
 /**
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
@@ -32,7 +34,7 @@ public class LoadedClass extends BctraceClass {
   private final Class clazz;
 
   LoadedClass(Class clazz) {
-    super(clazz.getName(), clazz.getClassLoader());
+    super(clazz.getName(), clazz.getClassLoader(), null);
     this.clazz = clazz;
   }
 

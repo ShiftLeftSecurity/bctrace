@@ -1,7 +1,7 @@
 package io.shiftleft.bctrace.impl;
 
 import io.shiftleft.bctrace.spi.Filter;
-import io.shiftleft.bctrace.spi.hierarchy.UnloadedClassInfo;
+import io.shiftleft.bctrace.spi.hierarchy.BctraceClass;
 import org.objectweb.asm.tree.MethodNode;
 
 public class TargetedFilter extends Filter {
@@ -29,7 +29,7 @@ public class TargetedFilter extends Filter {
   }
 
   @Override
-  public boolean instrumentMethod(UnloadedClassInfo classInfo, MethodNode mn) {
+  public boolean instrumentMethod(BctraceClass bctraceClass, MethodNode mn) {
     return this.methodName.equals(mn.name) && this.methodDescriptor.equals(mn.desc);
   }
 }

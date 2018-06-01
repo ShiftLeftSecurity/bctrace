@@ -35,7 +35,7 @@ import org.objectweb.asm.tree.MethodNode;
  * ProtectionDomain, ClassLoader) instrumentClass} method. If this return <code>true</code> the
  * class bytecode is parsed and the filter {@link #instrumentClass(BctraceClass,
  * ProtectionDomain, ClassLoader) instrumentMethod} is called. It this other returns true the filter
- * {@link #instrumentMethod(UnloadedClass, MethodNode) instrumentMethod} method will be invoked
+ * {@link #instrumentMethod(BctraceClass, MethodNode) instrumentMethod} method will be invoked
  * once per non abstract nor native method in the class. Invocations returning <code>true</code>
  * lead to a hook insertions into the bytecode of the method.
  *

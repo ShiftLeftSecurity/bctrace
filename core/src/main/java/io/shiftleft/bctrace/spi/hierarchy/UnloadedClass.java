@@ -24,6 +24,7 @@
  */
 package io.shiftleft.bctrace.spi.hierarchy;
 
+import io.shiftleft.bctrace.Bctrace;
 import java.io.IOException;
 import java.net.URL;
 import org.objectweb.asm.ClassReader;
@@ -36,13 +37,13 @@ public class UnloadedClass extends BctraceClass {
 
   private final ClassNode cn;
 
-  UnloadedClass(String name, ClassLoader cl) throws ClassNotFoundException {
-    super(name, cl);
+  UnloadedClass(String name, ClassLoader cl, Bctrace bctrace) throws ClassNotFoundException {
+    super(name, cl, bctrace);
     this.cn = createClassNode(getURL());
   }
 
-  public UnloadedClass(String name, ClassLoader cl, ClassNode cn) {
-    super(name, cl);
+  public UnloadedClass(String name, ClassLoader cl, ClassNode cn, Bctrace bctrace) {
+    super(name, cl, bctrace);
     this.cn = cn;
   }
 

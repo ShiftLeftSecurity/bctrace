@@ -31,7 +31,7 @@ public class UnresolvedClass extends BctraceClass {
 
 
   UnresolvedClass(String name, ClassLoader cl) {
-    super(name, cl);
+    super(name, cl, null);
   }
 
   @Override
