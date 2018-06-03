@@ -22,11 +22,11 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.impl;
+package io.shiftleft.bctrace;
 
 import io.shiftleft.bctrace.asm.TransformationSupport;
 import io.shiftleft.bctrace.debug.DebugInfo;
-import io.shiftleft.bctrace.spi.Instrumentation;
+import io.shiftleft.bctrace.Instrumentation;
 import java.lang.instrument.UnmodifiableClassException;
 import java.lang.ref.WeakReference;
 import java.util.HashMap;

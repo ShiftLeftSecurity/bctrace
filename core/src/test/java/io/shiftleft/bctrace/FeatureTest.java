@@ -28,15 +28,12 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import io.shiftleft.bctrace.TestClass.TestRuntimeException;
-import io.shiftleft.bctrace.impl.AllFilter;
-import io.shiftleft.bctrace.impl.TargetedFilter;
+import io.shiftleft.bctrace.filter.AllFilter;
 import io.shiftleft.bctrace.runtime.listener.Listener;
 import io.shiftleft.bctrace.runtime.listener.generic.BeforeThrownListener;
 import io.shiftleft.bctrace.runtime.listener.generic.StartListener;
-import io.shiftleft.bctrace.runtime.listener.specific.DirectListener;
-import io.shiftleft.bctrace.spi.Filter;
-import io.shiftleft.bctrace.spi.Hook;
-import io.shiftleft.bctrace.spi.TargetedHook;
+import io.shiftleft.bctrace.filter.Filter;
+import io.shiftleft.bctrace.hook.Hook;
 import java.lang.reflect.InvocationTargetException;
 import org.junit.Test;
 

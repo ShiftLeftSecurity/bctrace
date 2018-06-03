@@ -22,46 +22,27 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.spi;
+package io.shiftleft.bctrace.filter;
 
-import io.shiftleft.bctrace.spi.hierarchy.BctraceClass;
-import io.shiftleft.bctrace.spi.hierarchy.UnloadedClass;
+import io.shiftleft.bctrace.hierarchy.BctraceClass;
 import java.security.ProtectionDomain;
 import org.objectweb.asm.tree.MethodNode;
 
 /**
- * A filter determines which classes and methods are instrumented. <br><br> If the class is
- * transformable, the framework performs an initial query to the {@link #instrumentClass(String,
- * ProtectionDomain, ClassLoader) instrumentClass} method. If this return <code>true</code> the
- * class bytecode is parsed and the filter {@link #instrumentClass(BctraceClass,
- * ProtectionDomain, ClassLoader) instrumentMethod} is called. It this other returns true the filter
- * {@link #instrumentMethod(BctraceClass, MethodNode) instrumentMethod} method will be invoked
- * once per non abstract nor native method in the class. Invocations returning <code>true</code>
- * lead to a hook insertions into the bytecode of the method.
+ * A filter that accepts all classes non loaded by the bootstrap class loader
  *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public abstract class Filter {
+public class NonBootstrapFilter extends Filter {
 
-  /**
-   * First filter query performed by the transformer. Whether or not instrument the methods of a
-   * class.
-   */
+  @Override
   public boolean instrumentClass(String className, ProtectionDomain protectionDomain,
       ClassLoader cl) {
-    return true;
+    return cl != Object.class.getClassLoader();
   }
 
-  /**
-   * Second query once the class has been parsed. Whether or not instrument the methods of a class.
-   */
-  public boolean instrumentClass(BctraceClass clazz, ProtectionDomain protectionDomain,
-      ClassLoader cl) {
+  @Override
+  public boolean instrumentMethod(BctraceClass clazz, MethodNode mn) {
     return true;
   }
-
-  /**
-   * Returns a boolean condition that determines whether to instrument the specified method
-   */
-  public abstract boolean instrumentMethod(BctraceClass clazz, MethodNode mn);
 }

@@ -28,13 +28,12 @@ import static org.junit.Assert.assertEquals;
 
 import io.shiftleft.bctrace.asm.CallbackTransformer;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
-import io.shiftleft.bctrace.impl.TargetedFilter;
+import io.shiftleft.bctrace.filter.MethodFilter;
+import io.shiftleft.bctrace.hook.Hook;
+import io.shiftleft.bctrace.hook.MethodHook;
 import io.shiftleft.bctrace.runtime.Callback;
 import io.shiftleft.bctrace.runtime.listener.Listener;
 import io.shiftleft.bctrace.runtime.listener.specific.DirectListener;
-import io.shiftleft.bctrace.spi.Agent;
-import io.shiftleft.bctrace.spi.Hook;
-import io.shiftleft.bctrace.spi.TargetedHook;
 import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -90,31 +89,37 @@ public class CallBackTransformerTest {
   public void testDynamic() throws Exception {
 
     final long aLong = System.currentTimeMillis();
-    DirectListener listener = new SampleListener();
+    DirectListener listener1 = new SampleListener1();
+    DirectListener listener2 = new SampleListener2();
     Hook[] hooks = new Hook[]{
-        new TargetedHook(new TargetedFilter("io/shiftleft/bctrace/TestClass", "fact", "(J)J"),
-            listener)};
+        new MethodHook(new MethodFilter("io/shiftleft/bctrace/TestClass", "fact", "(J)J"),
+            listener1),
+        new MethodHook(new MethodFilter("io/shiftleft/bctrace/TestClass", "factWrapper", "(Ljava/lang/Long;)J"),
+            listener2)};
 
     Class callBackClass = getCallBackClass(hooks);
     Field listenersField = callBackClass.getField("listeners");
-    listenersField.set(null, new Listener[]{listener});
+    listenersField.set(null, new Listener[]{listener1, listener2});
 
     Method[] declaredMethods = callBackClass.getDeclaredMethods();
     for (Method m : declaredMethods) {
-      if (m.getName().endsWith("onEvent")) {
+      if (m.getName().endsWith("onEvent1")) {
         m.invoke(null, 0, 0, null, null, aLong);
-        break;
+      }
+      if (m.getName().endsWith("onEvent2")) {
+        m.invoke(null, 1, 0, null, null, new Long(aLong));
       }
     }
-    assertEquals(listener.toString(), Long.toString(aLong));
+    assertEquals(listener1.toString(), Long.toString(aLong));
+    assertEquals(listener2.toString(), Long.toString(aLong));
   }
 
-  public static class SampleListener implements DirectListener {
+  public static class SampleListener1 implements DirectListener {
 
     final StringBuilder sb = new StringBuilder();
 
     @ListenerMethod(type = ListenerType.onStart)
-    public void onEvent(int methodId, Class clazz, Object instance, long n) {
+    public void onEvent1(int methodId, Class clazz, Object instance, long n) {
       sb.append(n);
     }
 
@@ -124,5 +129,18 @@ public class CallBackTransformerTest {
     }
   }
 
-  ;
+  public static class SampleListener2 implements DirectListener {
+
+    final StringBuilder sb = new StringBuilder();
+
+    @ListenerMethod(type = ListenerType.onStart)
+    public void onEvent2(int methodId, Class clazz, Object instance, Long n) {
+      sb.append(n);
+    }
+
+    @Override
+    public String toString() {
+      return sb.toString();
+    }
+  }
 }

@@ -1,4 +1,4 @@
-package io.shiftleft.bctrace.spi;
+package io.shiftleft.bctrace;
 
 public interface AgentFactory {
   public Agent createAgent();

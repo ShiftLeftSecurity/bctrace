@@ -22,24 +22,50 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.spi;
+package io.shiftleft.bctrace;
 
-import io.shiftleft.bctrace.runtime.listener.Listener;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
- * An <b>instrumentation hook</b> determines what methods to instrument and what actions to perform
- * at runtime under the events triggered by the instrumented methods.
  *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public interface Hook<F extends Filter, L extends Listener> {
-  /**
-   * Returns the filter, deciding what methods to instrument.
-   */
-  public abstract F getFilter();
+public final class MethodRegistry {
 
-  /**
-   * Returns the listener invoked by the instrumented method hooks.
-   */
-  public abstract L getListener();
+  private static final MethodRegistry INSTANCE = new MethodRegistry();
+
+  private final ArrayList<MethodInfo> methodArray = new ArrayList<MethodInfo>();
+  private final Map<MethodInfo, Integer> methodMap = new HashMap<MethodInfo, Integer>();
+
+  public static MethodRegistry getInstance() {
+    return INSTANCE;
+  }
+
+  private MethodRegistry() {
+  }
+
+  public synchronized MethodInfo getMethod(Integer id) {
+    return methodArray.get(id);
+  }
+
+  public synchronized Integer registerMethodId(MethodInfo mi) {
+    Integer id = methodMap.get(mi);
+    if (id == null) {
+      methodArray.add(mi);
+      id = methodArray.size() - 1;
+      methodMap.put(mi, id);
+    }
+    return id;
+  }
+
+  public synchronized Integer getMethodId(String binaryClassName, String methodName, String methodDescriptor) {
+    MethodInfo mi = new MethodInfo(binaryClassName, methodName, methodDescriptor, 0);
+    return methodMap.get(mi);
+  }
+
+  public synchronized int size() {
+    return methodArray.size();
+  }
 }

@@ -22,15 +22,31 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.spi;
+package io.shiftleft.bctrace.hierarchy;
 
 /**
- *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public interface SystemProperty {
+public class UnresolvedClass extends BctraceClass {
 
-  public static final String DUMP_FOLDER = "bctrace.dump.path";
-  public static final String DEBUG_SERVER = "bctrace.debug.server";
-  public static final String LOG_LEVEL = "bctrace.log.level";
+
+  UnresolvedClass(String name, ClassLoader cl) {
+    super(name, cl, null);
+  }
+
+  @Override
+  protected String getSuperClassName() {
+    return null;
+  }
+
+  @Override
+  protected String[] getInterfaceNames() {
+    return null;
+  }
+
+  @Override
+  public int getModifiers() {
+    return 0;
+  }
 }
+

@@ -1,6 +1,7 @@
-package io.shiftleft.bctrace.spi;
+package io.shiftleft.bctrace;
 
 import io.shiftleft.bctrace.Bctrace;
+import io.shiftleft.bctrace.hook.Hook;
 
 public interface Agent {
 

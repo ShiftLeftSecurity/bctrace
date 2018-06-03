@@ -27,7 +27,7 @@ package io.shiftleft.bctrace.asm.helper;
 import io.shiftleft.bctrace.Bctrace;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
 import io.shiftleft.bctrace.runtime.listener.Listener;
-import io.shiftleft.bctrace.spi.Hook;
+import io.shiftleft.bctrace.hook.Hook;
 import java.util.ArrayList;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;

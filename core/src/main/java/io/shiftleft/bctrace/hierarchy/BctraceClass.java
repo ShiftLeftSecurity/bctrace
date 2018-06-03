@@ -22,7 +22,7 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.spi.hierarchy;
+package io.shiftleft.bctrace.hierarchy;
 
 import io.shiftleft.bctrace.Bctrace;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
@@ -34,7 +34,7 @@ import java.net.URL;
  */
 public abstract class BctraceClass {
 
-  private static final LoadedClass OBJECT_CLASS = new LoadedClass(Object.class);
+  private static final LoadedClass OBJECT_CLASS = new LoadedClass(Object.class, null);
   private static final BctraceClass[] EMPTY = new BctraceClass[0];
 
   protected final Bctrace bctrace;
@@ -148,13 +148,7 @@ public abstract class BctraceClass {
     }
 
     if (bctrace == null) {
-      try {
-        return from(name, cl);
-      } catch (ClassNotFoundException ex) {
-        Bctrace.getAgentLogger()
-            .log(Level.WARNING, "Could not obtain class bytecode for unloaded class " + name);
-        return new UnresolvedClass(name, cl);
-      }
+      return null;
     }
 
     //If the class has been loaded try to create a LoadedClass implementation
@@ -167,7 +161,7 @@ public abstract class BctraceClass {
         clazz = getClassIfLoadedByClassLoaderAncestors(name, cl, bctrace);
       }
       if (clazz != null) {
-        return new LoadedClass(clazz);
+        return new LoadedClass(clazz, bctrace);
       }
     }
     BctraceClass ret;
@@ -179,11 +173,6 @@ public abstract class BctraceClass {
       ret = new UnresolvedClass(name, cl);
     }
     return ret;
-  }
-
-  private static LoadedClass from(String name, ClassLoader cl) throws ClassNotFoundException {
-    Class clazz = cl.loadClass(name);
-    return new LoadedClass(clazz);
   }
 
   private static Class getClassIfLoadedByClassLoaderAncestors(String name, ClassLoader cl,

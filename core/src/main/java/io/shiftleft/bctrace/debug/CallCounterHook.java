@@ -26,8 +26,8 @@ package io.shiftleft.bctrace.debug;
 
 import io.shiftleft.bctrace.runtime.listener.Listener;
 import io.shiftleft.bctrace.runtime.listener.generic.StartListener;
-import io.shiftleft.bctrace.spi.Filter;
-import io.shiftleft.bctrace.spi.Hook;
+import io.shiftleft.bctrace.filter.Filter;
+import io.shiftleft.bctrace.hook.Hook;
 
 /**
  * @author Ignacio del Valle Alles idelvall@shiftleft.io

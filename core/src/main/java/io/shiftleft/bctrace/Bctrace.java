@@ -28,16 +28,12 @@ import io.shiftleft.bctrace.asm.CallbackTransformer;
 import io.shiftleft.bctrace.asm.Transformer;
 import io.shiftleft.bctrace.debug.CallCounterHook;
 import io.shiftleft.bctrace.debug.DebugInfo;
-import io.shiftleft.bctrace.impl.InstrumentationImpl;
+import io.shiftleft.bctrace.logging.AgentLoggerFactory;
 import io.shiftleft.bctrace.logging.Level;
 import io.shiftleft.bctrace.logging.Logger;
 import io.shiftleft.bctrace.runtime.Callback;
 import io.shiftleft.bctrace.runtime.listener.Listener;
-import io.shiftleft.bctrace.spi.Agent;
-import io.shiftleft.bctrace.spi.AgentLoggerFactory;
-import io.shiftleft.bctrace.spi.Hook;
-import io.shiftleft.bctrace.spi.Instrumentation;
-import io.shiftleft.bctrace.spi.SystemProperty;
+import io.shiftleft.bctrace.hook.Hook;
 import java.util.Arrays;
 
 /**

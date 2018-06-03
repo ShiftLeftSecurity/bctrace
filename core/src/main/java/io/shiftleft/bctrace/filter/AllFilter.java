@@ -22,10 +22,9 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.impl;
+package io.shiftleft.bctrace.filter;
 
-import io.shiftleft.bctrace.spi.Filter;
-import io.shiftleft.bctrace.spi.hierarchy.BctraceClass;
+import io.shiftleft.bctrace.hierarchy.BctraceClass;
 import java.security.ProtectionDomain;
 import org.objectweb.asm.tree.MethodNode;
 

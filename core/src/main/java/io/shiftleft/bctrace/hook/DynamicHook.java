@@ -1,8 +1,9 @@
-package io.shiftleft.bctrace.spi;
+package io.shiftleft.bctrace.hook;
 
 import io.shiftleft.bctrace.runtime.listener.Listener;
 import io.shiftleft.bctrace.runtime.listener.specific.DirectListener.ListenerMethod;
 import io.shiftleft.bctrace.runtime.listener.specific.DirectListener.ListenerType;
+import io.shiftleft.bctrace.filter.Filter;
 import java.lang.reflect.Method;
 import org.objectweb.asm.Type;
 
@@ -63,7 +64,6 @@ public class DynamicHook<F extends Filter, L extends Listener> implements Hook<F
               .getClass().getName());
     }
   }
-
 
   private static boolean checkFixedArgs(Class[] fixedArgs, Class[] listenerMethodArgs) {
     if (fixedArgs.length > listenerMethodArgs.length) {

@@ -286,28 +286,30 @@ public class ASMUtils {
   }
 
   public static MethodNode cloneMethod(MethodNode mn) {
-    MethodNode cloned = new MethodNode();
-    cloned.name = mn.name;
-    cloned.access = mn.access;
-    cloned.instructions = mn.instructions;
-    cloned.desc = mn.desc;
-    cloned.signature = mn.signature;
-    cloned.annotationDefault = mn.annotationDefault;
-    cloned.attrs = mn.attrs;
-    cloned.exceptions = mn.exceptions;
-    cloned.invisibleAnnotations = mn.invisibleAnnotations;
-    cloned.invisibleParameterAnnotations = mn.invisibleParameterAnnotations;
-    cloned.invisibleLocalVariableAnnotations = mn.invisibleLocalVariableAnnotations;
-    cloned.invisibleTypeAnnotations = mn.invisibleTypeAnnotations;
-    cloned.localVariables = mn.localVariables;
-    cloned.maxLocals = mn.maxLocals;
-    cloned.maxStack = mn.maxStack;
-    cloned.parameters = mn.parameters;
-    cloned.tryCatchBlocks = mn.tryCatchBlocks;
-    cloned.visibleAnnotations = mn.visibleAnnotations;
-    cloned.visibleLocalVariableAnnotations = mn.visibleLocalVariableAnnotations;
-    cloned.visibleParameterAnnotations = mn.visibleParameterAnnotations;
-    cloned.visibleTypeAnnotations = mn.visibleTypeAnnotations;
+    MethodNode cloned = new MethodNode(Opcodes.ASM6, mn.access, mn.name, mn.desc, mn.signature,
+        mn.exceptions.toArray(new String[mn.exceptions.size()]));
+    mn.accept(cloned);
+//    cloned.name = mn.name;
+//    cloned.access = mn.access;
+//    cloned.instructions = mn.instructions;
+//    cloned.desc = mn.desc;
+//    cloned.signature = mn.signature;
+//    cloned.annotationDefault = mn.annotationDefault;
+//    cloned.attrs = mn.attrs;
+//    cloned.exceptions = mn.exceptions;
+//    cloned.invisibleAnnotations = mn.invisibleAnnotations;
+//    cloned.invisibleParameterAnnotations = mn.invisibleParameterAnnotations;
+//    cloned.invisibleLocalVariableAnnotations = mn.invisibleLocalVariableAnnotations;
+//    cloned.invisibleTypeAnnotations = mn.invisibleTypeAnnotations;
+//    cloned.localVariables = mn.localVariables;
+//    cloned.maxLocals = mn.maxLocals;
+//    cloned.maxStack = mn.maxStack;
+//    cloned.parameters = mn.parameters;
+//    cloned.tryCatchBlocks = mn.tryCatchBlocks;
+//    cloned.visibleAnnotations = mn.visibleAnnotations;
+//    cloned.visibleLocalVariableAnnotations = mn.visibleLocalVariableAnnotations;
+//    cloned.visibleParameterAnnotations = mn.visibleParameterAnnotations;
+    //   cloned.visibleTypeAnnotations = mn.visibleTypeAnnotations;
 
     return cloned;
   }

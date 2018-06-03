@@ -26,15 +26,13 @@ package io.shiftleft.bctrace;
 
 import io.shiftleft.bctrace.asm.Transformer;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
-import io.shiftleft.bctrace.spi.Agent;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.List;
 import io.shiftleft.bctrace.runtime.Callback;
-import io.shiftleft.bctrace.impl.InstrumentationImpl;
 import io.shiftleft.bctrace.runtime.listener.Listener;
-import io.shiftleft.bctrace.spi.Hook;
+import io.shiftleft.bctrace.hook.Hook;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.InsnList;

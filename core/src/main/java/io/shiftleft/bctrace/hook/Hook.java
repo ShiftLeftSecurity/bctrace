@@ -22,29 +22,25 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.impl;
+package io.shiftleft.bctrace.hook;
 
-import io.shiftleft.bctrace.spi.Filter;
-import io.shiftleft.bctrace.spi.hierarchy.BctraceClass;
-import io.shiftleft.bctrace.spi.hierarchy.UnloadedClass;
-import java.security.ProtectionDomain;
-import org.objectweb.asm.tree.MethodNode;
+import io.shiftleft.bctrace.runtime.listener.Listener;
+import io.shiftleft.bctrace.filter.Filter;
 
 /**
- * A filter that accepts all classes non loaded by the bootstrap class loader
+ * An <b>instrumentation hook</b> determines what methods to instrument and what actions to perform
+ * at runtime under the events triggered by them.
  *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public class NonBootstrapFilter extends Filter {
+public interface Hook<F extends Filter, L extends Listener> {
+  /**
+   * Returns the filter, deciding what methods to instrument.
+   */
+  public abstract F getFilter();
 
-  @Override
-  public boolean instrumentClass(String className, ProtectionDomain protectionDomain,
-      ClassLoader cl) {
-    return cl != Object.class.getClassLoader();
-  }
-
-  @Override
-  public boolean instrumentMethod(BctraceClass clazz, MethodNode mn) {
-    return true;
-  }
+  /**
+   * Returns the listener invoked by the instrumented method hooks.
+   */
+  public abstract L getListener();
 }

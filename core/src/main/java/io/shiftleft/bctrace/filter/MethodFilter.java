@@ -22,51 +22,42 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.spi.hierarchy;
+package io.shiftleft.bctrace.filter;
 
-import io.shiftleft.bctrace.Bctrace;
+import io.shiftleft.bctrace.hierarchy.BctraceClass;
+import org.objectweb.asm.tree.MethodNode;
 
 /**
+ * A filter targeted exclusively to the specified method.
+ *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public class LoadedClass extends BctraceClass {
+public class MethodFilter extends Filter {
 
-  private final Class clazz;
+  private final String className;
+  private final String methodName;
+  private final String methodDescriptor;
 
-  LoadedClass(Class clazz) {
-    super(clazz.getName(), clazz.getClassLoader(), null);
-    this.clazz = clazz;
+  public MethodFilter(String className, String methodName, String methodDescriptor) {
+    this.className = className;
+    this.methodName = methodName;
+    this.methodDescriptor = methodDescriptor;
+  }
+
+  public String getClassName() {
+    return className;
+  }
+
+  public String getMethodName() {
+    return methodName;
+  }
+
+  public String getMethodDescriptor() {
+    return methodDescriptor;
   }
 
   @Override
-  protected String getSuperClassName() {
-    if (clazz.getSuperclass() == null) {
-      return null;
-    } else {
-      return clazz.getSuperclass().getName();
-    }
+  public boolean instrumentMethod(BctraceClass bctraceClass, MethodNode mn) {
+    return this.methodName.equals(mn.name) && this.methodDescriptor.equals(mn.desc);
   }
-
-  @Override
-  protected String[] getInterfaceNames() {
-    Class[] interfaces = clazz.getInterfaces();
-    if (interfaces == null) {
-      return null;
-    }
-    String[] ret = new String[interfaces.length];
-    for (int i = 0; i < ret.length; i++) {
-      ret[i] = interfaces[i].getName();
-    }
-    return ret;
-  }
-
-  @Override
-  public int getModifiers() {
-    return this.clazz.getModifiers();
-  }
-
-  public Class getClazz() {
-    return clazz;
-  }
-
 }
