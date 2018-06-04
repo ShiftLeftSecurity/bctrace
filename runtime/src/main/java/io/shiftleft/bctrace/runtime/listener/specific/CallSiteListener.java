@@ -24,16 +24,20 @@
  */
 package io.shiftleft.bctrace.runtime.listener.specific;
 
-import io.shiftleft.bctrace.runtime.listener.Listener;
-
 /**
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public interface CallSiteListener extends DirectListener {
+public abstract class CallSiteListener extends DynamicListener {
 
-  public String getCallSiteClassName();
+  public CallSiteListener() {
+    if (getType() != ListenerType.onBeforeCall) {
+      throw new Error("Invalid @ListenerType type for listener method in " + getClass());
+    }
+  }
 
-  public String getCallSiteMethodName();
+  public abstract String getCallSiteClassName();
 
-  public String getCallSiteMethodDescriptor();
+  public abstract String getCallSiteMethodName();
+
+  public abstract String getCallSiteMethodDescriptor();
 }

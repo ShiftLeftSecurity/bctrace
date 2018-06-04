@@ -25,10 +25,9 @@
 package io.shiftleft.bctrace.asm;
 
 import io.shiftleft.bctrace.asm.util.ASMUtils;
-import io.shiftleft.bctrace.runtime.listener.Listener;
-import io.shiftleft.bctrace.runtime.listener.specific.DirectListener.ListenerMethod;
 import io.shiftleft.bctrace.hook.DynamicHook;
 import io.shiftleft.bctrace.hook.Hook;
+import io.shiftleft.bctrace.runtime.listener.specific.DynamicListener;
 import java.io.IOException;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
@@ -54,6 +53,7 @@ import org.objectweb.asm.tree.TypeInsnNode;
  */
 public class CallbackTransformer implements ClassFileTransformer {
 
+  private static final String CALLBACK_JVM_CLASS_NAME = "io/shiftleft/bctrace/runtime/Callback";
   private final Hook[] hooks;
 
   public CallbackTransformer(Hook[] hooks) {
@@ -68,28 +68,23 @@ public class CallbackTransformer implements ClassFileTransformer {
       final byte[] classfileBuffer)
       throws IllegalClassFormatException {
 
-    if (className == null || !className.equals("io/shiftleft/bctrace/runtime/Callback")) {
+    if (className == null || !className.equals(CALLBACK_JVM_CLASS_NAME)) {
       return null;
     }
 
     try {
-      Set<Method> listenerMethods = new HashSet<Method>();
+      Set<DynamicListener> dynamicListeners = new HashSet<DynamicListener>();
       for (int i = 0; i < this.hooks.length; i++) {
         if (this.hooks[i] instanceof DynamicHook) {
-          Listener dynListener = this.hooks[i].getListener();
-          Method[] declaredMethods = dynListener.getClass().getDeclaredMethods();
-          for (int j = 0; j < declaredMethods.length; j++) {
-            if (declaredMethods[j].getAnnotation(ListenerMethod.class) != null) {
-              listenerMethods.add(declaredMethods[j]);
-            }
-          }
+          DynamicHook dynamicHook = (DynamicHook) this.hooks[i];
+          dynamicListeners.add(dynamicHook.getListener());
         }
       }
-      if (listenerMethods.size() == 0) {
+      if (dynamicListeners.size() == 0) {
         return null;
       }
       ClassReader cr = new ClassReader(
-          ClassLoader.getSystemResourceAsStream("io/shiftleft/bctrace/runtime/Callback.class"));
+          ClassLoader.getSystemResourceAsStream(CALLBACK_JVM_CLASS_NAME + ".class"));
       ClassNode cn = new ClassNode();
       cn.version = Opcodes.V1_6;
       cr.accept(cn, 0);
@@ -104,8 +99,8 @@ public class CallbackTransformer implements ClassFileTransformer {
       }
       cn.methods.remove(templateMethodNode);
 
-      for (Method listenerMethod : listenerMethods) {
-        cn.methods.add(createCallbackMethod(templateMethodNode, listenerMethod));
+      for (DynamicListener dynamicListener : dynamicListeners) {
+        cn.methods.add(createCallbackMethod(templateMethodNode, dynamicListener));
       }
 
       ClassWriter cw = new StaticClassWriter(cr, ClassWriter.COMPUTE_MAXS, null);
@@ -116,19 +111,28 @@ public class CallbackTransformer implements ClassFileTransformer {
     }
   }
 
-  private static MethodNode createCallbackMethod(MethodNode templateMethod, Method listenerMethod) {
+  public static String getDynamicListenerMethodName(DynamicListener listener) {
+    return listener.getClass().getName().replace('.', '_') + "_" +
+        listener.getListenerMethod().getName();
+  }
+
+  private static MethodNode createCallbackMethod(MethodNode templateMethod,
+      DynamicListener listener) {
     MethodNode mn = ASMUtils.cloneMethod(templateMethod);
     // Change method name from the template method
-    mn.name = listenerMethod.getDeclaringClass().getName().replace('.', '_') + "_" + listenerMethod
-        .getName();
+    mn.name = getDynamicListenerMethodName(listener);
     // Change signature of the method from private to public
     mn.access = (mn.access | Opcodes.ACC_PUBLIC) & ~Opcodes.ACC_PRIVATE;
-    updateMethodDescriptor(mn, listenerMethod);
-    updateMethodByteCode(mn, listenerMethod);
+    updateMethodDescriptor(mn, listener.getListenerMethod());
+    updateMethodByteCode(mn, listener.getListenerMethod());
     return mn;
   }
 
-  private static void updateMethodDescriptor(MethodNode mn, Method listenerMethod) {
+  public static String getDynamicListenerMethodDescriptor(DynamicListener listener) {
+    return updateMethodDescriptor(null, listener.getListenerMethod());
+  }
+
+  private static String updateMethodDescriptor(MethodNode mn, Method listenerMethod) {
     StringBuilder descriptor = new StringBuilder();
     descriptor.append("(");
     // First parameter is the methodId integer
@@ -138,15 +142,21 @@ public class CallbackTransformer implements ClassFileTransformer {
     for (int i = 0; i < params.length; i++) {
       String paramDesc = Type.getDescriptor(params[i]);
       descriptor.append(paramDesc);
-      mn.localVariables
-          .add(new LocalVariableNode("arg" + (i + 1), paramDesc, null,
-              mn.localVariables.get(0).start,
-              mn.localVariables.get(0).end, i + 1));
+      if (mn != null) {
+        mn.localVariables
+            .add(new LocalVariableNode("arg" + (i + 1), paramDesc, null,
+                mn.localVariables.get(0).start,
+                mn.localVariables.get(0).end, i + 1));
+      }
     }
     descriptor.append(")");
     // Void return
     descriptor.append("V");
-    mn.desc = descriptor.toString();
+    String desc = descriptor.toString();
+    if (mn != null) {
+      mn.desc = desc;
+    }
+    return desc;
   }
 
   // Changes toString() by listenerMethod(arg1, arg2, ...)

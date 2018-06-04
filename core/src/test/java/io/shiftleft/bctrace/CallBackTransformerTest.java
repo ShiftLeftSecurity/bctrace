@@ -26,15 +26,12 @@ package io.shiftleft.bctrace;
 
 import static org.junit.Assert.assertEquals;
 
-import io.shiftleft.bctrace.asm.CallbackTransformer;
-import io.shiftleft.bctrace.asm.util.ASMUtils;
+import io.shiftleft.bctrace.BcTraceTest.ByteClassLoader;
 import io.shiftleft.bctrace.filter.MethodFilter;
 import io.shiftleft.bctrace.hook.Hook;
 import io.shiftleft.bctrace.hook.MethodHook;
-import io.shiftleft.bctrace.runtime.Callback;
 import io.shiftleft.bctrace.runtime.listener.Listener;
-import io.shiftleft.bctrace.runtime.listener.specific.DirectListener;
-import java.io.InputStream;
+import io.shiftleft.bctrace.runtime.listener.specific.DynamicListener;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import org.junit.Test;
@@ -45,56 +42,21 @@ import org.junit.Test;
 public class CallBackTransformerTest {
 
   public static Class getCallBackClass(final Hook[] hooks) throws Exception {
-    Agent agent = new Agent() {
-      @Override
-      public void init(Bctrace bctrace) {
-      }
-
-      @Override
-      public void afterRegistration() {
-      }
-
-      @Override
-      public Hook[] getHooks() {
-        return hooks;
-      }
-    };
-    Bctrace bctrace = new Bctrace(null, agent);
-    String className = "io/shiftleft/bctrace/runtime/Callback";
-    String resourceName = className.replace('.', '/') + ".class";
-    InputStream is = CallBackTransformerTest.class.getClassLoader()
-        .getResourceAsStream(resourceName);
-    byte[] bytes = ASMUtils.toByteArray(is);
-    bctrace.init();
-    Listener[] listeners = new Listener[hooks.length];
-    for (int i = 0; i < listeners.length; i++) {
-      listeners[i] = hooks[i].getListener();
-    }
-    Callback.listeners = listeners;
-    CallbackTransformer transformer = new CallbackTransformer(hooks);
-    byte[] newBytes = transformer.transform(null, className, null, null, bytes);
-    BcTraceTest.viewByteCode(newBytes);
-    ByteClassLoader cl = new ByteClassLoader();
-    return cl.loadClass(className.replace('/', '.'), newBytes);
-  }
-
-  private static class ByteClassLoader extends ClassLoader {
-
-    public Class<?> loadClass(String name, byte[] byteCode) {
-      return super.defineClass(name, byteCode, 0, byteCode.length);
-    }
+    ByteClassLoader cl = new ByteClassLoader(hooks);
+    return cl.loadClass("io.shiftleft.bctrace.runtime.Callback");
   }
 
   @Test
   public void testDynamic() throws Exception {
 
     final long aLong = System.currentTimeMillis();
-    DirectListener listener1 = new SampleListener1();
-    DirectListener listener2 = new SampleListener2();
+    DynamicListener listener1 = new SampleListener1();
+    DynamicListener listener2 = new SampleListener2();
     Hook[] hooks = new Hook[]{
         new MethodHook(new MethodFilter("io/shiftleft/bctrace/TestClass", "fact", "(J)J"),
             listener1),
-        new MethodHook(new MethodFilter("io/shiftleft/bctrace/TestClass", "factWrapper", "(Ljava/lang/Long;)J"),
+        new MethodHook(new MethodFilter("io/shiftleft/bctrace/TestClass", "factWrapper",
+            "(Ljava/lang/Long;)J"),
             listener2)};
 
     Class callBackClass = getCallBackClass(hooks);
@@ -114,7 +76,7 @@ public class CallBackTransformerTest {
     assertEquals(listener2.toString(), Long.toString(aLong));
   }
 
-  public static class SampleListener1 implements DirectListener {
+  public static class SampleListener1 extends DynamicListener {
 
     final StringBuilder sb = new StringBuilder();
 
@@ -129,7 +91,7 @@ public class CallBackTransformerTest {
     }
   }
 
-  public static class SampleListener2 implements DirectListener {
+  public static class SampleListener2 extends DynamicListener {
 
     final StringBuilder sb = new StringBuilder();
 

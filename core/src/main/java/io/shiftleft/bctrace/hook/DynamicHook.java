@@ -1,21 +1,22 @@
 package io.shiftleft.bctrace.hook;
 
-import io.shiftleft.bctrace.runtime.listener.Listener;
-import io.shiftleft.bctrace.runtime.listener.specific.DirectListener.ListenerMethod;
-import io.shiftleft.bctrace.runtime.listener.specific.DirectListener.ListenerType;
 import io.shiftleft.bctrace.filter.Filter;
+import io.shiftleft.bctrace.runtime.listener.specific.DynamicListener;
+import io.shiftleft.bctrace.runtime.listener.specific.DynamicListener.ListenerMethod;
+import io.shiftleft.bctrace.runtime.listener.specific.DynamicListener.ListenerType;
 import java.lang.reflect.Method;
 import org.objectweb.asm.Type;
 
-public class DynamicHook<F extends Filter, L extends Listener> implements Hook<F, L> {
+public abstract class DynamicHook<F extends Filter, L extends DynamicListener> implements
+    Hook<F, L> {
 
   private final F filter;
   private final L listener;
 
-  public DynamicHook(F filter, L listener, String methodDescriptor) {
+  protected DynamicHook(F filter, L listener, String methodDescriptor) {
     this.filter = filter;
     this.listener = listener;
-    checkIntegrity(methodDescriptor);
+    checkListenerMethod(methodDescriptor);
   }
 
   @Override
@@ -28,18 +29,9 @@ public class DynamicHook<F extends Filter, L extends Listener> implements Hook<F
     return listener;
   }
 
-  private void checkIntegrity(String methodDescriptor) {
-    Method[] declaredMethods = listener.getClass().getDeclaredMethods();
-    if (declaredMethods == null || declaredMethods.length == 0) {
-      throw new Error("Listener does not define any method " + listener.getClass());
-    }
+  private void checkListenerMethod(String methodDescriptor) {
     Type[] argumentTypes = Type.getArgumentTypes(methodDescriptor);
-    for (int i = 0; i < declaredMethods.length; i++) {
-      checkListenerMethod(argumentTypes, declaredMethods[i]);
-    }
-  }
-
-  private void checkListenerMethod(Type[] argumentTypes, Method listenerMethod) {
+    Method listenerMethod = this.listener.getListenerMethod();
     ListenerMethod annotation = listenerMethod.getAnnotation(ListenerMethod.class);
     if (annotation == null) {
       return;
@@ -93,4 +85,5 @@ public class DynamicHook<F extends Filter, L extends Listener> implements Hook<F
       return true;
     }
   }
+
 }

@@ -29,12 +29,14 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 
 /**
- * DirectListener instances are notified directly from the instrumented method without creating
+ * DynamicListener instances are notified directly from the instrumented method without creating
  * intermediate object instance. They are used for high performance notification.
  *
- * DirectListener does not define a fixed interface. They are used in TargetedHooks, and they must
+ * DynamicListener does not define a fixed interface. They are used in TargetedHooks, and they must
  * define a single method (with name defined in the ListenerType enum) whose signature matches the
  * signature of the TargetedFilter of the hook in the following way:
  *
@@ -44,7 +46,52 @@ import java.lang.annotation.Target;
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  * @ListenerMethod public void onStart(Class clazz, Object instance, Integer arg1, String arg2)
  */
-public interface DirectListener extends Listener {
+public abstract class DynamicListener implements Listener {
+
+  private final Method listenerMethod;
+  private final ListenerType type;
+
+  public DynamicListener() {
+    checkAccessibleClass();
+    this.listenerMethod = searchListenerMethod();
+    this.type = this.listenerMethod.getAnnotation(ListenerMethod.class).type();
+  }
+
+  private void checkAccessibleClass() {
+    if (!Modifier.isPublic(getClass().getModifiers())) {
+      throw new Error("Error found in " + getClass()
+          + ". DynamicListener instances need to be defined in a public accessible class");
+    }
+  }
+
+  private Method searchListenerMethod() {
+    Method ret = null;
+    Class clazz = getClass();
+    while (clazz != null) {
+      Method[] declaredMethods = clazz.getDeclaredMethods();
+      for (int j = 0; j < declaredMethods.length; j++) {
+        if (declaredMethods[j].getAnnotation(ListenerMethod.class) != null) {
+          if (ret != null) {
+            throw new Error("Only one @ListenerMethod method is allowed in " + getClass());
+          }
+          ret = declaredMethods[j];
+        }
+      }
+      clazz = clazz.getSuperclass();
+    }
+    if (ret == null) {
+      throw new Error("Listener does not define any @ListenerMethod method " + getClass());
+    }
+    return ret;
+  }
+
+  public final Method getListenerMethod() {
+    return listenerMethod;
+  }
+
+  public final ListenerType getType() {
+    return type;
+  }
 
   /**
    * Defines the valid names for the listener method, and its fixed first arguments
@@ -53,8 +100,8 @@ public interface DirectListener extends Listener {
 
     // Method id, Instrumented class, instrumented instance
     onStart(int.class, Class.class, Object.class),
-    // Method id, caller class, caller instance, callee class, callee instance
-    onBeforeCall(int.class, Class.class, Object.class, Class.class, Object.class);
+    // Method id, caller class, caller instance, callee instance
+    onBeforeCall(int.class, Class.class, Object.class, Object.class);
 
     private Class[] fixedArgs;
 

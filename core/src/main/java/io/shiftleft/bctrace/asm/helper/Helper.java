@@ -72,6 +72,21 @@ public class Helper {
     return ret;
   }
 
+  protected ArrayList<Integer> getHooksOfType(ArrayList<Integer> hooksToUse,
+      Class<? extends Hook> clazz) {
+    ArrayList<Integer> ret = null;
+    for (Integer i : hooksToUse) {
+      Hook[] hooks = bctrace.getHooks();
+      if (hooks[i] != null && clazz.isAssignableFrom(hooks[i].getClass())) {
+        if (ret == null) {
+          ret = new ArrayList<Integer>(hooksToUse.size());
+        }
+        ret.add(i);
+      }
+    }
+    return ret;
+  }
+
   public InsnList getClassConstantReference(Type type, int version) {
     InsnList il = new InsnList();
     /*

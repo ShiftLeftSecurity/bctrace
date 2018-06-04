@@ -24,15 +24,15 @@
  */
 package io.shiftleft.bctrace;
 
+import io.shiftleft.bctrace.asm.CallbackTransformer;
 import io.shiftleft.bctrace.asm.Transformer;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
+import io.shiftleft.bctrace.hook.Hook;
+import io.shiftleft.bctrace.runtime.listener.Listener;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.List;
-import io.shiftleft.bctrace.runtime.Callback;
-import io.shiftleft.bctrace.runtime.listener.Listener;
-import io.shiftleft.bctrace.hook.Hook;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.InsnList;
@@ -42,38 +42,46 @@ import org.objectweb.asm.util.Textifier;
 import org.objectweb.asm.util.TraceMethodVisitor;
 
 /**
- *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
 public abstract class BcTraceTest {
 
-  public static Class getInstrumentClass(Class clazz, final Hook[] hooks) throws Exception {
+  public static Bctrace init(ByteClassLoader cl, final Hook[] hooks) throws Exception {
     Agent agent = new Agent() {
       @Override
       public void init(Bctrace bctrace) {
       }
+
       @Override
       public void afterRegistration() {
       }
+
       @Override
       public Hook[] getHooks() {
         return hooks;
       }
     };
     Bctrace bctrace = new Bctrace(null, agent);
-    String className = clazz.getCanonicalName();
-    String resourceName = className.replace('.', '/') + ".class";
-    InputStream is = clazz.getClassLoader().getResourceAsStream(resourceName);
-    byte[] bytes = ASMUtils.toByteArray(is);
     bctrace.init();
     Listener[] listeners = new Listener[hooks.length];
     for (int i = 0; i < listeners.length; i++) {
       listeners[i] = hooks[i].getListener();
     }
-    Callback.listeners = listeners;
-    Transformer transformer = new Transformer(new InstrumentationImpl(null), "BctraceNativePrefix", bctrace);
+    Class callBackclass = cl.loadClass("io.shiftleft.bctrace.runtime.Callback");
+    callBackclass.getField("listeners").set(null, listeners);
+    return bctrace;
+  }
+
+  public static Class getInstrumentClass(Class clazz, final Hook[] hooks) throws Exception {
+    ByteClassLoader cl = new ByteClassLoader(hooks);
+    Bctrace bctrace = init(cl, hooks);
+    Transformer transformer = new Transformer(new InstrumentationImpl(null), "BctraceNativePrefix",
+        bctrace);
+    String className = clazz.getCanonicalName();
+    String resourceName = className.replace('.', '/') + ".class";
+    InputStream is = clazz.getClassLoader().getResourceAsStream(resourceName);
+    byte[] bytes = ASMUtils.toByteArray(is);
     byte[] newBytes = transformer.transform(null, className, clazz, null, bytes);
-    ByteClassLoader cl = new ByteClassLoader();
     return cl.loadClass(className, newBytes);
   }
 
@@ -97,10 +105,37 @@ public abstract class BcTraceTest {
     }
   }
 
-  private static class ByteClassLoader extends ClassLoader {
+  public static class ByteClassLoader extends ClassLoader {
+
+    private Hook[] hooks;
+
+    public ByteClassLoader(Hook[] hooks) {
+      this.hooks = hooks;
+    }
 
     public Class<?> loadClass(String name, byte[] byteCode) {
       return super.defineClass(name, byteCode, 0, byteCode.length);
+    }
+
+    protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
+      if (name.equals("io.shiftleft.bctrace.runtime.Callback")) {
+        CallbackTransformer transformer = new CallbackTransformer(hooks);
+        try {
+          String resourceName = name.replace('.', '/') + ".class";
+          InputStream is = CallBackTransformerTest.class.getClassLoader()
+              .getResourceAsStream(resourceName);
+          byte[] bytes = ASMUtils.toByteArray(is);
+          byte[] newBytes = transformer.transform(null, name.replace('.', '/'), null, null, bytes);
+          if (newBytes == null) {
+            newBytes = bytes;
+          }
+          return loadClass(name, newBytes);
+        } catch (Exception ex) {
+          throw new RuntimeException(ex);
+        }
+      } else {
+        return super.loadClass(name, resolve);
+      }
     }
   }
 }
