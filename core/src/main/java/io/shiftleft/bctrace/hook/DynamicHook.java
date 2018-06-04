@@ -42,18 +42,17 @@ public abstract class DynamicHook<F extends Filter, L extends DynamicListener> i
 
     if (!checkFixedArgs(type.getFixedArgs(), listenerMethod.getParameterTypes())) {
       throw new Error(
-          "Invalid required arguments in listener method " + listenerMethod.getDeclaringClass()
+          "Invalid required arguments of @ListenerMethod `" + listenerMethod.getDeclaringClass()
               .getName()
-              + "." + listenerMethod.getName());
+              + "." + listenerMethod.getName() + "`");
     }
     if (!checkDynamicArgs(argumentTypes, listenerMethod.getParameterTypes(),
         type.getFixedArgs().length)) {
       throw new Error(
-          "Dynamic arguments in listener method " + listenerMethod.getDeclaringClass()
+          "Arguments of @ListenerMethod `" + listenerMethod.getDeclaringClass()
               .getName()
               + "." + listenerMethod.getName()
-              + " don't match the arguments of target method specified in the filter " + filter
-              .getClass().getName());
+              + "` don't correspond to the required arguments plus the arguments of the target method to be instrumented");
     }
   }
 

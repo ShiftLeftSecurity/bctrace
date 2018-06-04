@@ -98,9 +98,14 @@ public class CallbackTransformer implements ClassFileTransformer {
         }
       }
       cn.methods.remove(templateMethodNode);
-
+      HashSet<String> methodsAdded = new HashSet<String>();
       for (DynamicListener dynamicListener : dynamicListeners) {
-        cn.methods.add(createCallbackMethod(templateMethodNode, dynamicListener));
+        MethodNode mn = createCallbackMethod(templateMethodNode, dynamicListener);
+        String key = mn.name + mn.desc;
+        if (!methodsAdded.contains(key)) {
+          cn.methods.add(mn);
+          methodsAdded.add(key);
+        }
       }
 
       ClassWriter cw = new StaticClassWriter(cr, ClassWriter.COMPUTE_MAXS, null);

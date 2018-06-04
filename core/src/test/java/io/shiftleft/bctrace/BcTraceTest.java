@@ -68,6 +68,7 @@ public abstract class BcTraceTest {
       listeners[i] = hooks[i].getListener();
     }
     Class callBackclass = cl.loadClass("io.shiftleft.bctrace.runtime.Callback");
+
     callBackclass.getField("listeners").set(null, listeners);
     return bctrace;
   }

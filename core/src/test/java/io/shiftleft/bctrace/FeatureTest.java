@@ -37,6 +37,8 @@ import io.shiftleft.bctrace.runtime.listener.Listener;
 import io.shiftleft.bctrace.runtime.listener.generic.BeforeThrownListener;
 import io.shiftleft.bctrace.runtime.listener.generic.StartListener;
 import io.shiftleft.bctrace.runtime.listener.specific.CallSiteListener;
+import io.shiftleft.bctrace.runtime.listener.specific.DynamicListener.ListenerMethod;
+import io.shiftleft.bctrace.runtime.listener.specific.DynamicListener.ListenerType;
 import java.lang.reflect.InvocationTargetException;
 import org.junit.Test;
 
@@ -92,7 +94,11 @@ public class FeatureTest extends BcTraceTest {
 
   public static class CallSiteListener1 extends CallSiteListener {
 
-    final StringBuilder sb = new StringBuilder();
+    private final StringBuilder sb;
+
+    public CallSiteListener1(StringBuilder sb) {
+      this.sb = sb;
+    }
 
     @Override
     public String getCallSiteClassName() {
@@ -123,12 +129,52 @@ public class FeatureTest extends BcTraceTest {
     }
   }
 
+  public static class CallSiteListener2 extends CallSiteListener {
+
+    private final StringBuilder sb;
+
+    public CallSiteListener2(StringBuilder sb) {
+      this.sb = sb;
+    }
+
+    @Override
+    public String getCallSiteClassName() {
+      return "java/lang/System";
+    }
+
+    @Override
+    public String getCallSiteMethodName() {
+      return "arraycopy";
+    }
+
+    @Override
+    public String getCallSiteMethodDescriptor() {
+      return "(Ljava/lang/Object;ILjava/lang/Object;II)V";
+    }
+
+    @ListenerMethod(type = ListenerType.onBeforeCall)
+    public void onBeforeCall(int methodId, Class clazz, Object instance,
+        Object callSiteInstance, Object src, int srcPos,
+        Object dest, int destPos,
+        int length) {
+      sb.append("2");
+      assertEquals(clazz.getName(), TestClass.class.getName());
+      assertEquals(instance.getClass().getName(), TestClass.class.getName());
+      assertTrue(callSiteInstance == null);
+      assertNotNull(src);
+      assertNotNull(dest);
+    }
+  }
   @Test
   public void testCallSite() throws Exception {
     final long aLong = System.currentTimeMillis();
-    CallSiteListener1 callSiteListener1 = new CallSiteListener1();
+    StringBuilder sb = new StringBuilder();
+    CallSiteListener1 callSiteListener1 = new CallSiteListener1(sb);
+    CallSiteListener2 callSiteListener2 = new CallSiteListener2(sb);
     Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
-        new CallSiteHook(new AllFilter(), callSiteListener1)
+        new CallSiteHook(new AllFilter(), callSiteListener1),
+        new CallSiteHook(new AllFilter(), callSiteListener2)
+
 //        , new Hook() {
 //          @Override
 //          public Filter getFilter() {
@@ -199,7 +245,7 @@ public class FeatureTest extends BcTraceTest {
 //        }
     });
     clazz.getMethod("arrayCopyWrapper2").invoke(null);
-    assertEquals("1", callSiteListener1.sb.toString());
+    assertEquals("12", sb.toString());
   }
 
   @Test
