@@ -74,7 +74,6 @@ public final class Bctrace {
         instrumentation.getJavaInstrumentation()
             .addTransformer(new CallbackTransformer(hooks), false);
         Callback.listeners = listeners;
-        System.out.println(Arrays.toString(Callback.class.getDeclaredMethods()));
         Transformer transformer = new Transformer(this.instrumentation, NATIVE_WRAPPER_PREFIX,
             this);
         instrumentation.getJavaInstrumentation().addTransformer(transformer, true);
