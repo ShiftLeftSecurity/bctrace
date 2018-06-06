@@ -84,6 +84,18 @@ public final class Bctrace {
     }
   }
 
+  public void disableThreadNotification() {
+    Callback.disableThreadNotification();
+  }
+
+  public void enableThreadNotification() {
+    Callback.enableThreadNotification();
+  }
+
+  public void isThreadNotificationEnabled() {
+    Callback.isThreadNotificationEnabled();
+  }
+
   private static Logger createLogger() {
     Logger logger = AgentLoggerFactory.getInstance().getLogger();
     String logLevel = System.getProperty(SystemProperty.LOG_LEVEL);
