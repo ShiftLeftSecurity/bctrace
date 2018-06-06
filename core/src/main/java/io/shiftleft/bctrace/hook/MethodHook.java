@@ -22,29 +22,19 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.impl;
+package io.shiftleft.bctrace.hook;
 
-import io.shiftleft.bctrace.spi.Filter;
-import io.shiftleft.bctrace.spi.hierarchy.BctraceClass;
-import io.shiftleft.bctrace.spi.hierarchy.UnloadedClass;
-import java.security.ProtectionDomain;
-import org.objectweb.asm.tree.MethodNode;
+import io.shiftleft.bctrace.filter.MethodFilter;
+import io.shiftleft.bctrace.runtime.listener.specific.DynamicListener;
 
 /**
- * A filter that does not accepts any class or method.
+ * A hook targeted exclusively to a concrete method.
  *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public class NoneFilterImpl extends Filter {
+public class MethodHook extends DynamicHook<MethodFilter, DynamicListener> {
 
-  @Override
-  public boolean instrumentClass(String className, ProtectionDomain protectionDomain,
-      ClassLoader cl) {
-    return false;
-  }
-
-  @Override
-  public boolean instrumentMethod(BctraceClass clazz, MethodNode mn) {
-    return false;
+  public MethodHook(MethodFilter filter, DynamicListener listener) {
+    super(filter, listener, filter.getMethodDescriptor());
   }
 }

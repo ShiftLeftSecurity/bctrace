@@ -25,12 +25,8 @@
 package io.shiftleft.bctrace;
 
 import io.shiftleft.bctrace.debug.DebugHttpServer;
-import io.shiftleft.bctrace.spi.Hook;
 import java.io.IOException;
 import java.lang.instrument.Instrumentation;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Enumeration;
 import java.util.Scanner;
 
 /**
@@ -53,20 +49,14 @@ public class Init {
   }
 
   private static void bootstrap(String agentArgs, Instrumentation inst) throws Exception {
-    if (Bctrace.instance != null) {
-      throw new IllegalStateException("Bctrace has been already loaded");
-    }
     updateOsgiDelegationSystemProperty();
-    String[] hookClassNames = readHookClassNamesFromDescriptors();
-    if (hookClassNames == null || hookClassNames.length == 0) {
-      throw new Error("No hooks found in classpath resource " + DESCRIPTOR_NAME);
+    String factoryImpClass = readAgentFactoryImpClass();
+    if (factoryImpClass == null) {
+      throw new Error("No agent factory found in classpath resource " + DESCRIPTOR_NAME);
     }
-    Hook[] hooks = new Hook[hookClassNames.length];
-    for (int i = 0; i < hooks.length; i++) {
-      hooks[i] = (Hook) Class.forName(hookClassNames[i]).newInstance();
-    }
-    Bctrace.instance = new Bctrace(inst, hooks);
-    Bctrace.instance.init();
+    AgentFactory agentFactory = (AgentFactory) Class.forName(factoryImpClass).newInstance();
+    Bctrace bctrace = new Bctrace(inst, agentFactory.createAgent());
+    bctrace.init();
     DebugHttpServer.init();
   }
 
@@ -79,23 +69,15 @@ public class Init {
     }
   }
 
-  private static String[] readHookClassNamesFromDescriptors() throws IOException {
+  private static String readAgentFactoryImpClass() throws IOException {
     ClassLoader cl = Init.class.getClassLoader();
     if (cl == null) {
       cl = ClassLoader.getSystemClassLoader().getParent();
     }
-    Enumeration<URL> resources = cl.getResources(DESCRIPTOR_NAME);
-    ArrayList<String> list = new ArrayList<String>();
-    while (resources.hasMoreElements()) {
-      URL url = resources.nextElement();
-      Scanner scanner = new Scanner(url.openStream());
-      while (scanner.hasNextLine()) {
-        String line = scanner.nextLine().trim();
-        if (!line.isEmpty()) {
-          list.add(line);
-        }
-      }
+    Scanner scanner = new Scanner(cl.getResourceAsStream(DESCRIPTOR_NAME));
+    if (scanner.hasNextLine()) {
+      return scanner.nextLine().trim();
     }
-    return list.toArray(new String[list.size()]);
+    return null;
   }
 }

@@ -29,15 +29,16 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import io.shiftleft.bctrace.TestClass.TestRuntimeException;
-import io.shiftleft.bctrace.impl.AllFilter;
+import io.shiftleft.bctrace.filter.AllFilter;
+import io.shiftleft.bctrace.filter.Filter;
+import io.shiftleft.bctrace.hook.CallSiteHook;
+import io.shiftleft.bctrace.hook.Hook;
 import io.shiftleft.bctrace.runtime.listener.Listener;
-import io.shiftleft.bctrace.runtime.listener.info.BeforeCallSiteListener;
-import io.shiftleft.bctrace.runtime.listener.info.BeforeThrownListener;
-import io.shiftleft.bctrace.runtime.listener.info.FinishReturnArgumentsListener;
-import io.shiftleft.bctrace.runtime.listener.info.FinishReturnListener;
-import io.shiftleft.bctrace.runtime.listener.info.StartListener;
-import io.shiftleft.bctrace.spi.Filter;
-import io.shiftleft.bctrace.spi.Hook;
+import io.shiftleft.bctrace.runtime.listener.generic.BeforeThrownListener;
+import io.shiftleft.bctrace.runtime.listener.generic.StartListener;
+import io.shiftleft.bctrace.runtime.listener.specific.CallSiteListener;
+import io.shiftleft.bctrace.runtime.listener.specific.DynamicListener.ListenerMethod;
+import io.shiftleft.bctrace.runtime.listener.specific.DynamicListener.ListenerType;
 import java.lang.reflect.InvocationTargetException;
 import org.junit.Test;
 
@@ -60,7 +61,7 @@ public class FeatureTest extends BcTraceTest {
           public Listener getListener() {
             return new StartListener() {
               @Override
-              public void onStart(int methodId, Class clazz, Object instance) {
+              public void onStart(int methodId, Class clazz, Object instance, Object[] args) {
                 assertEquals(clazz.getName(), TestClass.class.getName());
                 steps.append("1");
               }
@@ -76,8 +77,9 @@ public class FeatureTest extends BcTraceTest {
           @Override
           public Listener getListener() {
             return new StartListener() {
+
               @Override
-              public void onStart(int methodId, Class clazz, Object instance) {
+              public void onStart(int methodId, Class clazz, Object instance, Object[] args) {
                 assertEquals(clazz.getName(), TestClass.class.getName());
                 steps.append("2");
               }
@@ -90,123 +92,91 @@ public class FeatureTest extends BcTraceTest {
     assertEquals("12", steps.toString());
   }
 
+  public static class CallSiteListener1 extends CallSiteListener {
+
+    private final StringBuilder sb;
+
+    public CallSiteListener1(StringBuilder sb) {
+      this.sb = sb;
+    }
+
+    @Override
+    public String getCallSiteClassName() {
+      return "java/lang/System";
+    }
+
+    @Override
+    public String getCallSiteMethodName() {
+      return "arraycopy";
+    }
+
+    @Override
+    public String getCallSiteMethodDescriptor() {
+      return "(Ljava/lang/Object;ILjava/lang/Object;II)V";
+    }
+
+    @ListenerMethod(type = ListenerType.onBeforeCall)
+    public void onBeforeCall(int methodId, Class clazz, Object instance,
+        Object callSiteInstance, Object src, int srcPos,
+        Object dest, int destPos,
+        int length) {
+      sb.append("1");
+      assertEquals(clazz.getName(), TestClass.class.getName());
+      assertEquals(instance.getClass().getName(), TestClass.class.getName());
+      assertTrue(callSiteInstance == null);
+      assertNotNull(src);
+      assertNotNull(dest);
+    }
+  }
+
+  public static class CallSiteListener2 extends CallSiteListener {
+
+    private final StringBuilder sb;
+
+    public CallSiteListener2(StringBuilder sb) {
+      this.sb = sb;
+    }
+
+    @Override
+    public String getCallSiteClassName() {
+      return "java/lang/System";
+    }
+
+    @Override
+    public String getCallSiteMethodName() {
+      return "arraycopy";
+    }
+
+    @Override
+    public String getCallSiteMethodDescriptor() {
+      return "(Ljava/lang/Object;ILjava/lang/Object;II)V";
+    }
+
+    @ListenerMethod(type = ListenerType.onBeforeCall)
+    public void onBeforeCall(int methodId, Class clazz, Object instance,
+        Object callSiteInstance, Object src, int srcPos,
+        Object dest, int destPos,
+        int length) {
+      sb.append("2");
+      assertEquals(clazz.getName(), TestClass.class.getName());
+      assertEquals(instance.getClass().getName(), TestClass.class.getName());
+      assertTrue(callSiteInstance == null);
+      assertNotNull(src);
+      assertNotNull(dest);
+    }
+  }
   @Test
   public void testCallSite() throws Exception {
-    final StringBuilder steps = new StringBuilder();
     final long aLong = System.currentTimeMillis();
+    StringBuilder sb = new StringBuilder();
+    CallSiteListener1 callSiteListener1 = new CallSiteListener1(sb);
+    CallSiteListener2 callSiteListener2 = new CallSiteListener2(sb);
     Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
-        new Hook() {
-          @Override
-          public Filter getFilter() {
-            return new AllFilter();
-          }
-
-          @Override
-          public Listener getListener() {
-            return new BeforeCallSiteListener() {
-              @Override
-              public String getCallSiteClassName() {
-                return "java/lang/System";
-              }
-
-              @Override
-              public String getCallSiteMethodName() {
-                return "arraycopy";
-              }
-
-              @Override
-              public String getCallSiteMethodDescriptor() {
-                return "(Ljava/lang/Object;ILjava/lang/Object;II)V";
-              }
-
-              @Override
-              public void onBeforeCall(int methodId, Class clazz, Object instance,
-                  Object callSiteInstance, Object[] callSiteArgs) {
-                steps.append("1");
-                assertEquals(clazz.getName(), TestClass.class.getName());
-                assertEquals(instance.getClass().getName(), TestClass.class.getName());
-                assertTrue(callSiteInstance == null);
-                assertEquals(5, callSiteArgs.length);
-                assertTrue(callSiteArgs[0].getClass()==char[].class);
-                assertTrue(callSiteArgs[1].getClass()==Integer.class);
-                assertTrue(callSiteArgs[2].getClass()==char[].class);
-                assertTrue(callSiteArgs[3].getClass()==Integer.class);
-                assertTrue(callSiteArgs[4].getClass()==Integer.class);
-              }
-            };
-          }
-        },
-        new Hook() {
-          @Override
-          public Filter getFilter() {
-            return new AllFilter();
-          }
-
-          @Override
-          public Listener getListener() {
-            return new BeforeCallSiteListener() {
-              @Override
-              public String getCallSiteClassName() {
-                return "java/lang/System";
-              }
-
-              @Override
-              public String getCallSiteMethodName() {
-                return "arraycopy";
-              }
-
-              @Override
-              public String getCallSiteMethodDescriptor() {
-                return "(Ljava/lang/Object;ILjava/lang/Object;II)V";
-              }
-
-              @Override
-              public void onBeforeCall(int methodId, Class clazz, Object instance,
-                  Object callSiteInstance, Object[] callSiteArgs) {
-                steps.append("2");
-              }
-            };
-          }
-        },
-        new Hook() {
-          @Override
-          public Filter getFilter() {
-            return new AllFilter();
-          }
-
-          @Override
-          public Listener getListener() {
-            return new BeforeCallSiteListener() {
-              @Override
-              public String getCallSiteClassName() {
-                return "io/shiftleft/bctrace/TestClass";
-              }
-
-              @Override
-              public String getCallSiteMethodName() {
-                return "arrayCopyWrapper";
-              }
-
-              @Override
-              public String getCallSiteMethodDescriptor() {
-                return "()V";
-              }
-
-              @Override
-              public void onBeforeCall(int methodId, Class clazz, Object instance,
-                  Object callSiteInstance, Object[] callSiteArgs) {
-                steps.append("0");
-                assertEquals(clazz.getName(), TestClass.class.getName());
-                assertTrue(instance == null);
-                assertEquals(callSiteInstance.getClass().getName(), TestClass.class.getName());
-                assertEquals(0, callSiteArgs.length);
-              }
-            };
-          }
-        }
+        new CallSiteHook(new AllFilter(), callSiteListener1),
+        new CallSiteHook(new AllFilter(), callSiteListener2)
     });
     clazz.getMethod("arrayCopyWrapper2").invoke(null);
-    assertEquals("012", steps.toString());
+    assertEquals("12", sb.toString());
   }
 
   @Test
@@ -278,54 +248,6 @@ public class FeatureTest extends BcTraceTest {
       }
     }
     assertTrue("Expected exception", captured);
-  }
-
-  @Test
-  public void testReturn() throws Exception {
-    final StringBuilder steps = new StringBuilder();
-    Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
-        new Hook() {
-          @Override
-          public Filter getFilter() {
-            return new AllFilter();
-          }
-
-          @Override
-          public Listener getListener() {
-            return new FinishReturnListener() {
-              @Override
-              public void onFinishedReturn(int methodId, Class clazz, Object instance, Object ret) {
-                assertNotNull(ret);
-                assertEquals(clazz.getName(), TestClass.class.getName());
-                steps.append("1");
-              }
-            };
-          }
-        },
-        new Hook() {
-          @Override
-          public Filter getFilter() {
-            return new AllFilter();
-          }
-
-          @Override
-          public Listener getListener() {
-            return new FinishReturnArgumentsListener() {
-              @Override
-              public void onFinishedReturn(int methodId, Class clazz, Object instance,
-                  Object[] args, Object ret) {
-                assertNotNull(ret);
-                assertEquals(clazz.getName(), TestClass.class.getName());
-                steps.append("2");
-              }
-            };
-          }
-        }
-    });
-    clazz.getMethod("getLong").invoke(null);
-    clazz.getMethod("getInt").invoke(null);
-    clazz.getMethod("getObject").invoke(null);
-    assertEquals(steps.toString(), "121212");
   }
 
 // TODO uncoment when #2 is fixed

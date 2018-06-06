@@ -25,7 +25,7 @@
 package io.shiftleft.bctrace.asm.helper;
 
 import io.shiftleft.bctrace.asm.util.ASMUtils;
-import io.shiftleft.bctrace.runtime.listener.info.BeforeThrownListener;
+import io.shiftleft.bctrace.runtime.listener.generic.BeforeThrownListener;
 import java.util.ArrayList;
 import java.util.Iterator;
 import org.objectweb.asm.Opcodes;
@@ -61,7 +61,7 @@ import org.objectweb.asm.tree.VarInsnNode;
 public class ThrowHelper extends Helper {
 
 
-  public static void addByteCodeInstructions(int methodId, ClassNode cn, MethodNode mn,
+  public void addByteCodeInstructions(int methodId, ClassNode cn, MethodNode mn,
       ArrayList<Integer> hooksToUse) {
     ArrayList<Integer> listenersToUse = getListenersOfType(hooksToUse,
         BeforeThrownListener.class);
@@ -83,7 +83,7 @@ public class ThrowHelper extends Helper {
     }
   }
 
-  private static InsnList getThrowTraceInstructions(int methodId, ClassNode cn, MethodNode mn,
+  private InsnList getThrowTraceInstructions(int methodId, ClassNode cn, MethodNode mn,
       ArrayList<Integer> listenersToUse) {
     InsnList il = new InsnList();
     for (Integer index : listenersToUse) {

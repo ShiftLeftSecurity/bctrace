@@ -22,10 +22,8 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.spi;
+package io.shiftleft.bctrace.logging;
 
-import io.shiftleft.bctrace.logging.Logger;
-import io.shiftleft.bctrace.logging.Level;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;

@@ -22,25 +22,27 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.runtime.listener.info;
+package io.shiftleft.bctrace.filter;
 
-import io.shiftleft.bctrace.runtime.listener.Listener;
+import io.shiftleft.bctrace.hierarchy.BctraceClass;
+import java.security.ProtectionDomain;
+import org.objectweb.asm.tree.MethodNode;
 
 /**
+ * A filter that accepts all classes non loaded by the bootstrap class loader
+ *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public interface StartArgumentsListener extends Listener {
+public class NonBootstrapFilter extends Filter {
 
-/**
-   * Invoked by instrumented methods before any of its original instructions (if
-   * multiple plugins are registered, listener notification is performed
-   * according to their respective plugin registration order).
-   *
-   * @param methodId method id (as defined by MethodRegistry)
-   * @param clazz class defining the method.
-   * @param instance instance where the method is invoked. Null if the method is static
-   * @param args arguments passed to the method. 
-   * returns false;
-   */
-  public void onStart(int methodId, Class clazz, Object instance, Object[] args);
+  @Override
+  public boolean instrumentClass(String className, ProtectionDomain protectionDomain,
+      ClassLoader cl) {
+    return cl != Object.class.getClassLoader();
+  }
+
+  @Override
+  public boolean instrumentMethod(BctraceClass clazz, MethodNode mn) {
+    return true;
+  }
 }

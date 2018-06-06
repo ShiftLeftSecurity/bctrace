@@ -22,30 +22,50 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.runtime.listener.info;
+package io.shiftleft.bctrace;
 
-import io.shiftleft.bctrace.runtime.listener.Listener;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public interface FinishReturnArgumentsListener extends Listener {
+public final class MethodRegistry {
 
-  /**
-   * Invoked by instrumented methods just before return (if multiple plugins are
-   * registered, listener notification is performed according to their
-   * respective plugin <b>reverse</b> registration order).
-   * 
-   * @param methodId method id (as defined by MethodRegistry)
-   * @param clazz class defining the method.
-   * @param instance instance where the method is invoked. Null if the method is static
-   * @param args arguments passed to the method.
-   * @param ret Object being returned by the method. Wrapper type if the
-   * original return type is primitive. <code>null</code> if the method return
-   * type is <code>void</code>
-   */
-  
-  public void onFinishedReturn(int methodId, Class clazz, Object instance, Object[] args, Object ret);
+  private static final MethodRegistry INSTANCE = new MethodRegistry();
 
+  private final ArrayList<MethodInfo> methodArray = new ArrayList<MethodInfo>();
+  private final Map<MethodInfo, Integer> methodMap = new HashMap<MethodInfo, Integer>();
+
+  public static MethodRegistry getInstance() {
+    return INSTANCE;
+  }
+
+  private MethodRegistry() {
+  }
+
+  public synchronized MethodInfo getMethod(Integer id) {
+    return methodArray.get(id);
+  }
+
+  public synchronized Integer registerMethodId(MethodInfo mi) {
+    Integer id = methodMap.get(mi);
+    if (id == null) {
+      methodArray.add(mi);
+      id = methodArray.size() - 1;
+      methodMap.put(mi, id);
+    }
+    return id;
+  }
+
+  public synchronized Integer getMethodId(String binaryClassName, String methodName, String methodDescriptor) {
+    MethodInfo mi = new MethodInfo(binaryClassName, methodName, methodDescriptor, 0);
+    return methodMap.get(mi);
+  }
+
+  public synchronized int size() {
+    return methodArray.size();
+  }
 }

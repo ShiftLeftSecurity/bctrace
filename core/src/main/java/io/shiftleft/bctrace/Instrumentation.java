@@ -22,63 +22,74 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.spi;
+package io.shiftleft.bctrace;
 
-import io.shiftleft.bctrace.runtime.listener.Listener;
+import java.lang.instrument.UnmodifiableClassException;
+import java.util.List;
 
 /**
- * An <b>instrumentation hook</b> determines what methods to instrument and what actions to perform
- * at runtime under the events triggered by the instrumented methods.
- *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public abstract class Hook {
-
-  protected Instrumentation instrumentation;
-
-  private final String jvmPackage;
-
-  public Hook() {
-    this.jvmPackage = getClass().getPackage().getName().replace('.', '/') + "/";
-  }
+public interface Instrumentation {
 
   /**
-   * Initializes the plugin. Called once at startup before initial instrumentation is performed.
+   * Whether or not this JVM supports class retransformation.
    *
-   * @param instrumentation Intrumentation callback, allowing triggering retransformations
+   * @see <a href="https://docs.oracle.com/javase/6/docs/api/java/lang/instrument/Instrumentation.html#isRetransformClassesSupported()">Instrumentation.isRetransformClassesSupported()</a>
    */
-  public final void init(Instrumentation instrumentation) {
-    this.instrumentation = instrumentation;
-    doInit();
-  }
+  boolean isRetransformClassesSupported();
 
   /**
-   * Allows subclasses to implement initialization logic.
+   * Whether or not this class can be retransformed.
    */
-  public void doInit() {
-  }
+  boolean isModifiableClass(Class<?> clazz);
 
   /**
-   * Callback method invoked after the transformer is registered
+   * Whether or not this class can be retransformed.
+   *
+   * @param jvmClassName class name according to the JVM spec (packages separated by '/')
    */
-  public void afterRegistration() {
-  }
-
-  public final Instrumentation getInstrumentation() {
-    return instrumentation;
-  }
-
-  public final String getJvmPackage() {
-    return jvmPackage;
-  }
+  boolean isModifiableClass(String jvmClassName);
 
   /**
-   * Returns the filter, deciding what methods to instrument.
+   * Retransforms the classes.
+   *
+   * @see <a href="https://docs.oracle.com/javase/6/docs/api/java/lang/instrument/Instrumentation.html#retransformClasses(java.lang.Class...)">Instrumentation.retransformClasses(java.lang.Class...)</a>
    */
-  public abstract Filter getFilter();
+  void retransformClasses(Class<?>... classes) throws UnmodifiableClassException;
 
   /**
-   * Returns the listener invoked by the instrumented method hooks.
+   *
+   * @param className
+   * @return
    */
-  public abstract Listener getListener();
+  public boolean isLoadedByAnyClassLoader(String className);
+
+  /**
+   * Returns a class with no side effects (if not loaded it remains not loaded), without using the
+   * expensive instrumentation.getAllLoadedClasses()
+   */
+  public Class getClassIfLoadedByClassLoader(String className, ClassLoader cl);
+
+  /**
+   *
+   * @param className
+   * @param cl
+   * @return
+   */
+  public boolean isLoadedBy(String className, ClassLoader cl);
+
+  /**
+   *
+   * @param className
+   * @return
+   */
+  public List<ClassLoader> getClassLoadersLoading(String className);
+
+  /**
+   *
+   * @return
+   */
+  public Class[] getAllLoadedClasses();
 }
+

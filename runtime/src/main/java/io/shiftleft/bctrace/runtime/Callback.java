@@ -25,13 +25,9 @@
 package io.shiftleft.bctrace.runtime;
 
 import io.shiftleft.bctrace.runtime.listener.Listener;
-import io.shiftleft.bctrace.runtime.listener.info.BeforeCallSiteListener;
-import io.shiftleft.bctrace.runtime.listener.info.BeforeThrownListener;
-import io.shiftleft.bctrace.runtime.listener.info.FinishReturnArgumentsListener;
-import io.shiftleft.bctrace.runtime.listener.info.FinishReturnListener;
-import io.shiftleft.bctrace.runtime.listener.info.StartArgumentsListener;
-import io.shiftleft.bctrace.runtime.listener.info.StartListener;
-import io.shiftleft.bctrace.runtime.listener.min.MinStartListener;
+import io.shiftleft.bctrace.runtime.listener.generic.BeforeThrownListener;
+import io.shiftleft.bctrace.runtime.listener.generic.FinishReturnListener;
+import io.shiftleft.bctrace.runtime.listener.generic.StartListener;
 
 /**
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
@@ -44,38 +40,6 @@ public final class Callback {
   public static Listener[] listeners;
 
   @SuppressWarnings("BoxedValueEquality")
-  public static void onStart(int methodId, int i) {
-    if (!isThreadNotificationEnabled()) {
-      return;
-    }
-    if (Boolean.TRUE == NOTIFYING_FLAG.get()) {
-      return;
-    }
-    try {
-      NOTIFYING_FLAG.set(Boolean.TRUE);
-      ((MinStartListener) listeners[i]).onStart(methodId);
-    } finally {
-      NOTIFYING_FLAG.set(Boolean.FALSE);
-    }
-  }
-
-  @SuppressWarnings("BoxedValueEquality")
-  public static void onStart(int methodId, Class clazz, Object instance, int i) {
-    if (!isThreadNotificationEnabled()) {
-      return;
-    }
-    if (Boolean.TRUE == NOTIFYING_FLAG.get()) {
-      return;
-    }
-    try {
-      NOTIFYING_FLAG.set(Boolean.TRUE);
-      ((StartListener) listeners[i]).onStart(methodId, clazz, instance);
-    } finally {
-      NOTIFYING_FLAG.set(Boolean.FALSE);
-    }
-  }
-
-  @SuppressWarnings("BoxedValueEquality")
   public static void onStart(Object[] args, int methodId, Class clazz, Object instance, int i) {
     if (!isThreadNotificationEnabled()) {
       return;
@@ -85,24 +49,7 @@ public final class Callback {
     }
     try {
       NOTIFYING_FLAG.set(Boolean.TRUE);
-      ((StartArgumentsListener) listeners[i]).onStart(methodId, clazz, instance, args);
-    } finally {
-      NOTIFYING_FLAG.set(Boolean.FALSE);
-    }
-  }
-
-  @SuppressWarnings("BoxedValueEquality")
-  public static void onFinishedReturn(Object ret, int methodId, Class clazz, Object instance,
-      int i) {
-    if (!isThreadNotificationEnabled()) {
-      return;
-    }
-    if (Boolean.TRUE == NOTIFYING_FLAG.get()) {
-      return;
-    }
-    try {
-      NOTIFYING_FLAG.set(Boolean.TRUE);
-      ((FinishReturnListener) listeners[i]).onFinishedReturn(methodId, clazz, instance, ret);
+      ((StartListener) listeners[i]).onStart(methodId, clazz, instance, args);
     } finally {
       NOTIFYING_FLAG.set(Boolean.FALSE);
     }
@@ -119,7 +66,7 @@ public final class Callback {
     }
     try {
       NOTIFYING_FLAG.set(Boolean.TRUE);
-      ((FinishReturnArgumentsListener) listeners[i])
+      ((FinishReturnListener) listeners[i])
           .onFinishedReturn(methodId, clazz, instance, args, ret);
     } finally {
       NOTIFYING_FLAG.set(Boolean.FALSE);
@@ -144,8 +91,7 @@ public final class Callback {
   }
 
   @SuppressWarnings("BoxedValueEquality")
-  public static void onBeforeCallSite(Object callSiteInstance, Object[] callSiteArgs, int methodId, Class clazz, Object instance,
-      int i) {
+  private static void dynamicTemplate(int i) {
     if (!isThreadNotificationEnabled()) {
       return;
     }
@@ -154,7 +100,7 @@ public final class Callback {
     }
     try {
       NOTIFYING_FLAG.set(Boolean.TRUE);
-      ((BeforeCallSiteListener) listeners[i]).onBeforeCall(methodId, clazz, instance, callSiteInstance, callSiteArgs);
+      (listeners[i]).notify();
     } finally {
       NOTIFYING_FLAG.set(Boolean.FALSE);
     }

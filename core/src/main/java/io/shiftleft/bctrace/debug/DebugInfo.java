@@ -24,7 +24,7 @@
  */
 package io.shiftleft.bctrace.debug;
 
-import io.shiftleft.bctrace.spi.SystemProperty;
+import io.shiftleft.bctrace.SystemProperty;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;

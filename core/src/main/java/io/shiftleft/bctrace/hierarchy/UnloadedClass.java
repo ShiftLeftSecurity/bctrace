@@ -22,24 +22,70 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.runtime.listener.info;
+package io.shiftleft.bctrace.hierarchy;
 
-import io.shiftleft.bctrace.runtime.listener.Listener;
+import io.shiftleft.bctrace.Bctrace;
+import java.io.IOException;
+import java.net.URL;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.tree.ClassNode;
 
 /**
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public interface StartListener extends Listener {
+public class UnloadedClass extends BctraceClass {
 
-  /**
-   * Invoked by instrumented methods before any of its original instructions (if multiple plugins
-   * are registered, listener notification is performed according to their respective plugin
-   * registration order).
-   *
-   * @param methodId method id (as defined by MethodRegistry)
-   * @param clazz class defining the method.
-   * @param instance instance where the method is invoked. Null if the method is static
-   */
-  public void onStart(int methodId, Class clazz, Object instance);
+  private final ClassNode cn;
 
+  UnloadedClass(String name, ClassLoader cl, Bctrace bctrace) throws ClassNotFoundException {
+    super(name, cl, bctrace);
+    this.cn = createClassNode(getURL());
+  }
+
+  public UnloadedClass(String name, ClassLoader cl, ClassNode cn, Bctrace bctrace) {
+    super(name, cl, bctrace);
+    this.cn = cn;
+  }
+
+  private static ClassNode createClassNode(URL url) throws ClassNotFoundException {
+    if (url == null) {
+      throw new ClassNotFoundException();
+    }
+    try {
+      ClassReader cr = new ClassReader(url.openStream());
+      ClassNode cn = new ClassNode();
+      cr.accept(cn, 0);
+      return cn;
+    } catch (IOException ex) {
+      throw new RuntimeException(ex);
+    }
+  }
+
+  public ClassNode getRawClassNode() {
+    return cn;
+  }
+
+  @Override
+  protected String getSuperClassName() {
+    if (this.cn.superName == null) {
+      return null;
+    } else {
+      return this.cn.superName.replace('/', '.');
+    }
+  }
+
+  @Override
+  protected String[] getInterfaceNames() {
+    String[] ret = new String[this.cn.interfaces.size()];
+    for (int i = 0; i < this.cn.interfaces.size(); i++) {
+      ret[i] = this.cn.interfaces.get(i).replace('/', '.');
+    }
+    return ret;
+  }
+
+  @Override
+  public int getModifiers() {
+    return this.cn.access;
+  }
 }
+

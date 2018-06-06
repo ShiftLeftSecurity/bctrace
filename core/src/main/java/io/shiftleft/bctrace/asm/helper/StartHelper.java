@@ -25,9 +25,7 @@
 package io.shiftleft.bctrace.asm.helper;
 
 import io.shiftleft.bctrace.asm.util.ASMUtils;
-import io.shiftleft.bctrace.runtime.listener.info.StartArgumentsListener;
-import io.shiftleft.bctrace.runtime.listener.info.StartListener;
-import io.shiftleft.bctrace.runtime.listener.min.MinStartListener;
+import io.shiftleft.bctrace.runtime.listener.generic.StartListener;
 import java.util.ArrayList;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -46,100 +44,15 @@ import org.objectweb.asm.tree.VarInsnNode;
  */
 public class StartHelper extends Helper {
 
-  public static void addByteCodeInstructions(int methodId, ClassNode cn, MethodNode mn,
+  public void addByteCodeInstructions(int methodId, ClassNode cn, MethodNode mn,
       ArrayList<Integer> hooksToUse) {
 
-    addMinTraceStart(methodId, cn, mn, hooksToUse);
     addTraceStart(methodId, cn, mn, hooksToUse);
-    addTraceStartWithArguments(methodId, cn, mn, hooksToUse);
   }
 
-  /**
-   * Depending on the {@link MinStartListener} listeners that apply to this method,  this helper
-   * turns the method node instructions of a method like this:
-   * <br><pre>{@code
-   * public Object foo(Object arg){
-   *   return void(args);
-   * }
-   * }
-   * </pre>
-   * Into that:
-   * <br><pre>{@code
-   * public Object foo(Object arg){
-   *   Object ret = void(args);
-   *   // Notify listeners that apply to this method (methodId 1550)
-   *   Callback.onStart(1550, 0);
-   *   Callback.onStart(1550, 2);
-   *   Callback.onStart(1550, 10);
-   *   return void(args);
-   * }
-   * }
-   * </pre>
-   */
-  private static void addMinTraceStart(int methodId, ClassNode cn, MethodNode mn,
-      ArrayList<Integer> hooksToUse) {
-    ArrayList<Integer> listenersToUse = getListenersOfType(hooksToUse, MinStartListener.class);
-    if (!isInstrumentationNeeded(listenersToUse)) {
-      return;
-    }
-    InsnList il = new InsnList();
-    for (Integer index : listenersToUse) {
-      il.add(ASMUtils.getPushInstruction(methodId));
-      il.add(ASMUtils.getPushInstruction(index));
-      il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
-          "io/shiftleft/bctrace/runtime/Callback", "onStart",
-          "(II)V", false));
-    }
-    mn.instructions.insert(il);
-  }
 
   /**
-   * Depending on the {@link StartListener} listeners that apply to this method,  this helper turns
-   * the method node instructions of a method like this:
-   * <br><pre>{@code
-   * public Object foo(Object args){
-   *   return void(args);
-   * }
-   * }
-   * </pre>
-   * Into that:
-   * <br><pre>{@code
-   * public Object foo(Object arg){
-   *   Object ret = void(arg);
-   *   // Notify listeners that apply to this method (methodId 1550)
-   *   Callback.onStart(1550, clazz, this, 0);
-   *   Callback.onStart(1550, clazz, this, 2);
-   *   Callback.onStart(1550, clazz, this, 10);
-   *   return void(args);
-   * }
-   * }
-   * </pre>
-   */
-  private static void addTraceStart(int methodId, ClassNode cn, MethodNode mn,
-      ArrayList<Integer> hooksToUse) {
-    ArrayList<Integer> listenersToUse = getListenersOfType(hooksToUse, StartListener.class);
-    if (!isInstrumentationNeeded(listenersToUse)) {
-      return;
-    }
-    InsnList il = new InsnList();
-    for (Integer index : listenersToUse) {
-      il.add(ASMUtils.getPushInstruction(methodId));
-      il.add(getClassConstantReference(Type.getObjectType(cn.name), cn.version));
-      if (ASMUtils.isStatic(mn.access) || mn.name.equals("<init>")) {
-        il.add(new InsnNode(Opcodes.ACONST_NULL));
-      } else {
-        il.add(new VarInsnNode(Opcodes.ALOAD, 0));
-      }
-      il.add(ASMUtils.getPushInstruction(index));
-      il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
-          "io/shiftleft/bctrace/runtime/Callback", "onStart",
-          "(ILjava/lang/Class;Ljava/lang/Object;I)V", false));
-    }
-    mn.instructions.insert(il);
-  }
-
-  /**
-   * Depending on the {@link StartArgumentsListener} listeners that apply to this method,  this
+   * Depending on the {@link StartListener} listeners that apply to this method,  this
    * helper turns the method node instructions of a method like this:
    * <br><pre>{@code
    * public Object foo(Object arg1, Object arg2, ..., Object argn){
@@ -161,10 +74,10 @@ public class StartHelper extends Helper {
    * }
    * </pre>
    */
-  private static void addTraceStartWithArguments(int methodId, ClassNode cn, MethodNode mn,
+  private void addTraceStart(int methodId, ClassNode cn, MethodNode mn,
       ArrayList<Integer> hooksToUse) {
     ArrayList<Integer> listenersToUse = getListenersOfType(hooksToUse,
-        StartArgumentsListener.class);
+        StartListener.class);
     if (!isInstrumentationNeeded(listenersToUse)) {
       return;
     }

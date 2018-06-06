@@ -1343,7 +1343,7 @@ class Frame {
    */
   final void accept(final MethodWriter methodWriter) {
     // Compute the number of locals, ignoring TOP types that are just after a LONG or a DOUBLE, and
-    // all trailing TOP types.
+    // all trailing TOP types.                                                                                  q
     int[] localTypes = inputLocals;
     int nLocal = 0;
     int nTrailingTop = 0;

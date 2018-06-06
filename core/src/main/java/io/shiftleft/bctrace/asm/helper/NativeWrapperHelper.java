@@ -54,9 +54,9 @@ import org.objectweb.asm.tree.MethodNode;
  */
 public class NativeWrapperHelper extends Helper {
 
-  public static void createWrapperImpl(ClassNode cn, MethodNode mn, String prefix,
+  public void createWrapperImpl(ClassNode cn, MethodNode mn, String prefix,
       List<MethodNode> newMethods) {
-    MethodNode clonedMethod = cloneAndRenameNativeMethod(cn, mn, prefix);
+    MethodNode clonedMethod = cloneAndRenameNativeMethod(mn, prefix);
     newMethods.add(clonedMethod);
     InsnList il = new InsnList();
     mn.instructions = il;
@@ -78,35 +78,13 @@ public class NativeWrapperHelper extends Helper {
     }
   }
 
-  private static MethodNode cloneAndRenameNativeMethod(ClassNode cn, MethodNode mn, String prefix) {
-    MethodNode cloned = new MethodNode();
+  private MethodNode cloneAndRenameNativeMethod(MethodNode mn, String prefix) {
+    MethodNode cloned = ASMUtils.cloneMethod(mn);
     cloned.name = prefix + mn.name;
-
-    cloned.access = mn.access;
-    cloned.instructions = mn.instructions;
-    cloned.desc = mn.desc;
-    cloned.signature = mn.signature;
-    cloned.annotationDefault = mn.annotationDefault;
-    cloned.attrs = mn.attrs;
-    cloned.exceptions = mn.exceptions;
-    cloned.invisibleAnnotations = mn.invisibleAnnotations;
-    cloned.invisibleParameterAnnotations = mn.invisibleParameterAnnotations;
-    cloned.invisibleLocalVariableAnnotations = mn.invisibleLocalVariableAnnotations;
-    cloned.invisibleTypeAnnotations = mn.invisibleTypeAnnotations;
-    cloned.localVariables = mn.localVariables;
-    cloned.maxLocals = mn.maxLocals;
-    cloned.maxStack = mn.maxStack;
-    cloned.parameters = mn.parameters;
-    cloned.tryCatchBlocks = mn.tryCatchBlocks;
-    cloned.visibleAnnotations = mn.visibleAnnotations;
-    cloned.visibleLocalVariableAnnotations = mn.visibleLocalVariableAnnotations;
-    cloned.visibleParameterAnnotations = mn.visibleParameterAnnotations;
-    cloned.visibleTypeAnnotations = mn.visibleTypeAnnotations;
-
     return cloned;
   }
 
-  private static void pushArguments(InsnList il, MethodNode mn) {
+  private void pushArguments(InsnList il, MethodNode mn) {
     Type[] methodArguments = Type.getArgumentTypes(mn.desc);
     int index = ASMUtils.isStatic(mn.access) ? 0 : 1;
     for (int i = 0; i < methodArguments.length; i++) {

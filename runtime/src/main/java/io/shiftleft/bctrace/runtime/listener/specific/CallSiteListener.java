@@ -22,25 +22,22 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.runtime.listener.info;
-
-import io.shiftleft.bctrace.runtime.listener.Listener;
+package io.shiftleft.bctrace.runtime.listener.specific;
 
 /**
- *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public interface BeforeThrownListener extends Listener {
+public abstract class CallSiteListener extends DynamicListener {
 
-  /**
-   * Invoked by instrumented methods just before the actual method throws a
-   * throwable.
-   *
-   * @param methodId method id (as defined by MethodRegistry)
-   * @param clazz class defining the method.
-   * @param instance instance where the method is invoked. Null if the method is static
-   * @param th throwable to be thrown
-   */
-  public void onBeforeThrown(int methodId, Class clazz, Object instance, Throwable th);
+  public CallSiteListener() {
+    if (getType() != ListenerType.onBeforeCall) {
+      throw new Error("Invalid @ListenerType type for listener method in " + getClass());
+    }
+  }
 
+  public abstract String getCallSiteClassName();
+
+  public abstract String getCallSiteMethodName();
+
+  public abstract String getCallSiteMethodDescriptor();
 }
