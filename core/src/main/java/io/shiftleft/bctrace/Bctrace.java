@@ -28,13 +28,13 @@ import io.shiftleft.bctrace.asm.CallbackTransformer;
 import io.shiftleft.bctrace.asm.Transformer;
 import io.shiftleft.bctrace.debug.CallCounterHook;
 import io.shiftleft.bctrace.debug.DebugInfo;
+import io.shiftleft.bctrace.hook.Hook;
 import io.shiftleft.bctrace.logging.AgentLoggerFactory;
 import io.shiftleft.bctrace.logging.Level;
 import io.shiftleft.bctrace.logging.Logger;
 import io.shiftleft.bctrace.runtime.Callback;
 import io.shiftleft.bctrace.runtime.listener.Listener;
-import io.shiftleft.bctrace.hook.Hook;
-import java.util.Arrays;
+import java.net.URL;
 
 /**
  * Framework entry point.
@@ -94,6 +94,16 @@ public final class Bctrace {
 
   public void isThreadNotificationEnabled() {
     Callback.isThreadNotificationEnabled();
+  }
+
+  public static URL getURL(Class clazz) {
+    String resourceName = clazz.getName().replace('.', '/') + ".class";
+    ClassLoader cl = clazz.getClassLoader();
+    if (cl == null) {
+      return ClassLoader.getSystemResource(resourceName);
+    } else {
+      return cl.getResource(resourceName);
+    }
   }
 
   private static Logger createLogger() {
