@@ -63,12 +63,8 @@ public abstract class BctraceClass {
   public final URL getURL() {
     if (!computedURL) {
       synchronized (this) {
-        String classResource = name.replace('.', '/') + ".class";
-        if (cl == null) {
-          this.url = ClassLoader.getSystemResource(classResource);
-        } else {
-          this.url = cl.getResource(classResource);
-        }
+        this.url = Bctrace.getURL(name, cl);
+        computedURL = true;
       }
     }
     return this.url;

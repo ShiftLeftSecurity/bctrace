@@ -106,6 +106,15 @@ public final class Bctrace {
     }
   }
 
+  public static URL getURL(String className, ClassLoader cl) {
+    String classResource = className.replace('.', '/') + ".class";
+    if (cl == null) {
+      return ClassLoader.getSystemResource(classResource);
+    } else {
+      return cl.getResource(classResource);
+    }
+  }
+
   private static Logger createLogger() {
     Logger logger = AgentLoggerFactory.getInstance().getLogger();
     String logLevel = System.getProperty(SystemProperty.LOG_LEVEL);
