@@ -68,11 +68,8 @@ public class CallSiteHelper extends Helper {
       ArrayList<Integer> hooksToUse) {
 
     // Auxiliar local variables
-    int callSiteInstVarIndex = -1;
-    if (!ASMUtils.isStatic(mn.access)) {
-      callSiteInstVarIndex = mn.maxLocals;
-      mn.maxLocals = mn.maxLocals + 1;
-    }
+    int callSiteInstVarIndex = mn.maxLocals;
+    mn.maxLocals = mn.maxLocals + 1;
 
     int[][] localVariablesArgumentMap = getLocalVariablesArgumentMap(mn);
 
