@@ -74,6 +74,11 @@ public abstract class BcTraceTest {
   }
 
   public static Class getInstrumentClass(Class clazz, final Hook[] hooks) throws Exception {
+    return getInstrumentClass(clazz, hooks, false);
+  }
+
+  public static Class getInstrumentClass(Class clazz, final Hook[] hooks, boolean trace)
+      throws Exception {
     ByteClassLoader cl = new ByteClassLoader(hooks);
     Bctrace bctrace = init(cl, hooks);
     Transformer transformer = new Transformer(new InstrumentationImpl(null), "BctraceNativePrefix",
@@ -83,6 +88,9 @@ public abstract class BcTraceTest {
     InputStream is = clazz.getClassLoader().getResourceAsStream(resourceName);
     byte[] bytes = ASMUtils.toByteArray(is);
     byte[] newBytes = transformer.transform(null, className, clazz, null, bytes);
+    if (trace) {
+      BcTraceTest.viewByteCode(newBytes);
+    }
     return cl.loadClass(className, newBytes);
   }
 

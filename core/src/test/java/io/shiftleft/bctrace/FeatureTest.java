@@ -37,8 +37,6 @@ import io.shiftleft.bctrace.runtime.listener.Listener;
 import io.shiftleft.bctrace.runtime.listener.generic.BeforeThrownListener;
 import io.shiftleft.bctrace.runtime.listener.generic.StartListener;
 import io.shiftleft.bctrace.runtime.listener.specific.CallSiteListener;
-import io.shiftleft.bctrace.runtime.listener.specific.DynamicListener.ListenerMethod;
-import io.shiftleft.bctrace.runtime.listener.specific.DynamicListener.ListenerType;
 import java.lang.reflect.InvocationTargetException;
 import org.junit.Test;
 
@@ -165,6 +163,7 @@ public class FeatureTest extends BcTraceTest {
       assertNotNull(dest);
     }
   }
+
   @Test
   public void testCallSite() throws Exception {
     final long aLong = System.currentTimeMillis();
@@ -174,7 +173,8 @@ public class FeatureTest extends BcTraceTest {
     Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
         new CallSiteHook(new AllFilter(), callSiteListener1),
         new CallSiteHook(new AllFilter(), callSiteListener2)
-    });
+    }, true);
+
     clazz.getMethod("arrayCopyWrapper2").invoke(null);
     assertEquals("12", sb.toString());
   }

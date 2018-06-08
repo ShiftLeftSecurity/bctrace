@@ -45,6 +45,12 @@ public class TestClass {
     System.arraycopy(a, 0, b, 0, 2);
   }
 
+  public static void staticArrayCopyWrapper() {
+    char[] a = new char[]{'a', 'b', 'c'};
+    char[] b = new char[2];
+    System.arraycopy(a, 0, b, 0, 2);
+  }
+
   public static void arrayCopyWrapper2() {
     TestClass t = new TestClass();
     t.arrayCopyWrapper();
@@ -76,6 +82,23 @@ public class TestClass {
     }
     return 1;
   }
+
+  public static boolean isEmpty(Object[] array) {
+    return (array == null || array.length == 0);
+  }
+
+//  public static String[] concatenateStringArrays(String[] array1, String[] array2) {
+//    if (isEmpty(array1)) {
+//      return array2;
+//    }
+//    if (isEmpty(array2)) {
+//      return array1;
+//    }
+//    String[] newArr = new String[array1.length + array2.length];
+//    System.arraycopy(array1, 0, newArr, 0, array1.length);
+//    System.arraycopy(array2, 0, newArr, array1.length, array2.length);
+//    return newArr;
+//  }
 
   public static void doFrames() {
     Number num = (System.currentTimeMillis() % 2 == 0 ? new Integer(3) : new Long(4));
