@@ -37,12 +37,11 @@ public final class MethodInfo {
   private final String methodName;
   private final String methodDescriptor;
   private final int modifiers;
-  private final String representation;
 
   private String packageName;
 
-  public static MethodInfo from(String className, MethodNode mn) {
-    return new MethodInfo(className, mn.name, mn.desc, mn.access);
+  public static MethodInfo from(String binaryClassName, MethodNode mn) {
+    return new MethodInfo(binaryClassName, mn.name, mn.desc, mn.access);
   }
 
   public MethodInfo(String binaryClassName, String methodName, String methodDescriptor, int modifiers) {
@@ -50,7 +49,6 @@ public final class MethodInfo {
     this.methodName = methodName;
     this.methodDescriptor = methodDescriptor;
     this.modifiers = modifiers;
-    this.representation = binaryClassName + "." + methodName + methodDescriptor;
   }
 
   public String getBinaryClassName() {
@@ -106,31 +104,34 @@ public final class MethodInfo {
 
   @Override
   public String toString() {
-    return this.representation;
+    return binaryClassName + "." + methodName + methodDescriptor;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+
+    MethodInfo that = (MethodInfo) o;
+
+    if (!binaryClassName.equals(that.binaryClassName)) {
+      return false;
+    }
+    if (!methodName.equals(that.methodName)) {
+      return false;
+    }
+    return methodDescriptor.equals(that.methodDescriptor);
   }
 
   @Override
   public int hashCode() {
-    int hash = 3;
-    hash = 79 * hash + (this.representation != null ? this.representation.hashCode() : 0);
-    return hash;
-  }
-
-  @Override
-  public boolean equals(Object obj) {
-    if (this == obj) {
-      return true;
-    }
-    if (obj == null) {
-      return false;
-    }
-    if (getClass() != obj.getClass()) {
-      return false;
-    }
-    final MethodInfo other = (MethodInfo) obj;
-    if ((this.representation == null) ? (other.representation != null) : !this.representation.equals(other.representation)) {
-      return false;
-    }
-    return true;
+    int result = binaryClassName.hashCode();
+    result = 31 * result + methodName.hashCode();
+    result = 31 * result + methodDescriptor.hashCode();
+    return result;
   }
 }
