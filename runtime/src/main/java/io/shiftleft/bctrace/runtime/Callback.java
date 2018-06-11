@@ -113,7 +113,7 @@ public final class Callback {
 
   @SuppressWarnings("BoxedValueEquality")
   public static void enableThreadNotification() {
-    NOTIFY_DISABLED_FLAG.remove();
+    NOTIFY_DISABLED_FLAG.set(Boolean.FALSE);
   }
 
   @SuppressWarnings("BoxedValueEquality")

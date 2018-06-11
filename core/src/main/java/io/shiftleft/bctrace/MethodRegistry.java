@@ -60,8 +60,7 @@ public final class MethodRegistry {
     return id;
   }
 
-  public synchronized Integer getMethodId(String binaryClassName, String methodName, String methodDescriptor) {
-    MethodInfo mi = new MethodInfo(binaryClassName, methodName, methodDescriptor, 0);
+  public synchronized Integer getMethodId(MethodInfo mi) {
     return methodMap.get(mi);
   }
 

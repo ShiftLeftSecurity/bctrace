@@ -25,6 +25,10 @@
 package io.shiftleft.bctrace.asm;
 
 import io.shiftleft.bctrace.Bctrace;
+import io.shiftleft.bctrace.InstrumentationImpl;
+import io.shiftleft.bctrace.MethodInfo;
+import io.shiftleft.bctrace.MethodRegistry;
+import io.shiftleft.bctrace.SystemProperty;
 import io.shiftleft.bctrace.asm.helper.CallSiteHelper;
 import io.shiftleft.bctrace.asm.helper.NativeWrapperHelper;
 import io.shiftleft.bctrace.asm.helper.ReturnHelper;
@@ -32,14 +36,10 @@ import io.shiftleft.bctrace.asm.helper.StartHelper;
 import io.shiftleft.bctrace.asm.helper.ThrowHelper;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
 import io.shiftleft.bctrace.debug.DebugInfo;
-import io.shiftleft.bctrace.InstrumentationImpl;
+import io.shiftleft.bctrace.hierarchy.UnloadedClass;
+import io.shiftleft.bctrace.hook.Hook;
 import io.shiftleft.bctrace.logging.Level;
 import io.shiftleft.bctrace.runtime.Callback;
-import io.shiftleft.bctrace.hook.Hook;
-import io.shiftleft.bctrace.MethodInfo;
-import io.shiftleft.bctrace.MethodRegistry;
-import io.shiftleft.bctrace.SystemProperty;
-import io.shiftleft.bctrace.hierarchy.UnloadedClass;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.lang.instrument.ClassFileTransformer;
@@ -136,7 +136,8 @@ public class Transformer implements ClassFileTransformer {
       if (!TransformationSupport.isTransformable(className, loader)) {
         return ret;
       }
-      ArrayList<Integer> matchingHooks = getMatchingHooksByName(className, protectionDomain, loader);
+      ArrayList<Integer> matchingHooks = getMatchingHooksByName(className, protectionDomain,
+          loader);
       if (matchingHooks == null || matchingHooks.isEmpty()) {
         return ret;
       }
@@ -264,14 +265,12 @@ public class Transformer implements ClassFileTransformer {
         modifyMethod(cn, mn, hooksToUse, newMethods);
         transformed = true;
         if (DebugInfo.getInstance() != null) {
-          Integer methodId = MethodRegistry.getInstance()
-              .getMethodId(cn.name, mn.name, mn.desc);
+          Integer methodId = MethodRegistry.getInstance().getMethodId(MethodInfo.from(cn.name, mn));
           DebugInfo.getInstance().setInstrumented(methodId, true);
         }
       } else {
         if (DebugInfo.getInstance() != null) {
-          Integer methodId = MethodRegistry.getInstance()
-              .getMethodId(cn.name, mn.name, mn.desc);
+          Integer methodId = MethodRegistry.getInstance().getMethodId(MethodInfo.from(cn.name, mn));
           DebugInfo.getInstance().setInstrumented(methodId, false);
         }
       }
