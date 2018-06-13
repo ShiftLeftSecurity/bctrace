@@ -22,85 +22,81 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.asm.helper;
+package io.shiftleft.bctrace.asm.helper.generic;
 
+import io.shiftleft.bctrace.asm.helper.Helper;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
-import io.shiftleft.bctrace.runtime.listener.generic.StartListener;
+import io.shiftleft.bctrace.runtime.listener.generic.BeforeThrownListener;
 import java.util.ArrayList;
+import java.util.Iterator;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
+import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
-import org.objectweb.asm.tree.VarInsnNode;
 
 /**
- * Inserts the bytecode instructions within method node, needed to handle the different start
- * listeners registered.
+ * Inserts into the method bytecodes, the instructions needed to notify the registered listeners
+ * before a throwable is directly thrown by the target method.
  *
+ * This helper turns throw instructions like these:
+ * <br><pre>{@code
+ * throw aException;
+ * }
+ * </pre>
+ * Into that:
+ * <br><pre>{@code
+ * // Notify the event to the listeners that apply to this method (suppose methodId 1550)
+ * Callback.onBeforeThrown(aException, 1550, clazz, this, 0);
+ * Callback.onBeforeThrown(aException, 1550, clazz, this, 2);
+ * Callback.onBeforeThrown(aException, 1550, clazz, this, 10);
+ * ...
+ * throw aException;
+ * }
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public class StartHelper extends Helper {
+public class ThrowHelper extends Helper {
+
 
   public void addByteCodeInstructions(int methodId, ClassNode cn, MethodNode mn,
       ArrayList<Integer> hooksToUse) {
-
-    addTraceStart(methodId, cn, mn, hooksToUse);
-  }
-
-
-  /**
-   * Depending on the {@link StartListener} listeners that apply to this method,  this
-   * helper turns the method node instructions of a method like this:
-   * <br><pre>{@code
-   * public Object foo(Object arg1, Object arg2, ..., Object argn){
-   *   return void(arg1, arg2, ..., argn);
-   * }
-   * }
-   * </pre>
-   * Into that:
-   * <br><pre>{@code
-   * public Object foo(Object args){
-   *   Object[] args = new Object[]{arg1, arg2, ..., argn};
-   *   Object ret = void(args);
-   *   // Notify listeners that apply to this method (methodId 1550)
-   *   Callback.onStart(args, 1550, clazz, this, 0);
-   *   Callback.onStart(args, 1550, clazz, this, 2);
-   *   Callback.onStart(args, 1550, clazz, this, 10);
-   *   return void(arg1, arg2, ..., argn);
-   * }
-   * }
-   * </pre>
-   */
-  private void addTraceStart(int methodId, ClassNode cn, MethodNode mn,
-      ArrayList<Integer> hooksToUse) {
     ArrayList<Integer> listenersToUse = getListenersOfType(hooksToUse,
-        StartListener.class);
+        BeforeThrownListener.class);
+
     if (!isInstrumentationNeeded(listenersToUse)) {
       return;
     }
-    InsnList il = new InsnList();
-    pushMethodArgsArray(il, mn);
+    InsnList il = mn.instructions;
+    Iterator<AbstractInsnNode> it = il.iterator();
+    while (it.hasNext()) {
+      AbstractInsnNode abstractInsnNode = it.next();
 
+      switch (abstractInsnNode.getOpcode()) {
+        case Opcodes.ATHROW:
+          il.insertBefore(abstractInsnNode,
+              getThrowTraceInstructions(methodId, cn, mn, listenersToUse));
+          break;
+      }
+    }
+  }
+
+  private InsnList getThrowTraceInstructions(int methodId, ClassNode cn, MethodNode mn,
+      ArrayList<Integer> listenersToUse) {
+    InsnList il = new InsnList();
     for (int i = 0; i < listenersToUse.size(); i++) {
       Integer index = listenersToUse.get(i);
-      if (i < listenersToUse.size() - 1) {
-        il.add(new InsnNode(Opcodes.DUP));
-      }
-      il.add(ASMUtils.getPushInstruction(methodId));
+      il.add(new InsnNode(Opcodes.DUP)); // dup throwable
+      il.add(ASMUtils.getPushInstruction(methodId)); // method id
       il.add(getClassConstantReference(Type.getObjectType(cn.name), cn.version));
-      if (ASMUtils.isStatic(mn.access) || mn.name.equals("<init>")) {
-        il.add(new InsnNode(Opcodes.ACONST_NULL));
-      } else {
-        il.add(new VarInsnNode(Opcodes.ALOAD, 0));
-      }
-      il.add(ASMUtils.getPushInstruction(index));
+      pushInstance(il, mn); // current instance
+      il.add(ASMUtils.getPushInstruction(index)); // hook id
       il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
-          "io/shiftleft/bctrace/runtime/Callback", "onStart",
-          "([Ljava/lang/Object;ILjava/lang/Class;Ljava/lang/Object;I)V", false));
+          "io/shiftleft/bctrace/runtime/Callback", "onBeforeThrown",
+          "(Ljava/lang/Throwable;ILjava/lang/Class;Ljava/lang/Object;I)V", false));
     }
-    mn.instructions.insert(il);
+    return il;
   }
 }

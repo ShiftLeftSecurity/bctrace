@@ -28,7 +28,6 @@ import io.shiftleft.bctrace.asm.CallbackTransformer;
 import io.shiftleft.bctrace.asm.Transformer;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
 import io.shiftleft.bctrace.hook.Hook;
-import io.shiftleft.bctrace.runtime.listener.Listener;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -63,7 +62,7 @@ public abstract class BcTraceTest {
     };
     Bctrace bctrace = new Bctrace(null, agent);
     bctrace.init();
-    Listener[] listeners = new Listener[hooks.length];
+    Object[] listeners = new Object[hooks.length];
     for (int i = 0; i < listeners.length; i++) {
       listeners[i] = hooks[i].getListener();
     }
@@ -87,7 +86,7 @@ public abstract class BcTraceTest {
     String resourceName = className.replace('.', '/') + ".class";
     InputStream is = clazz.getClassLoader().getResourceAsStream(resourceName);
     byte[] bytes = ASMUtils.toByteArray(is);
-    byte[] newBytes = transformer.transform(null, className, clazz, null, bytes);
+    byte[] newBytes = transformer.transform(null, className.replace('.', '/'), clazz, null, bytes);
     if (trace) {
       BcTraceTest.viewByteCode(newBytes);
     }

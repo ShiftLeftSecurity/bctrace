@@ -26,8 +26,9 @@ package io.shiftleft.bctrace.asm.helper;
 
 import io.shiftleft.bctrace.Bctrace;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
-import io.shiftleft.bctrace.runtime.listener.Listener;
 import io.shiftleft.bctrace.hook.Hook;
+import io.shiftleft.bctrace.runtime.listener.specific.DirectListener;
+import io.shiftleft.bctrace.runtime.listener.specific.DirectListener.ListenerType;
 import java.util.ArrayList;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -37,12 +38,13 @@ import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TypeInsnNode;
+import org.objectweb.asm.tree.VarInsnNode;
 
 /**
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
 public class Helper {
-  
+
   protected Bctrace bctrace;
 
   public void setBctrace(Bctrace bctrace) {
@@ -57,16 +59,37 @@ public class Helper {
   }
 
   protected ArrayList<Integer> getListenersOfType(ArrayList<Integer> hooksToUse,
-      Class<? extends Listener> clazz) {
+      Class<?> clazz) {
     ArrayList<Integer> ret = null;
-    for (Integer i : hooksToUse) {
-      Hook[] hooks = bctrace.getHooks();
+    Hook[] hooks = bctrace.getHooks();
+    for (int h = 0; h < hooks.length; h++) {
+      Integer i = hooksToUse.get(h);
       if (hooks[i].getListener() != null &&
           clazz.isAssignableFrom(hooks[i].getListener().getClass())) {
         if (ret == null) {
           ret = new ArrayList<Integer>(hooksToUse.size());
         }
         ret.add(i);
+      }
+    }
+    return ret;
+  }
+
+  protected ArrayList<Integer> getDirectListenersOfType(ArrayList<Integer> hooksToUse,
+      ListenerType type) {
+    ArrayList<Integer> ret = null;
+    Hook[] hooks = bctrace.getHooks();
+    for (int h = 0; h < hooks.length; h++) {
+      Integer i = hooksToUse.get(h);
+      Object listener = hooks[i].getListener();
+      if (listener instanceof DirectListener) {
+        DirectListener directListener = (DirectListener) listener;
+        if (directListener.getType() == type) {
+          if (ret == null) {
+            ret = new ArrayList<Integer>(hooksToUse.size());
+          }
+          ret.add(i);
+        }
       }
     }
     return ret;
@@ -136,4 +159,29 @@ public class Helper {
     }
   }
 
+  /**
+   * Appends to the list bytecodes to push the parameter arguments on top of the operand stack
+   */
+  protected void pushMethodArgs(InsnList il, MethodNode mn) {
+    Type[] methodArguments = Type.getArgumentTypes(mn.desc);
+    if (methodArguments.length > 0) {
+      int index = ASMUtils.isStatic(mn.access) ? 0 : 1;
+      for (int i = 0; i < methodArguments.length; i++) {
+        il.add(ASMUtils.getLoadInst(methodArguments[i], index));
+        index += methodArguments[i].getSize();
+      }
+    }
+  }
+
+  /**
+   * Appends to the list bytecodes to push the instance on top of the operand stack, or null if the
+   * method is static
+   */
+  protected void pushInstance(InsnList il, MethodNode mn) {
+    if (ASMUtils.isStatic(mn.access) || mn.name.equals("<init>")) { // current instance
+      il.add(new InsnNode(Opcodes.ACONST_NULL));
+    } else {
+      il.add(new VarInsnNode(Opcodes.ALOAD, 0));
+    }
+  }
 }

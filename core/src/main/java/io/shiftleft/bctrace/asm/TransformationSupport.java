@@ -72,7 +72,8 @@ public class TransformationSupport {
     if (jvmClassName.contains("$$Lambda$")) {
       return false;
     }
-    for (String prefix : CLASSNAME_PREFIX_IGNORE_LIST) {
+    for (int i = 0; i < CLASSNAME_PREFIX_IGNORE_LIST.length; i++) {
+      String prefix = CLASSNAME_PREFIX_IGNORE_LIST[i];
       if (jvmClassName.startsWith(prefix)) {
         return false;
       }

@@ -26,7 +26,6 @@ package io.shiftleft.bctrace;
 
 import io.shiftleft.bctrace.asm.TransformationSupport;
 import io.shiftleft.bctrace.debug.DebugInfo;
-import io.shiftleft.bctrace.Instrumentation;
 import java.lang.instrument.UnmodifiableClassException;
 import java.lang.ref.WeakReference;
 import java.util.HashMap;
@@ -76,7 +75,8 @@ public final class InstrumentationImpl implements Instrumentation {
   @Override
   public void retransformClasses(Class<?>... classes) throws UnmodifiableClassException {
     if (javaInstrumentation != null && classes != null && classes.length > 0) {
-      for (Class<?> clazz : classes) {
+      for (int i = 0; i < classes.length; i++) {
+        Class<?> clazz = classes[i];
         if (!isModifiableClass(clazz)) {
           throw new UnmodifiableClassException(clazz.getName());
         }
@@ -92,7 +92,8 @@ public final class InstrumentationImpl implements Instrumentation {
     synchronized (loadedClassesMap) {
       if (javaInstrumentation != null) {
         Class[] allLoadedClasses = javaInstrumentation.getAllLoadedClasses();
-        for (Class clazz : allLoadedClasses) {
+        for (int i = 0; i < allLoadedClasses.length; i++) {
+          Class<?> clazz = allLoadedClasses[i];
           registerClass(clazz.getName(), clazz.getClassLoader(), loadedClassesMap);
         }
       }
@@ -133,7 +134,8 @@ public final class InstrumentationImpl implements Instrumentation {
       list = new LinkedList<WeakReference<ClassLoader>>();
       map.put(className, list);
     } else {
-      for (WeakReference<ClassLoader> wr : list) {
+      for (int i = 0; i < list.size(); i++) {
+        WeakReference<ClassLoader> wr = list.get(i);
         if (cl == null) { // Bootstrap classloader
           if (wr == null) {
             return;
@@ -159,7 +161,8 @@ public final class InstrumentationImpl implements Instrumentation {
       if (cl == null) { // Bootstrap classloader
         list.remove(null);
       } else {
-        for (WeakReference<ClassLoader> wr : list) {
+        for (int i = 0; i < list.size(); i++) {
+          WeakReference<ClassLoader> wr = list.get(i);
           if (wr != null && wr.get() == cl) {
             list.remove(wr);
             break;
@@ -179,7 +182,8 @@ public final class InstrumentationImpl implements Instrumentation {
     if (classloaders == null) {
       return false;
     }
-    for (WeakReference<ClassLoader> wk : classloaders) {
+    for (int i = 0; i < classloaders.size(); i++) {
+      WeakReference<ClassLoader> wk = classloaders.get(i);
       if (wk == null || wk.get() != null) {
         return true;
       }
@@ -194,7 +198,8 @@ public final class InstrumentationImpl implements Instrumentation {
       return null;
     }
     List<ClassLoader> ret = new LinkedList<ClassLoader>();
-    for (WeakReference<ClassLoader> wk : classloaders) {
+    for (int i = 0; i < classloaders.size(); i++) {
+      WeakReference<ClassLoader> wk = classloaders.get(i);
       if (wk == null) {
         ret.add(null);
       } else {
@@ -214,7 +219,8 @@ public final class InstrumentationImpl implements Instrumentation {
       return null;
     }
     try {
-      for (WeakReference<ClassLoader> wk : classloaders) {
+       for (int i = 0; i < classloaders.size(); i++) {
+      WeakReference<ClassLoader> wk = classloaders.get(i);
         if (cl == null) {
           if (wk == null) {
             return Class.forName(name, false, null);
@@ -238,7 +244,8 @@ public final class InstrumentationImpl implements Instrumentation {
     if (classloaders == null) {
       return false;
     }
-    for (WeakReference<ClassLoader> wk : classloaders) {
+     for (int i = 0; i < classloaders.size(); i++) {
+      WeakReference<ClassLoader> wk = classloaders.get(i);
       if (cl == null) {
         if (wk == null) {
           return true;

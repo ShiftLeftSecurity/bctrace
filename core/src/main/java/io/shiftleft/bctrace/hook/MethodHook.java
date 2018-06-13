@@ -25,16 +25,16 @@
 package io.shiftleft.bctrace.hook;
 
 import io.shiftleft.bctrace.filter.MethodFilter;
-import io.shiftleft.bctrace.runtime.listener.specific.DynamicListener;
+import io.shiftleft.bctrace.runtime.listener.specific.DirectListener;
 
 /**
  * A hook targeted exclusively to a concrete method.
  *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public class MethodHook extends DynamicHook<MethodFilter, DynamicListener> {
+public class MethodHook extends DirectHook<MethodFilter, DirectListener> {
 
-  public MethodHook(MethodFilter filter, DynamicListener listener) {
+  public MethodHook(MethodFilter filter, DirectListener listener) {
     super(filter, listener, filter.getMethodDescriptor());
   }
 }

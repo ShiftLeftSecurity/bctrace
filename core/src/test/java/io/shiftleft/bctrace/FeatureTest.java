@@ -26,17 +26,23 @@ package io.shiftleft.bctrace;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import io.shiftleft.bctrace.TestClass.TestRuntimeException;
 import io.shiftleft.bctrace.filter.AllFilter;
 import io.shiftleft.bctrace.filter.Filter;
+import io.shiftleft.bctrace.filter.MethodFilter;
 import io.shiftleft.bctrace.hook.CallSiteHook;
+import io.shiftleft.bctrace.hook.GenericHook;
 import io.shiftleft.bctrace.hook.Hook;
-import io.shiftleft.bctrace.runtime.listener.Listener;
+import io.shiftleft.bctrace.hook.MethodHook;
 import io.shiftleft.bctrace.runtime.listener.generic.BeforeThrownListener;
+import io.shiftleft.bctrace.runtime.listener.generic.GenericListener;
+import io.shiftleft.bctrace.runtime.listener.generic.ReturnListener;
 import io.shiftleft.bctrace.runtime.listener.generic.StartListener;
 import io.shiftleft.bctrace.runtime.listener.specific.CallSiteListener;
+import io.shiftleft.bctrace.runtime.listener.specific.DirectListener;
 import java.lang.reflect.InvocationTargetException;
 import org.junit.Test;
 
@@ -49,14 +55,14 @@ public class FeatureTest extends BcTraceTest {
   public void testStart() throws Exception {
     final StringBuilder steps = new StringBuilder();
     Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
-        new Hook() {
+        new GenericHook() {
           @Override
           public Filter getFilter() {
             return new AllFilter();
           }
 
           @Override
-          public Listener getListener() {
+          public GenericListener getListener() {
             return new StartListener() {
               @Override
               public void onStart(int methodId, Class clazz, Object instance, Object[] args) {
@@ -66,14 +72,14 @@ public class FeatureTest extends BcTraceTest {
             };
           }
         },
-        new Hook() {
+        new GenericHook() {
           @Override
           public Filter getFilter() {
             return new AllFilter();
           }
 
           @Override
-          public Listener getListener() {
+          public GenericListener getListener() {
             return new StartListener() {
 
               @Override
@@ -88,6 +94,52 @@ public class FeatureTest extends BcTraceTest {
     clazz.getMethod("execVoid").invoke(null);
     System.out.println(clazz.getClassLoader());
     assertEquals("12", steps.toString());
+  }
+
+  @Test
+  public void testReturn() throws Exception {
+    final StringBuilder steps = new StringBuilder();
+    Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
+        new GenericHook() {
+          @Override
+          public Filter getFilter() {
+            return new AllFilter();
+          }
+
+          @Override
+          public GenericListener getListener() {
+            return new ReturnListener() {
+              @Override
+              public void onFinish(int methodId, Class clazz, Object instance, Object[] args,
+                  Object ret) {
+                assertEquals(clazz.getName(), TestClass.class.getName());
+                steps.append("1");
+              }
+            };
+          }
+        },
+        new GenericHook() {
+          @Override
+          public Filter getFilter() {
+            return new AllFilter();
+          }
+
+          @Override
+          public GenericListener getListener() {
+            return new ReturnListener() {
+              @Override
+              public void onFinish(int methodId, Class clazz, Object instance, Object[] args,
+                  Object ret) {
+                assertEquals(clazz.getName(), TestClass.class.getName());
+                steps.append("2");
+              }
+            };
+          }
+        }
+    });
+    clazz.getMethod("execVoid").invoke(null);
+    System.out.println(clazz.getClassLoader());
+    assertEquals("21", steps.toString());
   }
 
   public static class CallSiteListener1 extends CallSiteListener {
@@ -114,7 +166,7 @@ public class FeatureTest extends BcTraceTest {
     }
 
     @ListenerMethod(type = ListenerType.onBeforeCall)
-    public void onBeforeCall(int methodId, Class clazz, Object instance,
+    public void onBeforeCall(Class clazz, Object instance,
         Object callSiteInstance, Object src, int srcPos,
         Object dest, int destPos,
         int length) {
@@ -151,7 +203,7 @@ public class FeatureTest extends BcTraceTest {
     }
 
     @ListenerMethod(type = ListenerType.onBeforeCall)
-    public void onBeforeCall(int methodId, Class clazz, Object instance,
+    public void onBeforeCall(Class clazz, Object instance,
         Object callSiteInstance, Object src, int srcPos,
         Object dest, int destPos,
         int length) {
@@ -166,30 +218,222 @@ public class FeatureTest extends BcTraceTest {
 
   @Test
   public void testCallSite() throws Exception {
-    final long aLong = System.currentTimeMillis();
     StringBuilder sb = new StringBuilder();
     CallSiteListener1 callSiteListener1 = new CallSiteListener1(sb);
     CallSiteListener2 callSiteListener2 = new CallSiteListener2(sb);
     Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
         new CallSiteHook(new AllFilter(), callSiteListener1),
         new CallSiteHook(new AllFilter(), callSiteListener2)
-    }, true);
+    }, false);
 
     clazz.getMethod("arrayCopyWrapper2").invoke(null);
     assertEquals("12", sb.toString());
   }
 
+  public static class DirectListener1 extends DirectListener {
+
+    private final StringBuilder sb;
+
+    public DirectListener1(StringBuilder sb) {
+      this.sb = sb;
+    }
+
+    @ListenerMethod(type = ListenerType.onStart)
+    public void onBeforeCall(Class clazz, Object instance, String[] array1, String[] array2) {
+      sb.append("1");
+      assertEquals(clazz.getName(), TestClass.class.getName());
+      assertNull(instance);
+      assertNotNull(array1);
+      assertNotNull(array2);
+    }
+  }
+
+  public static class DirectListener2 extends DirectListener {
+
+    private final StringBuilder sb;
+
+    public DirectListener2(StringBuilder sb) {
+      this.sb = sb;
+    }
+
+    @ListenerMethod(type = ListenerType.onStart)
+    public void onBeforeCall(Class clazz, Object instance, String[] array1, String[] array2) {
+      sb.append("2");
+      assertEquals(clazz.getName(), TestClass.class.getName());
+      assertNull(instance);
+      assertNotNull(array1);
+      assertNotNull(array2);
+    }
+  }
+
+  @Test
+  public void testDirectStart() throws Exception {
+    StringBuilder sb = new StringBuilder();
+    DirectListener listener1 = new DirectListener1(sb);
+    DirectListener listener2 = new DirectListener2(sb);
+    Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
+        new MethodHook(new MethodFilter("io/shiftleft/bctrace/TestClass", "concatenateStringArrays",
+            "([Ljava/lang/String;[Ljava/lang/String;)[Ljava/lang/String;"), listener1),
+        new MethodHook(new MethodFilter("io/shiftleft/bctrace/TestClass", "concatenateStringArrays",
+            "([Ljava/lang/String;[Ljava/lang/String;)[Ljava/lang/String;"), listener2)
+    }, false);
+
+    String[] s1 = {"a", "b"};
+    String[] s2 = {"c", "d"};
+    clazz.getMethod("concatenateStringArrays", String[].class, String[].class).invoke(null, s1, s2);
+    assertEquals("12", sb.toString());
+  }
+
+  public static class DirectListener3 extends DirectListener {
+
+    private final StringBuilder sb;
+
+    public DirectListener3(StringBuilder sb) {
+      this.sb = sb;
+    }
+
+    @ListenerMethod(type = ListenerType.onFinish)
+    public void onFinish(Class clazz, Object instance, String[] array1, String[] array2,
+        String[] ret) {
+      sb.append("1");
+      assertEquals(clazz.getName(), TestClass.class.getName());
+      assertNull(instance);
+      assertNotNull(array1);
+      assertNotNull(array2);
+      assertTrue(array1.length + array2.length == ret.length);
+    }
+  }
+
+  public static class DirectListener4 extends DirectListener {
+
+    private final StringBuilder sb;
+
+    public DirectListener4(StringBuilder sb) {
+      this.sb = sb;
+    }
+
+    @ListenerMethod(type = ListenerType.onFinish)
+    public void onFinish(Class clazz, Object instance, String[] array1, String[] array2,
+        String[] ret) {
+      sb.append("2");
+      assertEquals(clazz.getName(), TestClass.class.getName());
+      assertNull(instance);
+      assertNotNull(array1);
+      assertNotNull(array2);
+      assertTrue(array1.length + array2.length == ret.length);
+    }
+  }
+
+  @Test
+  public void testDirectReturn() throws Exception {
+    StringBuilder sb = new StringBuilder();
+    DirectListener listener3 = new DirectListener3(sb);
+    DirectListener listener4 = new DirectListener4(sb);
+    Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
+        new MethodHook(new MethodFilter("io/shiftleft/bctrace/TestClass", "concatenateStringArrays",
+            "([Ljava/lang/String;[Ljava/lang/String;)[Ljava/lang/String;"), listener3),
+        new MethodHook(new MethodFilter("io/shiftleft/bctrace/TestClass", "concatenateStringArrays",
+            "([Ljava/lang/String;[Ljava/lang/String;)[Ljava/lang/String;"), listener4)
+    }, false);
+
+    String[] s1 = {"a", "b"};
+    String[] s2 = {"c", "d"};
+    clazz.getMethod("concatenateStringArrays", String[].class, String[].class).invoke(null, s1, s2);
+    assertEquals("21", sb.toString());
+  }
+
+  public static class DirectListenerVoid extends DirectListener {
+
+    private final StringBuilder sb;
+
+    public DirectListenerVoid(StringBuilder sb) {
+      this.sb = sb;
+    }
+
+    @ListenerMethod(type = ListenerType.onFinish)
+    public void onFinish(Class clazz, Object instance) {
+      sb.append("1");
+      assertEquals(clazz.getName(), TestClass.class.getName());
+      assertNull(instance);
+    }
+  }
+
+  @Test
+  public void testDirectReturnVoid() throws Exception {
+    StringBuilder sb = new StringBuilder();
+    DirectListener listener = new DirectListenerVoid(sb);
+    Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
+        new MethodHook(new MethodFilter("io/shiftleft/bctrace/TestClass", "doFrames",
+            "()V"), listener)
+    }, false);
+    clazz.getMethod("doFrames").invoke(null);
+    assertEquals("1", sb.toString());
+  }
+
+  public static class AfterCallSiteListener extends CallSiteListener {
+
+    private final String token;
+    private final StringBuilder sb;
+
+    public AfterCallSiteListener(String token, StringBuilder sb) {
+      this.token = token;
+      this.sb = sb;
+    }
+
+    @Override
+    public String getCallSiteClassName() {
+      return "java/lang/System";
+    }
+
+    @Override
+    public String getCallSiteMethodName() {
+      return "arraycopy";
+    }
+
+    @Override
+    public String getCallSiteMethodDescriptor() {
+      return "(Ljava/lang/Object;ILjava/lang/Object;II)V";
+    }
+
+    @ListenerMethod(type = ListenerType.onAfterCall)
+    public void onBeforeCall(Class clazz, Object instance,
+        Object callSiteInstance, Object src, int srcPos,
+        Object dest, int destPos,
+        int length) {
+      sb.append(token);
+      assertEquals(clazz.getName(), TestClass.class.getName());
+      assertEquals(instance.getClass().getName(), TestClass.class.getName());
+      assertTrue(callSiteInstance == null);
+      assertNotNull(src);
+      assertNotNull(dest);
+    }
+  }
+
+  @Test
+  public void testAfterCallSite() throws Exception {
+    StringBuilder sb = new StringBuilder();
+    AfterCallSiteListener l1 = new AfterCallSiteListener("1", sb);
+    AfterCallSiteListener l2 = new AfterCallSiteListener("2", sb);
+    Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
+        new CallSiteHook(new AllFilter(), l1),
+        new CallSiteHook(new AllFilter(), l2)
+    }, false);
+
+    clazz.getMethod("arrayCopyWrapper2").invoke(null);
+    assertEquals("21", sb.toString());
+  }
+
   @Test
   public void testConstructor() throws Exception {
     Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
-        new Hook() {
+        new GenericHook() {
           @Override
           public Filter getFilter() {
             return new AllFilter();
           }
 
           @Override
-          public Listener getListener() {
+          public GenericListener getListener() {
             return null;
           }
         }
@@ -201,14 +445,14 @@ public class FeatureTest extends BcTraceTest {
   public void testThrown() throws Exception {
     final StringBuilder steps = new StringBuilder();
     Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
-        new Hook() {
+        new GenericHook() {
           @Override
           public Filter getFilter() {
             return new AllFilter();
           }
 
           @Override
-          public Listener getListener() {
+          public GenericListener getListener() {
             return new BeforeThrownListener() {
               @Override
               public void onBeforeThrown(int methodId, Class clazz, Object instance, Throwable th) {
@@ -219,14 +463,14 @@ public class FeatureTest extends BcTraceTest {
             };
           }
         },
-        new Hook() {
+        new GenericHook() {
           @Override
           public Filter getFilter() {
             return new AllFilter();
           }
 
           @Override
-          public Listener getListener() {
+          public GenericListener getListener() {
             return new BeforeThrownListener() {
               @Override
               public void onBeforeThrown(int methodId, Class clazz, Object instance, Throwable th) {
@@ -263,7 +507,7 @@ public class FeatureTest extends BcTraceTest {
 //
 //        @Override
 //        public Listener getListener() {
-//          return new FinishReturnListener() {
+//          return new ReturnListener() {
 //            @Override
 //            public void onFinishedReturn(int methodId, Object instance, Object ret) {
 //              assertNull(ret);
@@ -297,7 +541,7 @@ public class FeatureTest extends BcTraceTest {
 //
 //        @Override
 //        public Listener getListener() {
-//          return new FinishReturnListener() {
+//          return new ReturnListener() {
 //            @Override
 //            public void onFinishedReturn(int methodId, Object instance, Object ret) {
 //              assertNull(ret);
@@ -325,7 +569,7 @@ public class FeatureTest extends BcTraceTest {
 //
 //        @Override
 //        public Listener getListener() {
-//          return new FinishReturnListener() {
+//          return new ReturnListener() {
 //            @Override
 //            public void onFinishedReturn(int methodId, Object instance, Object ret) {
 //              assertNotNull(ret);
@@ -389,7 +633,7 @@ public class FeatureTest extends BcTraceTest {
 //
 //        @Override
 //        public Listener getListener() {
-//          return new FinishReturnListener() {
+//          return new ReturnListener() {
 //            @Override
 //            public void onFinishedReturn(int methodId, Object instance, Object ret) {
 //              assertNotNull(ret);

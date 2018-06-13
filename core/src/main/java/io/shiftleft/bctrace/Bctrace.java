@@ -33,7 +33,6 @@ import io.shiftleft.bctrace.logging.AgentLoggerFactory;
 import io.shiftleft.bctrace.logging.Level;
 import io.shiftleft.bctrace.logging.Logger;
 import io.shiftleft.bctrace.runtime.Callback;
-import io.shiftleft.bctrace.runtime.listener.Listener;
 import java.net.URL;
 
 /**
@@ -66,7 +65,7 @@ public final class Bctrace {
   public void init() {
     if (agent != null) {
       agent.init(this);
-      Listener[] listeners = new Listener[hooks.length];
+      Object[] listeners = new Object[hooks.length];
       for (int i = 0; i < hooks.length; i++) {
         listeners[i] = this.hooks[i].getListener();
       }

@@ -24,12 +24,10 @@
  */
 package io.shiftleft.bctrace.runtime.listener.generic;
 
-import io.shiftleft.bctrace.runtime.listener.Listener;
-
 /**
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public interface StartListener extends Listener {
+public abstract class StartListener extends GenericListener {
 
 /**
    * Invoked by instrumented methods before any of its original instructions (if
@@ -42,5 +40,5 @@ public interface StartListener extends Listener {
    * @param args arguments passed to the method. 
    * returns false;
    */
-  public void onStart(int methodId, Class clazz, Object instance, Object[] args);
+  public abstract void onStart(int methodId, Class clazz, Object instance, Object[] args);
 }

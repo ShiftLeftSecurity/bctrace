@@ -24,9 +24,8 @@
  */
 package io.shiftleft.bctrace.runtime;
 
-import io.shiftleft.bctrace.runtime.listener.Listener;
 import io.shiftleft.bctrace.runtime.listener.generic.BeforeThrownListener;
-import io.shiftleft.bctrace.runtime.listener.generic.FinishReturnListener;
+import io.shiftleft.bctrace.runtime.listener.generic.ReturnListener;
 import io.shiftleft.bctrace.runtime.listener.generic.StartListener;
 
 /**
@@ -37,7 +36,7 @@ public final class Callback {
   private static final ThreadLocal<Boolean> NOTIFY_DISABLED_FLAG = new ThreadLocal<Boolean>();
   private static final ThreadLocal<Boolean> NOTIFYING_FLAG = new ThreadLocal<Boolean>();
 
-  public static Listener[] listeners;
+  public static Object[] listeners;
 
   @SuppressWarnings("BoxedValueEquality")
   public static void onStart(Object[] args, int methodId, Class clazz, Object instance, int i) {
@@ -56,7 +55,7 @@ public final class Callback {
   }
 
   @SuppressWarnings("BoxedValueEquality")
-  public static void onFinishedReturn(Object ret, int methodId, Class clazz, Object instance,
+  public static void onFinish(Object ret, int methodId, Class clazz, Object instance,
       int i, Object[] args) {
     if (!isThreadNotificationEnabled()) {
       return;
@@ -66,8 +65,8 @@ public final class Callback {
     }
     try {
       NOTIFYING_FLAG.set(Boolean.TRUE);
-      ((FinishReturnListener) listeners[i])
-          .onFinishedReturn(methodId, clazz, instance, args, ret);
+      ((ReturnListener) listeners[i])
+          .onFinish(methodId, clazz, instance, args, ret);
     } finally {
       NOTIFYING_FLAG.set(Boolean.FALSE);
     }

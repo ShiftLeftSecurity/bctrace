@@ -22,10 +22,11 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.asm.helper;
+package io.shiftleft.bctrace.asm.helper.generic;
 
+import io.shiftleft.bctrace.asm.helper.Helper;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
-import io.shiftleft.bctrace.runtime.listener.generic.FinishReturnListener;
+import io.shiftleft.bctrace.runtime.listener.generic.ReturnListener;
 import java.util.ArrayList;
 import java.util.Iterator;
 import org.objectweb.asm.Opcodes;
@@ -36,7 +37,6 @@ import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
-import org.objectweb.asm.tree.VarInsnNode;
 
 /**
  * Inserts the bytecode instructions within method node, needed to handle the return listeners
@@ -54,7 +54,7 @@ import org.objectweb.asm.tree.VarInsnNode;
  * public Object foo(Object arg){
  *   Object ret = void(arg);
  *   // Notify listeners that apply to this method
- *   Callback.onFinishedReturn(ret, clazz, this, 0, arg);
+ *   Callback.onFinish(ret, clazz, this, 0, arg);
  *   Callback.onFinishedThrowable(ret, clazz, this, 2, arg);
  *   Callback.onFinishedThrowable(ret, clazz, this, 10, arg);
  *   // Return the original value
@@ -77,15 +77,15 @@ public class ReturnHelper extends Helper {
   private void addReturnTraceWithArguments(int methodId, ClassNode cn, MethodNode mn,
       ArrayList<Integer> hooksToUse) {
     ArrayList<Integer> listenersToUse = getListenersOfType(hooksToUse,
-        FinishReturnListener.class);
+        ReturnListener.class);
     if (!isInstrumentationNeeded(listenersToUse)) {
       return;
     }
-    addReturnTrace(methodId, cn, mn, listenersToUse, true);
+    addReturnTrace(methodId, cn, mn, listenersToUse);
   }
 
   private void addReturnTrace(int methodId, ClassNode cn, MethodNode mn,
-      ArrayList<Integer> listenersToUse, boolean passArgumentsToListener) {
+      ArrayList<Integer> listenersToUse) {
     InsnList il = mn.instructions;
     Iterator<AbstractInsnNode> it = il.iterator();
     Type returnType = Type.getReturnType(mn.desc);
@@ -96,7 +96,7 @@ public class ReturnHelper extends Helper {
       switch (abstractInsnNode.getOpcode()) {
         case Opcodes.RETURN:
           il.insertBefore(abstractInsnNode,
-              getVoidReturnTraceInstructions(methodId, cn, mn, listenersToUse, passArgumentsToListener));
+              getVoidReturnTraceInstructions(methodId, cn, mn, listenersToUse));
           break;
         case Opcodes.IRETURN:
         case Opcodes.LRETURN:
@@ -104,44 +104,33 @@ public class ReturnHelper extends Helper {
         case Opcodes.ARETURN:
         case Opcodes.DRETURN:
           il.insertBefore(abstractInsnNode,
-              getReturnTraceInstructions(methodId, cn, mn, returnType, listenersToUse,
-                  passArgumentsToListener));
+              getReturnTraceInstructions(methodId, cn, mn, returnType, listenersToUse));
       }
     }
   }
 
   private InsnList getVoidReturnTraceInstructions(int methodId, ClassNode cn, MethodNode mn,
-      ArrayList<Integer> listenersToUse, boolean passArgumentsToListener) {
+      ArrayList<Integer> listenersToUse) {
     InsnList il = new InsnList();
     for (int i = listenersToUse.size() - 1; i >= 0; i--) {
       Integer index = listenersToUse.get(i);
       il.add(new InsnNode(Opcodes.ACONST_NULL)); // return value
       il.add(ASMUtils.getPushInstruction(methodId)); // method id
       il.add(getClassConstantReference(Type.getObjectType(cn.name), cn.version)); // class
-      if (ASMUtils.isStatic(mn.access) || mn.name.equals("<init>")) { // current instance
-        il.add(new InsnNode(Opcodes.ACONST_NULL));
-      } else {
-        il.add(new VarInsnNode(Opcodes.ALOAD, 0));
-      }
+      pushInstance(il, mn); // current instance
       il.add(ASMUtils.getPushInstruction(index)); // hook id
 
-      if (passArgumentsToListener) {
-        pushMethodArgsArray(il, mn);
-        il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
-            "io/shiftleft/bctrace/runtime/Callback", "onFinishedReturn",
-            "(Ljava/lang/Object;ILjava/lang/Class;Ljava/lang/Object;I[Ljava/lang/Object;)V",
-            false));
-      } else {
-        il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
-            "io/shiftleft/bctrace/runtime/Callback", "onFinishedReturn",
-            "(Ljava/lang/Object;ILjava/lang/Class;Ljava/lang/Object;I)V", false));
-      }
+      pushMethodArgsArray(il, mn);
+      il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
+          "io/shiftleft/bctrace/runtime/Callback", "onFinish",
+          "(Ljava/lang/Object;ILjava/lang/Class;Ljava/lang/Object;I[Ljava/lang/Object;)V",
+          false));
     }
     return il;
   }
 
   private InsnList getReturnTraceInstructions(int methodId, ClassNode cn, MethodNode mn,
-      Type returnType, ArrayList<Integer> listenersToUse, boolean passArguments) {
+      Type returnType, ArrayList<Integer> listenersToUse) {
     InsnList il = new InsnList();
     for (int i = listenersToUse.size() - 1; i >= 0; i--) {
       Integer index = listenersToUse.get(i);
@@ -156,23 +145,13 @@ public class ReturnHelper extends Helper {
       }
       il.add(ASMUtils.getPushInstruction(methodId)); // method id
       il.add(getClassConstantReference(Type.getObjectType(cn.name), cn.version)); // class
-      if (ASMUtils.isStatic(mn.access) || mn.name.equals("<init>")) { // current instance
-        il.add(new InsnNode(Opcodes.ACONST_NULL));
-      } else {
-        il.add(new VarInsnNode(Opcodes.ALOAD, 0));
-      }
+      pushInstance(il, mn); // current instance
       il.add(ASMUtils.getPushInstruction(index)); // hook id
-      if (passArguments) {
-        pushMethodArgsArray(il, mn);
-        il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
-            "io/shiftleft/bctrace/runtime/Callback", "onFinishedReturn",
-            "(Ljava/lang/Object;ILjava/lang/Class;Ljava/lang/Object;I[Ljava/lang/Object;)V",
-            false));
-      } else {
-        il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
-            "io/shiftleft/bctrace/runtime/Callback", "onFinishedReturn",
-            "(Ljava/lang/Object;ILjava/lang/Class;Ljava/lang/Object;I)V", false));
-      }
+      pushMethodArgsArray(il, mn);
+      il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
+          "io/shiftleft/bctrace/runtime/Callback", "onFinish",
+          "(Ljava/lang/Object;ILjava/lang/Class;Ljava/lang/Object;I[Ljava/lang/Object;)V",
+          false));
     }
     return il;
   }

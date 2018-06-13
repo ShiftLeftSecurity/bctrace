@@ -24,7 +24,6 @@
  */
 package io.shiftleft.bctrace.runtime.listener.specific;
 
-import io.shiftleft.bctrace.runtime.listener.Listener;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -33,10 +32,10 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 
 /**
- * DynamicListener instances are notified directly from the instrumented method without creating
+ * DirectListener instances are notified directly from the instrumented method without creating
  * intermediate object instance. They are used for high performance notification.
  *
- * DynamicListener does not define a fixed interface. They are used in TargetedHooks, and they must
+ * DirectListener does not define a fixed interface. They are used in TargetedHooks, and they must
  * define a single method (with name defined in the ListenerType enum) whose signature matches the
  * signature of the TargetedFilter of the hook in the following way:
  *
@@ -46,12 +45,12 @@ import java.lang.reflect.Modifier;
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  * @ListenerMethod public void onStart(Class clazz, Object instance, Integer arg1, String arg2)
  */
-public abstract class DynamicListener implements Listener {
+public abstract class DirectListener {
 
   private final Method listenerMethod;
   private final ListenerType type;
 
-  public DynamicListener() {
+  public DirectListener() {
     checkAccessibleClass();
     this.listenerMethod = searchListenerMethod();
     this.type = this.listenerMethod.getAnnotation(ListenerMethod.class).type();
@@ -60,7 +59,7 @@ public abstract class DynamicListener implements Listener {
   private void checkAccessibleClass() {
     if (!Modifier.isPublic(getClass().getModifiers())) {
       throw new Error("Error found in " + getClass()
-          + ". DynamicListener instances need to be defined in a public accessible class");
+          + ". DirectListener instances need to be defined in a public accessible class");
     }
   }
 
@@ -93,24 +92,40 @@ public abstract class DynamicListener implements Listener {
     return type;
   }
 
+  public static enum DynamicArgsType {
+    ARGUMENTS_AND_RETURN_TYPE,
+    ARGUMENTS
+  }
+
   /**
    * Defines the valid names for the listener method, and its fixed first arguments
    */
   public static enum ListenerType {
 
-    // Method id, Instrumented class, instrumented instance
-    onStart(int.class, Class.class, Object.class),
-    // Method id, caller class, caller instance, callee instance
-    onBeforeCall(int.class, Class.class, Object.class, Object.class);
+    // Instrumented class, instrumented instance
+    onStart(DynamicArgsType.ARGUMENTS, Class.class, Object.class),
+    // Instrumented class, instrumented instance
+    onFinish(DynamicArgsType.ARGUMENTS_AND_RETURN_TYPE, Class.class, Object.class),
+    // Instrumented (caller) class, instrumented instance, callee instance
+    onBeforeCall(DynamicArgsType.ARGUMENTS, Class.class, Object.class, Object.class),
+    // Instrumented (caller) class, instrumented instance, callee instance
+    onAfterCall(DynamicArgsType.ARGUMENTS_AND_RETURN_TYPE, Class.class, Object.class, Object.class);
+
 
     private Class[] fixedArgs;
+    private DynamicArgsType dynamicArgsType;
 
-    ListenerType(Class... fixedArgs) {
+    ListenerType(DynamicArgsType dynamicArgsType, Class... fixedArgs) {
       this.fixedArgs = fixedArgs;
+      this.dynamicArgsType = dynamicArgsType;
     }
 
     public Class[] getFixedArgs() {
       return fixedArgs;
+    }
+
+    public DynamicArgsType getDynamicArgsType() {
+      return dynamicArgsType;
     }
   }
 

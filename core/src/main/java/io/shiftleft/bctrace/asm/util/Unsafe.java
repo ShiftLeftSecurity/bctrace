@@ -37,10 +37,13 @@ public class Unsafe {
     try {
       Field[] fields = sun.misc.Unsafe.class.getDeclaredFields();
       Field instanceField = null;
-      for (Field field : fields) {
-        if (sun.misc.Unsafe.class.isAssignableFrom(field.getType())) {
-          instanceField = field;
-          break;
+      if (fields != null) {
+        for (int i = 0; i < fields.length; i++) {
+          Field field = fields[i];
+          if (sun.misc.Unsafe.class.isAssignableFrom(field.getType())) {
+            instanceField = field;
+            break;
+          }
         }
       }
       if (instanceField == null) {

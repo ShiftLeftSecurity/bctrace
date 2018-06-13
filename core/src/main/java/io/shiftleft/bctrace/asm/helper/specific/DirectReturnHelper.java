@@ -22,10 +22,14 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.asm.helper;
+package io.shiftleft.bctrace.asm.helper.specific;
 
+import io.shiftleft.bctrace.asm.CallbackTransformer;
+import io.shiftleft.bctrace.asm.helper.Helper;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
-import io.shiftleft.bctrace.runtime.listener.generic.BeforeThrownListener;
+import io.shiftleft.bctrace.hook.Hook;
+import io.shiftleft.bctrace.runtime.listener.specific.DirectListener;
+import io.shiftleft.bctrace.runtime.listener.specific.DirectListener.ListenerType;
 import java.util.ArrayList;
 import java.util.Iterator;
 import org.objectweb.asm.Opcodes;
@@ -33,72 +37,71 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.InsnList;
-import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
-import org.objectweb.asm.tree.VarInsnNode;
 
-/**
- * Inserts into the method bytecodes, the instructions needed to notify the registered listeners
- * before a throwable is directly thrown by the target method.
- *
- * This helper turns throw instructions like these:
- * <br><pre>{@code
- * throw aException;
- * }
- * </pre>
- * Into that:
- * <br><pre>{@code
- * // Notify the event to the listeners that apply to this method (suppose methodId 1550)
- * Callback.onBeforeThrown(aException, 1550, clazz, this, 0);
- * Callback.onBeforeThrown(aException, 1550, clazz, this, 2);
- * Callback.onBeforeThrown(aException, 1550, clazz, this, 10);
- * ...
- * throw aException;
- * }
- * @author Ignacio del Valle Alles idelvall@shiftleft.io
- */
-public class ThrowHelper extends Helper {
+public class DirectReturnHelper extends Helper {
 
-
-  public void addByteCodeInstructions(int methodId, ClassNode cn, MethodNode mn,
+  public void addByteCodeInstructions(ClassNode cn, MethodNode mn,
       ArrayList<Integer> hooksToUse) {
-    ArrayList<Integer> listenersToUse = getListenersOfType(hooksToUse,
-        BeforeThrownListener.class);
 
+    ArrayList<Integer> listenersToUse = getDirectListenersOfType(hooksToUse, ListenerType.onFinish);
     if (!isInstrumentationNeeded(listenersToUse)) {
       return;
     }
+    addReturnTrace(cn, mn, listenersToUse);
+  }
+
+  private void addReturnTrace(ClassNode cn, MethodNode mn,
+      ArrayList<Integer> listenersToUse) {
+
     InsnList il = mn.instructions;
     Iterator<AbstractInsnNode> it = il.iterator();
+    Type returnType = Type.getReturnType(mn.desc);
+
     while (it.hasNext()) {
       AbstractInsnNode abstractInsnNode = it.next();
-
       switch (abstractInsnNode.getOpcode()) {
-        case Opcodes.ATHROW:
+        case Opcodes.RETURN:
+        case Opcodes.IRETURN:
+        case Opcodes.LRETURN:
+        case Opcodes.FRETURN:
+        case Opcodes.ARETURN:
+        case Opcodes.DRETURN:
           il.insertBefore(abstractInsnNode,
-              getThrowTraceInstructions(methodId, cn, mn, listenersToUse));
-          break;
+              getReturnTraceInstructions(cn, mn, returnType, listenersToUse));
       }
     }
   }
 
-  private InsnList getThrowTraceInstructions(int methodId, ClassNode cn, MethodNode mn,
-      ArrayList<Integer> listenersToUse) {
+  private InsnList getReturnTraceInstructions(ClassNode cn, MethodNode mn,
+      Type returnType, ArrayList<Integer> listenersToUse) {
     InsnList il = new InsnList();
-    for (Integer index : listenersToUse) {
-      il.add(new InsnNode(Opcodes.DUP)); // dup throwable
-      il.add(ASMUtils.getPushInstruction(methodId)); // method id
-      il.add(getClassConstantReference(Type.getObjectType(cn.name), cn.version));
-      if (ASMUtils.isStatic(mn.access) || mn.name.equals("<init>")) { // current instance
-        il.add(new InsnNode(Opcodes.ACONST_NULL));
-      } else {
-        il.add(new VarInsnNode(Opcodes.ALOAD, 0));
-      }
+    Hook[] hooks = bctrace.getHooks();
+    int returnVarIndex = mn.maxLocals;
+    if (!returnType.getDescriptor().equals("V")) {
+      mn.maxLocals = mn.maxLocals + returnType.getSize();
+      il.add(ASMUtils.getStoreInst(returnType, returnVarIndex));
+    }
+    for (int i = listenersToUse.size() - 1; i >= 0; i--) {
+      Integer index = listenersToUse.get(i);
+      DirectListener listener = (DirectListener) hooks[index].getListener();
       il.add(ASMUtils.getPushInstruction(index)); // hook id
+      il.add(getClassConstantReference(Type.getObjectType(cn.name), cn.version)); // caller class
+      pushInstance(il, mn); // current instance
+      pushMethodArgs(il, mn); // method args
+      if (!returnType.getDescriptor().equals("V")) {
+        il.add(ASMUtils.getLoadInst(returnType, returnVarIndex));
+      }
+      // Invoke dynamically generated callback method. See CallbackTransformer
       il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
-          "io/shiftleft/bctrace/runtime/Callback", "onBeforeThrown",
-          "(Ljava/lang/Throwable;ILjava/lang/Class;Ljava/lang/Object;I)V", false));
+          "io/shiftleft/bctrace/runtime/Callback",
+          CallbackTransformer.getDynamicListenerMethodName(listener),
+          CallbackTransformer.getDynamicListenerMethodDescriptor(listener),
+          false));
+      if (!returnType.getDescriptor().equals("V")) {
+        il.add(ASMUtils.getLoadInst(returnType, returnVarIndex));
+      }
     }
     return il;
   }

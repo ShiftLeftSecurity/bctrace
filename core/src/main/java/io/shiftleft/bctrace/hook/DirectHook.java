@@ -1,19 +1,20 @@
 package io.shiftleft.bctrace.hook;
 
 import io.shiftleft.bctrace.filter.Filter;
-import io.shiftleft.bctrace.runtime.listener.specific.DynamicListener;
-import io.shiftleft.bctrace.runtime.listener.specific.DynamicListener.ListenerMethod;
-import io.shiftleft.bctrace.runtime.listener.specific.DynamicListener.ListenerType;
+import io.shiftleft.bctrace.runtime.listener.specific.DirectListener;
+import io.shiftleft.bctrace.runtime.listener.specific.DirectListener.DynamicArgsType;
+import io.shiftleft.bctrace.runtime.listener.specific.DirectListener.ListenerMethod;
+import io.shiftleft.bctrace.runtime.listener.specific.DirectListener.ListenerType;
 import java.lang.reflect.Method;
 import org.objectweb.asm.Type;
 
-public abstract class DynamicHook<F extends Filter, L extends DynamicListener> implements
+public abstract class DirectHook<F extends Filter, L extends DirectListener> extends
     Hook<F, L> {
 
   private final F filter;
   private final L listener;
 
-  protected DynamicHook(F filter, L listener, String methodDescriptor) {
+  protected DirectHook(F filter, L listener, String methodDescriptor) {
     this.filter = filter;
     this.listener = listener;
     checkListenerMethod(methodDescriptor);
@@ -31,6 +32,7 @@ public abstract class DynamicHook<F extends Filter, L extends DynamicListener> i
 
   private void checkListenerMethod(String methodDescriptor) {
     Type[] argumentTypes = Type.getArgumentTypes(methodDescriptor);
+    Type returnType = Type.getReturnType(methodDescriptor);
     Method listenerMethod = this.listener.getListenerMethod();
     ListenerMethod annotation = listenerMethod.getAnnotation(ListenerMethod.class);
     if (annotation == null) {
@@ -46,8 +48,7 @@ public abstract class DynamicHook<F extends Filter, L extends DynamicListener> i
               .getName()
               + "." + listenerMethod.getName() + "`");
     }
-    if (!checkDynamicArgs(argumentTypes, listenerMethod.getParameterTypes(),
-        type.getFixedArgs().length)) {
+    if (!checkDynamicArgs(argumentTypes, returnType, listenerMethod.getParameterTypes(), type)) {
       throw new Error(
           "Arguments of @ListenerMethod `" + listenerMethod.getDeclaringClass()
               .getName()
@@ -68,11 +69,12 @@ public abstract class DynamicHook<F extends Filter, L extends DynamicListener> i
     return true;
   }
 
-  private static boolean checkDynamicArgs(Type[] argumentTypes, Class[] listenerMethodArgs,
-      int start) {
-    if (argumentTypes == null) {
-      return start == listenerMethodArgs.length;
-    } else {
+  private static boolean checkDynamicArgs(Type[] argumentTypes, Type returnType,
+      Class[] listenerMethodArgs,
+      ListenerType type) {
+    int start = type.getFixedArgs().length;
+    if (type.getDynamicArgsType() == DynamicArgsType.ARGUMENTS || returnType.getDescriptor()
+        .equals("V")) {
       if (start + argumentTypes.length != listenerMethodArgs.length) {
         return false;
       }
@@ -80,6 +82,19 @@ public abstract class DynamicHook<F extends Filter, L extends DynamicListener> i
         if (!argumentTypes[i].equals(Type.getType(listenerMethodArgs[i + start]))) {
           return false;
         }
+      }
+      return true;
+    } else {
+      if (start + argumentTypes.length + 1 != listenerMethodArgs.length) {
+        return false;
+      }
+      for (int i = 0; i < argumentTypes.length; i++) {
+        if (!argumentTypes[i].equals(Type.getType(listenerMethodArgs[i + start]))) {
+          return false;
+        }
+      }
+      if (!returnType.equals(Type.getType(listenerMethodArgs[argumentTypes.length + start]))) {
+        return false;
       }
       return true;
     }

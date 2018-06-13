@@ -29,14 +29,17 @@ import io.shiftleft.bctrace.InstrumentationImpl;
 import io.shiftleft.bctrace.MethodInfo;
 import io.shiftleft.bctrace.MethodRegistry;
 import io.shiftleft.bctrace.SystemProperty;
-import io.shiftleft.bctrace.asm.helper.CallSiteHelper;
-import io.shiftleft.bctrace.asm.helper.NativeWrapperHelper;
-import io.shiftleft.bctrace.asm.helper.ReturnHelper;
-import io.shiftleft.bctrace.asm.helper.StartHelper;
-import io.shiftleft.bctrace.asm.helper.ThrowHelper;
+import io.shiftleft.bctrace.asm.helper.generic.NativeWrapperHelper;
+import io.shiftleft.bctrace.asm.helper.generic.ReturnHelper;
+import io.shiftleft.bctrace.asm.helper.generic.StartHelper;
+import io.shiftleft.bctrace.asm.helper.generic.ThrowHelper;
+import io.shiftleft.bctrace.asm.helper.specific.CallSiteHelper;
+import io.shiftleft.bctrace.asm.helper.specific.DirectReturnHelper;
+import io.shiftleft.bctrace.asm.helper.specific.DirectStartHelper;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
 import io.shiftleft.bctrace.debug.DebugInfo;
 import io.shiftleft.bctrace.hierarchy.UnloadedClass;
+import io.shiftleft.bctrace.hook.GenericHook;
 import io.shiftleft.bctrace.hook.Hook;
 import io.shiftleft.bctrace.logging.Level;
 import io.shiftleft.bctrace.runtime.Callback;
@@ -68,6 +71,8 @@ public class Transformer implements ClassFileTransformer {
   private final ReturnHelper returnHelper = new ReturnHelper();
   private final ThrowHelper throwHelper = new ThrowHelper();
   private final CallSiteHelper callSiteHelper = new CallSiteHelper();
+  private final DirectStartHelper directStartHelper = new DirectStartHelper();
+  private final DirectReturnHelper directReturnHelper = new DirectReturnHelper();
   private final NativeWrapperHelper nativeWrapperHelper = new NativeWrapperHelper();
 
   static {
@@ -100,6 +105,8 @@ public class Transformer implements ClassFileTransformer {
     this.returnHelper.setBctrace(bctrace);
     this.throwHelper.setBctrace(bctrace);
     this.callSiteHelper.setBctrace(bctrace);
+    this.directStartHelper.setBctrace(bctrace);
+    this.directReturnHelper.setBctrace(bctrace);
     this.nativeWrapperHelper.setBctrace(bctrace);
 
   }
@@ -244,9 +251,11 @@ public class Transformer implements ClassFileTransformer {
     List<MethodNode> methods = cn.methods;
     boolean transformed = false;
     List<MethodNode> newMethods = new ArrayList<MethodNode>();
-    for (MethodNode mn : methods) {
+    for (int m = 0; m < methods.size(); m++) {
+      MethodNode mn = methods.get(m);
       ArrayList<Integer> hooksToUse = new ArrayList<Integer>(matchingHooks.size());
-      for (Integer i : matchingHooks) {
+      for (int h = 0; h < matchingHooks.size(); h++) {
+        Integer i = matchingHooks.get(h);
         if (hooks[i] != null && hooks[i].getFilter() != null && hooks[i].getFilter()
             .instrumentMethod(ci, mn)) {
           hooksToUse.add(i);
@@ -256,8 +265,10 @@ public class Transformer implements ClassFileTransformer {
         continue;
       }
       if (!hooksToUse.isEmpty()) {
+        boolean useGeneric = false;
         // Add additional hooks
-        for (Integer i : matchingHooks) {
+        for (int h = 0; h < matchingHooks.size(); h++) {
+          Integer i = matchingHooks.get(h);
           if (hooks[i].getFilter() == null) {
             hooksToUse.add(i);
           }
@@ -283,20 +294,31 @@ public class Transformer implements ClassFileTransformer {
       ArrayList<Integer> hooksToUse,
       List<MethodNode> newMethods) {
 
-    Integer methodId = MethodRegistry.getInstance().registerMethodId(MethodInfo.from(cn.name, mn));
-
-    if (DebugInfo.getInstance() != null) {
-      DebugInfo.getInstance().setInstrumented(methodId, true);
+    boolean hasGenericHooks = false;
+    for (int h = 0; h < hooksToUse.size(); h++) {
+      Integer i = hooksToUse.get(h);
+      Hook hook = hooks[i];
+      if (hooks[i] instanceof GenericHook) {
+        hasGenericHooks = true;
+        break;
+      }
     }
-
     if (ASMUtils.isNative(mn.access)) {
       nativeWrapperHelper.createWrapperImpl(cn, mn, nativeWrapperPrefix, newMethods);
     }
+    if (hasGenericHooks) {
+      Integer methodId = MethodRegistry.getInstance()
+          .registerMethodId(MethodInfo.from(cn.name, mn));
 
-    // These are the actual bytecode modifications performed by Bctrace:
-    startHelper.addByteCodeInstructions(methodId, cn, mn, hooksToUse);
-    returnHelper.addByteCodeInstructions(methodId, cn, mn, hooksToUse);
-    throwHelper.addByteCodeInstructions(methodId, cn, mn, hooksToUse);
-    callSiteHelper.addByteCodeInstructions(methodId, cn, mn, hooksToUse);
+      if (DebugInfo.getInstance() != null) {
+        DebugInfo.getInstance().setInstrumented(methodId, true);
+      }
+      startHelper.addByteCodeInstructions(methodId, cn, mn, hooksToUse);
+      returnHelper.addByteCodeInstructions(methodId, cn, mn, hooksToUse);
+      throwHelper.addByteCodeInstructions(methodId, cn, mn, hooksToUse);
+    }
+    callSiteHelper.addByteCodeInstructions(cn, mn, hooksToUse);
+    directStartHelper.addByteCodeInstructions(cn, mn, hooksToUse);
+    directReturnHelper.addByteCodeInstructions(cn, mn, hooksToUse);
   }
 }

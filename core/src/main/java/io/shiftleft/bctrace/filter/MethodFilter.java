@@ -25,6 +25,7 @@
 package io.shiftleft.bctrace.filter;
 
 import io.shiftleft.bctrace.hierarchy.BctraceClass;
+import java.security.ProtectionDomain;
 import org.objectweb.asm.tree.MethodNode;
 
 /**
@@ -54,6 +55,12 @@ public class MethodFilter extends Filter {
 
   public String getMethodDescriptor() {
     return methodDescriptor;
+  }
+
+  @Override
+  public boolean instrumentClass(String className, ProtectionDomain protectionDomain,
+      ClassLoader cl) {
+    return this.className.equals(className);
   }
 
   @Override

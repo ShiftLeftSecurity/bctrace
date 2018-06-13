@@ -24,14 +24,11 @@
  */
 package io.shiftleft.bctrace.runtime.listener.generic;
 
-import io.shiftleft.bctrace.runtime.listener.Listener;
-
 /**
  *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public interface BeforeThrownListener extends Listener {
-
+  public abstract class BeforeThrownListener extends GenericListener {
   /**
    * Invoked by instrumented methods just before the actual method throws a
    * throwable.
@@ -41,6 +38,6 @@ public interface BeforeThrownListener extends Listener {
    * @param instance instance where the method is invoked. Null if the method is static
    * @param th throwable to be thrown
    */
-  public void onBeforeThrown(int methodId, Class clazz, Object instance, Throwable th);
+  public abstract void onBeforeThrown(int methodId, Class clazz, Object instance, Throwable th);
 
 }

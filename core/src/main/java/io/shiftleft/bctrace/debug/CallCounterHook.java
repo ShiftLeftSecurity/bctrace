@@ -24,7 +24,7 @@
  */
 package io.shiftleft.bctrace.debug;
 
-import io.shiftleft.bctrace.runtime.listener.Listener;
+import io.shiftleft.bctrace.hook.GenericHook;
 import io.shiftleft.bctrace.runtime.listener.generic.StartListener;
 import io.shiftleft.bctrace.filter.Filter;
 import io.shiftleft.bctrace.hook.Hook;
@@ -32,9 +32,9 @@ import io.shiftleft.bctrace.hook.Hook;
 /**
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public class CallCounterHook implements Hook {
+public class CallCounterHook extends GenericHook<Filter, StartListener> {
 
-  private final Listener listener = new StartListener() {
+  private final StartListener listener = new StartListener() {
     @Override
     public void onStart(int methodId, Class clazz, Object instance, Object[] args) {
       DebugInfo.getInstance().increaseCallCounter(methodId);
@@ -48,7 +48,7 @@ public class CallCounterHook implements Hook {
   }
 
   @Override
-  public Listener getListener() {
+  public StartListener getListener() {
     return listener;
   }
 }

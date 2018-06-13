@@ -22,13 +22,14 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.asm.helper;
+package io.shiftleft.bctrace.asm.helper.specific;
 
 import io.shiftleft.bctrace.asm.CallbackTransformer;
+import io.shiftleft.bctrace.asm.helper.Helper;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
 import io.shiftleft.bctrace.hook.Hook;
 import io.shiftleft.bctrace.runtime.listener.specific.CallSiteListener;
-import io.shiftleft.bctrace.runtime.listener.specific.DynamicListener.ListenerType;
+import io.shiftleft.bctrace.runtime.listener.specific.DirectListener.ListenerType;
 import java.util.ArrayList;
 import java.util.Iterator;
 import org.objectweb.asm.Opcodes;
@@ -54,9 +55,9 @@ import org.objectweb.asm.tree.VarInsnNode;
  * </pre>
  * Into that:
  * <br><pre>{@code
- * // Notify the event to the listener that apply to this method (suppose methodId 1550)
- * Callback.onBeforeCallSite(null, new Object[]{src, new Integer(0), target, new Integer(0), new
- * Integer(length)}, 1550, clazz, this, listenerIndex);
+ * // Notify the event to the listener that apply to this method
+ * Callback.onBeforeCallSite(listenerIndex, callerClass, callerInstance, null, src, 0, target, 0,
+ * length);
  * System.arrayCopy(src, 0, target, 0, length);
  * }
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
@@ -64,14 +65,15 @@ import org.objectweb.asm.tree.VarInsnNode;
 public class CallSiteHelper extends Helper {
 
   // Iterates over all instructions and for each call site adds corresponding instructions
-  public void addByteCodeInstructions(int methodId, ClassNode cn, MethodNode mn,
+  public void addByteCodeInstructions(ClassNode cn, MethodNode mn,
       ArrayList<Integer> hooksToUse) {
 
     // Auxiliar local variables
-    int callSiteInstVarIndex = mn.maxLocals;
+    int callSiteInstanceVarIndex = mn.maxLocals;
     mn.maxLocals = mn.maxLocals + 1;
 
-    int[][] localVariablesArgumentMap = getLocalVariablesArgumentMap(mn);
+    int[] returnVariablesMap = getReturnVariablesArgumentMap(mn, hooksToUse);
+    int[][] localVariablesArgumentMap = getLocalVariablesArgumentMap(mn, hooksToUse);
 
     InsnList il = mn.instructions;
     Iterator<AbstractInsnNode> it = il.iterator();
@@ -84,15 +86,26 @@ public class CallSiteHelper extends Helper {
           case Opcodes.INVOKESPECIAL:
           case Opcodes.INVOKEVIRTUAL:
           case Opcodes.INVOKESTATIC:
-            InsnList callSiteInstructions = getBeforeCallSiteInstructions(
-                methodId,
+            InsnList before = getBeforeCallSiteInstructions(
                 cn,
                 mn,
                 callSite,
                 localVariablesArgumentMap,
-                callSiteInstVarIndex);
-            if (callSiteInstructions != null) {
-              il.insertBefore(callSite, callSiteInstructions);
+                callSiteInstanceVarIndex,
+                hooksToUse);
+            if (before != null) {
+              il.insertBefore(callSite, before);
+            }
+            InsnList after = getAfterCallSiteInstructions(
+                cn,
+                mn,
+                callSite,
+                localVariablesArgumentMap,
+                returnVariablesMap,
+                callSiteInstanceVarIndex,
+                hooksToUse);
+            if (after != null) {
+              il.insert(callSite, after);
             }
             break;
         }
@@ -100,44 +113,103 @@ public class CallSiteHelper extends Helper {
     }
   }
 
-  private InsnList getBeforeCallSiteInstructions(int methodId, ClassNode cn, MethodNode mn,
-      MethodInsnNode callSite, int[][] localVariablesArgumentMap, int callSiteInstVarIndex) {
+  private InsnList getBeforeCallSiteInstructions(ClassNode cn, MethodNode mn,
+      MethodInsnNode callSite, int[][] localVariablesArgumentMap, int callSiteInstanceVarIndex,
+      ArrayList<Integer> hooksToUse) {
 
     Type[] argTypes = Type.getArgumentTypes(callSite.desc);
     boolean staticCall = callSite.getOpcode() == Opcodes.INVOKESTATIC;
     InsnList il = new InsnList();
-    for (int i = 0; i < bctrace.getHooks().length; i++) {
+    for (int h = 0; h < hooksToUse.size(); h++) {
+      Integer i = hooksToUse.get(h);
       int[] listenerArgs = localVariablesArgumentMap[i];
       if (listenerArgs != null) {
         CallSiteListener listener = (CallSiteListener) bctrace.getHooks()[i].getListener();
+
         if (listener.getCallSiteClassName().equals(callSite.owner) &&
             listener.getCallSiteMethodName().equals(callSite.name) &&
             listener.getCallSiteMethodDescriptor().equals(callSite.desc)) {
 
-          il.add(createCallSiteVariables(mn, argTypes, staticCall, localVariablesArgumentMap[i],
-              callSiteInstVarIndex));
+          // store local variables both for before call and for after call
+          il.add(storeCallSiteInstanceAndArgsInVariables(mn, argTypes, staticCall,
+              localVariablesArgumentMap[i],
+              callSiteInstanceVarIndex));
 
-          // Method id, caller class, caller instance, callee instance
-          // onBeforeCall(int.class, Class.class, Object.class, Object.class);
+          if (listener.getType() == ListenerType.onBeforeCall) {
+            // caller class, caller instance, callee instance
+            // onBeforeCall(Class.class, Object.class, Object.class);
+            il.add(ASMUtils.getPushInstruction(i)); // hook id
+            il.add(
+                getClassConstantReference(Type.getObjectType(cn.name), cn.version)); // caller class
+            pushInstance(il, mn); // current instance
+            if (callSite.getOpcode() == Opcodes.INVOKESTATIC) { // callee instance
+              il.add(new InsnNode(Opcodes.ACONST_NULL));
+            } else {
+              il.add(new VarInsnNode(Opcodes.ALOAD, callSiteInstanceVarIndex));
+            }
+            // Move local variables to stack
+            for (int j = 0; j < argTypes.length; j++) {
+              Type argType = argTypes[j];
+              il.add(ASMUtils.getLoadInst(argType, localVariablesArgumentMap[i][j]));
+            }
+            // Invoke dynamically generated callback method. See CallbackTransformer
+            il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
+                "io/shiftleft/bctrace/runtime/Callback",
+                CallbackTransformer.getDynamicListenerMethodName(listener),
+                CallbackTransformer.getDynamicListenerMethodDescriptor(listener),
+                false));
+          }
+        }
+      }
+    }
+    return il;
+  }
+
+  private InsnList getAfterCallSiteInstructions(ClassNode cn, MethodNode mn,
+      MethodInsnNode callSite, int[][] localVariablesArgumentMap, int[] returnVariablesMap,
+      int callSiteInstanceVarIndex,
+      ArrayList<Integer> hooksToUse) {
+
+    Type[] argTypes = Type.getArgumentTypes(callSite.desc);
+    Type returnType = Type.getReturnType(callSite.desc);
+    boolean staticCall = callSite.getOpcode() == Opcodes.INVOKESTATIC;
+    InsnList il = new InsnList();
+    for (int h = hooksToUse.size() - 1; h >= 0; h--) {
+      Integer i = hooksToUse.get(h);
+      int[] listenerArgs = localVariablesArgumentMap[i];
+      if (listenerArgs != null) {
+        CallSiteListener listener = (CallSiteListener) bctrace.getHooks()[i].getListener();
+        if (listener.getType() != ListenerType.onAfterCall) {
+          continue;
+        }
+        if (listener.getCallSiteClassName().equals(callSite.owner) &&
+            listener.getCallSiteMethodName().equals(callSite.name) &&
+            listener.getCallSiteMethodDescriptor().equals(callSite.desc)) {
+
+          if (!returnType.getDescriptor().equals("V")) {
+            il.add(ASMUtils.getStoreInst(returnType, returnVariablesMap[i]));
+          }
+
+          // caller class, caller instance, callee instance
+          // onAfterCall(Class.class, Object.class, Object.class);
 
           il.add(ASMUtils.getPushInstruction(i)); // hook id
-          il.add(ASMUtils.getPushInstruction(methodId)); // method id
           il.add(
               getClassConstantReference(Type.getObjectType(cn.name), cn.version)); // caller class
-          if (ASMUtils.isStatic(mn.access) || mn.name.equals("<init>")) { // caller instance
-            il.add(new InsnNode(Opcodes.ACONST_NULL));
-          } else {
-            il.add(new VarInsnNode(Opcodes.ALOAD, 0));
-          }
+          pushInstance(il, mn); // current instance
           if (callSite.getOpcode() == Opcodes.INVOKESTATIC) { // callee instance
             il.add(new InsnNode(Opcodes.ACONST_NULL));
           } else {
-            il.add(new VarInsnNode(Opcodes.ALOAD, callSiteInstVarIndex));
+            il.add(new VarInsnNode(Opcodes.ALOAD, callSiteInstanceVarIndex));
           }
           // Move local variables to stack
           for (int j = 0; j < argTypes.length; j++) {
             Type argType = argTypes[j];
             il.add(ASMUtils.getLoadInst(argType, localVariablesArgumentMap[i][j]));
+          }
+          // Move return value variables to stack
+          if (!returnType.getDescriptor().equals("V")) {
+            il.add(ASMUtils.getLoadInst(returnType, returnVariablesMap[i]));
           }
           // Invoke dynamically generated callback method. See CallbackTransformer
           il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
@@ -152,20 +224,65 @@ public class CallSiteHelper extends Helper {
   }
 
   /**
-   * Returns a int[i][j] holding the indexes for the local variables created for holding the j-th
-   * argument of the i-th listener. Updates maxlocals accordingly.
+   * Returns a int[i] holding the indexes for the local variables created for holding return
+   * value of the i-th listener. Updates maxlocals accordingly.
    */
-  private int[][] getLocalVariablesArgumentMap(MethodNode mn) {
+  private int[] getReturnVariablesArgumentMap(MethodNode mn, ArrayList<Integer> hooksToUse) {
     Hook[] hooks = bctrace.getHooks();
-    int[][] map = new int[hooks.length][];
-    for (int i = 0; i < hooks.length; i++) {
+    int[] map = new int[hooks.length];
+    for (int h = 0; h < hooksToUse.size(); h++) {
+      Integer i = hooksToUse.get(h);
       if (!(hooks[i].getListener() instanceof CallSiteListener)) {
         continue;
       }
       CallSiteListener listener = (CallSiteListener) hooks[i].getListener();
-      if (listener.getType() != ListenerType.onBeforeCall) {
+      if (listener.getType() != ListenerType.onAfterCall) {
         continue;
       }
+      Iterator<AbstractInsnNode> it = mn.instructions.iterator();
+      // We only want to reserve local variables for those listeners that apply to this method:
+      while (it.hasNext()) {
+        AbstractInsnNode node = it.next();
+        if (node instanceof MethodInsnNode) {
+          MethodInsnNode callSite = (MethodInsnNode) node;
+          switch (node.getOpcode()) {
+            case Opcodes.INVOKEINTERFACE:
+            case Opcodes.INVOKESPECIAL:
+            case Opcodes.INVOKEVIRTUAL:
+            case Opcodes.INVOKESTATIC:
+              if (listener.getCallSiteClassName().equals(callSite.owner) &&
+                  listener.getCallSiteMethodName().equals(callSite.name) &&
+                  listener.getCallSiteMethodDescriptor().equals(callSite.desc)) {
+
+                // If here, then this listener will be applied
+                Type returnType = Type.getReturnType(callSite.desc);
+                if (!returnType.getDescriptor().equals("V")) {
+                  map[i] = mn.maxLocals;
+                  mn.maxLocals = mn.maxLocals + returnType.getSize();
+                }
+                break; // continue next listener
+              }
+          }
+        }
+      }
+    }
+    return map;
+  }
+
+
+  /**
+   * Returns a int[i][j] holding the indexes for the local variables created for holding the j-th
+   * argument of the i-th listener. Updates maxlocals accordingly.
+   */
+  private int[][] getLocalVariablesArgumentMap(MethodNode mn, ArrayList<Integer> hooksToUse) {
+    Hook[] hooks = bctrace.getHooks();
+    int[][] map = new int[hooks.length][];
+    for (int h = 0; h < hooksToUse.size(); h++) {
+      Integer i = hooksToUse.get(h);
+      if (!(hooks[i].getListener() instanceof CallSiteListener)) {
+        continue;
+      }
+      CallSiteListener listener = (CallSiteListener) hooks[i].getListener();
       Iterator<AbstractInsnNode> it = mn.instructions.iterator();
       // We only want to reserve local variables for those listeners that apply to this method:
       while (it.hasNext()) {
@@ -210,7 +327,8 @@ public class CallSiteHelper extends Helper {
    * @param argTypes argument types of the current call site
    * @param localVariablesArgumentMap Variable indexes to store each value
    */
-  private InsnList createCallSiteVariables(MethodNode mn, Type[] argTypes, boolean staticCall,
+  private InsnList storeCallSiteInstanceAndArgsInVariables(MethodNode mn, Type[] argTypes,
+      boolean staticCall,
       int[] localVariablesArgumentMap, int callSiteInstVarIndex) {
 
     InsnList il = new InsnList();

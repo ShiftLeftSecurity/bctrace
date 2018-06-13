@@ -24,7 +24,6 @@
  */
 package io.shiftleft.bctrace.hook;
 
-import io.shiftleft.bctrace.runtime.listener.Listener;
 import io.shiftleft.bctrace.filter.Filter;
 
 /**
@@ -33,7 +32,11 @@ import io.shiftleft.bctrace.filter.Filter;
  *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public interface Hook<F extends Filter, L extends Listener> {
+public abstract class Hook<F extends Filter, L> {
+
+  Hook() {
+  }
+
   /**
    * Returns the filter, deciding what methods to instrument.
    */

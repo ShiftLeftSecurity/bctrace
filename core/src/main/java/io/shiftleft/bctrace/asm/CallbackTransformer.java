@@ -25,9 +25,9 @@
 package io.shiftleft.bctrace.asm;
 
 import io.shiftleft.bctrace.asm.util.ASMUtils;
-import io.shiftleft.bctrace.hook.DynamicHook;
+import io.shiftleft.bctrace.hook.DirectHook;
 import io.shiftleft.bctrace.hook.Hook;
-import io.shiftleft.bctrace.runtime.listener.specific.DynamicListener;
+import io.shiftleft.bctrace.runtime.listener.specific.DirectListener;
 import java.io.IOException;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
@@ -73,10 +73,10 @@ public class CallbackTransformer implements ClassFileTransformer {
     }
 
     try {
-      Set<DynamicListener> dynamicListeners = new HashSet<DynamicListener>();
+      Set<DirectListener> dynamicListeners = new HashSet<DirectListener>();
       for (int i = 0; i < this.hooks.length; i++) {
-        if (this.hooks[i] instanceof DynamicHook) {
-          DynamicHook dynamicHook = (DynamicHook) this.hooks[i];
+        if (this.hooks[i] instanceof DirectHook) {
+          DirectHook dynamicHook = (DirectHook) this.hooks[i];
           dynamicListeners.add(dynamicHook.getListener());
         }
       }
@@ -99,7 +99,7 @@ public class CallbackTransformer implements ClassFileTransformer {
       }
       cn.methods.remove(templateMethodNode);
       HashSet<String> methodsAdded = new HashSet<String>();
-      for (DynamicListener dynamicListener : dynamicListeners) {
+      for (DirectListener dynamicListener : dynamicListeners) {
         MethodNode mn = createCallbackMethod(templateMethodNode, dynamicListener);
         String key = mn.name + mn.desc;
         if (!methodsAdded.contains(key)) {
@@ -116,13 +116,13 @@ public class CallbackTransformer implements ClassFileTransformer {
     }
   }
 
-  public static String getDynamicListenerMethodName(DynamicListener listener) {
+  public static String getDynamicListenerMethodName(DirectListener listener) {
     return listener.getClass().getName().replace('.', '_') + "_" +
         listener.getListenerMethod().getName();
   }
 
   private static MethodNode createCallbackMethod(MethodNode templateMethod,
-      DynamicListener listener) {
+      DirectListener listener) {
     MethodNode mn = ASMUtils.cloneMethod(templateMethod);
     // Change method name from the template method
     mn.name = getDynamicListenerMethodName(listener);
@@ -133,7 +133,7 @@ public class CallbackTransformer implements ClassFileTransformer {
     return mn;
   }
 
-  public static String getDynamicListenerMethodDescriptor(DynamicListener listener) {
+  public static String getDynamicListenerMethodDescriptor(DirectListener listener) {
     return updateMethodDescriptor(null, listener.getListenerMethod());
   }
 
