@@ -110,7 +110,7 @@ public class FeatureTest extends BcTraceTest {
           public GenericListener getListener() {
             return new ReturnListener() {
               @Override
-              public void onFinish(int methodId, Class clazz, Object instance, Object[] args,
+              public void onReturn(int methodId, Class clazz, Object instance, Object[] args,
                   Object ret) {
                 assertEquals(clazz.getName(), TestClass.class.getName());
                 steps.append("1");
@@ -128,7 +128,7 @@ public class FeatureTest extends BcTraceTest {
           public GenericListener getListener() {
             return new ReturnListener() {
               @Override
-              public void onFinish(int methodId, Class clazz, Object instance, Object[] args,
+              public void onReturn(int methodId, Class clazz, Object instance, Object[] args,
                   Object ret) {
                 assertEquals(clazz.getName(), TestClass.class.getName());
                 steps.append("2");

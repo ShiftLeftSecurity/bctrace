@@ -44,6 +44,6 @@ public abstract class ReturnListener extends GenericListener {
    * type is <code>void</code>
    */
   
-  public abstract void onFinish(int methodId, Class clazz, Object instance, Object[] args, Object ret);
+  public abstract void onReturn(int methodId, Class clazz, Object instance, Object[] args, Object ret);
 
 }

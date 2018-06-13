@@ -122,7 +122,7 @@ public class ReturnHelper extends Helper {
 
       pushMethodArgsArray(il, mn);
       il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
-          "io/shiftleft/bctrace/runtime/Callback", "onFinish",
+          "io/shiftleft/bctrace/runtime/Callback", "onReturn",
           "(Ljava/lang/Object;ILjava/lang/Class;Ljava/lang/Object;I[Ljava/lang/Object;)V",
           false));
     }
@@ -149,7 +149,7 @@ public class ReturnHelper extends Helper {
       il.add(ASMUtils.getPushInstruction(index)); // hook id
       pushMethodArgsArray(il, mn);
       il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
-          "io/shiftleft/bctrace/runtime/Callback", "onFinish",
+          "io/shiftleft/bctrace/runtime/Callback", "onReturn",
           "(Ljava/lang/Object;ILjava/lang/Class;Ljava/lang/Object;I[Ljava/lang/Object;)V",
           false));
     }

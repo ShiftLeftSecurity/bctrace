@@ -55,7 +55,7 @@ public final class Callback {
   }
 
   @SuppressWarnings("BoxedValueEquality")
-  public static void onFinish(Object ret, int methodId, Class clazz, Object instance,
+  public static void onReturn(Object ret, int methodId, Class clazz, Object instance,
       int i, Object[] args) {
     if (!isThreadNotificationEnabled()) {
       return;
@@ -66,7 +66,7 @@ public final class Callback {
     try {
       NOTIFYING_FLAG.set(Boolean.TRUE);
       ((ReturnListener) listeners[i])
-          .onFinish(methodId, clazz, instance, args, ret);
+          .onReturn(methodId, clazz, instance, args, ret);
     } finally {
       NOTIFYING_FLAG.set(Boolean.FALSE);
     }
