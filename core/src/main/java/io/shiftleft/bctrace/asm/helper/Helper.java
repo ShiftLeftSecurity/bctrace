@@ -62,7 +62,7 @@ public class Helper {
       Class<?> clazz) {
     ArrayList<Integer> ret = null;
     Hook[] hooks = bctrace.getHooks();
-    for (int h = 0; h < hooks.length; h++) {
+    for (int h = 0; h < hooksToUse.size(); h++) {
       Integer i = hooksToUse.get(h);
       if (hooks[i].getListener() != null &&
           clazz.isAssignableFrom(hooks[i].getListener().getClass())) {
@@ -79,7 +79,7 @@ public class Helper {
       ListenerType type) {
     ArrayList<Integer> ret = null;
     Hook[] hooks = bctrace.getHooks();
-    for (int h = 0; h < hooks.length; h++) {
+    for (int h = 0; h < hooksToUse.size(); h++) {
       Integer i = hooksToUse.get(h);
       Object listener = hooks[i].getListener();
       if (listener instanceof DirectListener) {
@@ -98,7 +98,8 @@ public class Helper {
   protected ArrayList<Integer> getHooksOfType(ArrayList<Integer> hooksToUse,
       Class<? extends Hook> clazz) {
     ArrayList<Integer> ret = null;
-    for (Integer i : hooksToUse) {
+    for (int h = 0; h < hooksToUse.size(); h++) {
+      Integer i = hooksToUse.get(h);
       Hook[] hooks = bctrace.getHooks();
       if (hooks[i] != null && clazz.isAssignableFrom(hooks[i].getClass())) {
         if (ret == null) {
