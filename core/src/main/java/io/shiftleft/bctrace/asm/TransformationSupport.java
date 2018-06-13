@@ -26,6 +26,8 @@ package io.shiftleft.bctrace.asm;
 
 import io.shiftleft.bctrace.Bctrace;
 import io.shiftleft.bctrace.Init;
+import io.shiftleft.bctrace.SystemProperty;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -51,6 +53,15 @@ public class TransformationSupport {
       while (resources.hasMoreElements()) {
         URL url = resources.nextElement();
         Scanner scanner = new Scanner(url.openStream());
+        while (scanner.hasNextLine()) {
+          String line = scanner.nextLine().trim();
+          if (!line.isEmpty()) {
+            list.add(line);
+          }
+        }
+      }
+      if (System.getProperty(SystemProperty.IGNORE_FILE) != null) {
+        Scanner scanner = new Scanner(new FileInputStream(System.getProperty(SystemProperty.IGNORE_FILE)));
         while (scanner.hasNextLine()) {
           String line = scanner.nextLine().trim();
           if (!line.isEmpty()) {
