@@ -66,6 +66,7 @@ public class Transformer implements ClassFileTransformer {
 
   private static final File DUMP_FOLDER;
   private final String nativeWrapperPrefix;
+  private final CallbackTransformer cbTransformer;
 
   private final StartHelper startHelper = new StartHelper();
   private final ReturnHelper returnHelper = new ReturnHelper();
@@ -96,11 +97,13 @@ public class Transformer implements ClassFileTransformer {
   private final AtomicInteger TRANSFORMATION_COUNTER = new AtomicInteger();
 
   public Transformer(InstrumentationImpl instrumentation, String nativeWrapperPrefix,
-      Bctrace bctrace) {
+      Bctrace bctrace, CallbackTransformer cbTransformer) {
     this.instrumentation = instrumentation;
     this.nativeWrapperPrefix = nativeWrapperPrefix;
     this.bctrace = bctrace;
     this.hooks = bctrace.getHooks();
+    this.cbTransformer = cbTransformer;
+
     this.startHelper.setBctrace(bctrace);
     this.returnHelper.setBctrace(bctrace);
     this.throwHelper.setBctrace(bctrace);
@@ -118,6 +121,11 @@ public class Transformer implements ClassFileTransformer {
       final ProtectionDomain protectionDomain,
       final byte[] classfileBuffer)
       throws IllegalClassFormatException {
+
+    // Wait for CallbackTransformer to finish
+    if (this.cbTransformer != null && !this.cbTransformer.isCompleted()) {
+      return null;
+    }
 
     if (className == null) {
       return null;

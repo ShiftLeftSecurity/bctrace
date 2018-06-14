@@ -81,7 +81,7 @@ public abstract class BcTraceTest {
     ByteClassLoader cl = new ByteClassLoader(hooks);
     Bctrace bctrace = init(cl, hooks);
     Transformer transformer = new Transformer(new InstrumentationImpl(null), "BctraceNativePrefix",
-        bctrace);
+        bctrace, null);
     String className = clazz.getCanonicalName();
     String resourceName = className.replace('.', '/') + ".class";
     InputStream is = clazz.getClassLoader().getResourceAsStream(resourceName);

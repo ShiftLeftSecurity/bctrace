@@ -286,8 +286,9 @@ public class ASMUtils {
   }
 
   public static MethodNode cloneMethod(MethodNode mn) {
-    MethodNode cloned = new MethodNode(Opcodes.ASM6, mn.access, mn.name, mn.desc, mn.signature,
-        mn.exceptions.toArray(new String[mn.exceptions.size()]));
+    MethodNode cloned = new MethodNode(Opcodes.ASM5, mn.access, mn.name, mn.desc, mn.signature,
+        mn.exceptions == null ? new String[0]
+            : mn.exceptions.toArray(new String[mn.exceptions.size()]));
     mn.accept(cloned);
 //    cloned.name = mn.name;
 //    cloned.access = mn.access;
@@ -355,9 +356,9 @@ public class ASMUtils {
   public static void main(String[] args) {
     int mod = Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_PRIVATE;
     mod = mod & ~Opcodes.ACC_PRIVATE;
-    System.out.println(isPublic(mod));
-    System.out.println(isStatic(mod));
-    System.out.println(isProtected(mod));
-    System.out.println(isPrivate(mod));
+    System.err.println(isPublic(mod));
+    System.err.println(isStatic(mod));
+    System.err.println(isProtected(mod));
+    System.err.println(isPrivate(mod));
   }
 }

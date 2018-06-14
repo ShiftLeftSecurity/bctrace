@@ -24,11 +24,12 @@
  */
 package io.shiftleft.bctrace.asm;
 
+import io.shiftleft.bctrace.Bctrace;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
 import io.shiftleft.bctrace.hook.DirectHook;
 import io.shiftleft.bctrace.hook.Hook;
+import io.shiftleft.bctrace.logging.Level;
 import io.shiftleft.bctrace.runtime.listener.specific.DirectListener;
-import java.io.IOException;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.lang.reflect.Method;
@@ -43,6 +44,7 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.InsnList;
+import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.LocalVariableNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
@@ -55,6 +57,7 @@ public class CallbackTransformer implements ClassFileTransformer {
 
   private static final String CALLBACK_JVM_CLASS_NAME = "io/shiftleft/bctrace/runtime/Callback";
   private final Hook[] hooks;
+  private volatile boolean completed = false;
 
   public CallbackTransformer(Hook[] hooks) {
     this.hooks = hooks;
@@ -88,7 +91,6 @@ public class CallbackTransformer implements ClassFileTransformer {
       ClassNode cn = new ClassNode();
       cn.version = Opcodes.V1_6;
       cr.accept(cn, 0);
-
       MethodNode templateMethodNode = null;
       List<MethodNode> methodNodes = cn.methods;
       for (MethodNode methodNode : methodNodes) {
@@ -96,6 +98,10 @@ public class CallbackTransformer implements ClassFileTransformer {
           templateMethodNode = methodNode;
           break;
         }
+      }
+      if (templateMethodNode == null) {
+        throw new Error(
+            "Could not find method 'io/shiftleft/bctrace/runtime/Callback.dynamicTemplate'");
       }
       cn.methods.remove(templateMethodNode);
       HashSet<String> methodsAdded = new HashSet<String>();
@@ -107,12 +113,16 @@ public class CallbackTransformer implements ClassFileTransformer {
           methodsAdded.add(key);
         }
       }
-
       ClassWriter cw = new StaticClassWriter(cr, ClassWriter.COMPUTE_MAXS, null);
       cn.accept(cw);
+      this.completed = true;
       return cw.toByteArray();
-    } catch (IOException ex) {
-      throw new RuntimeException(ex);
+    } catch (Throwable th) {
+      Bctrace.getAgentLogger().setLevel(Level.ERROR);
+      Bctrace.getAgentLogger()
+          .log(Level.ERROR, "Error found instrumenting class " + className, th);
+      System.exit(1);
+      return null;
     }
   }
 
@@ -133,6 +143,10 @@ public class CallbackTransformer implements ClassFileTransformer {
     return mn;
   }
 
+  public boolean isCompleted() {
+    return completed;
+  }
+
   public static String getDynamicListenerMethodDescriptor(DirectListener listener) {
     return updateMethodDescriptor(null, listener.getListenerMethod());
   }
@@ -150,8 +164,8 @@ public class CallbackTransformer implements ClassFileTransformer {
       if (mn != null) {
         mn.localVariables
             .add(new LocalVariableNode("arg" + (i + 1), paramDesc, null,
-                mn.localVariables.get(0).start,
-                mn.localVariables.get(0).end, i + 1));
+                new LabelNode(),
+                new LabelNode(), i + 1));
       }
     }
     descriptor.append(")");
