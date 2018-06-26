@@ -38,11 +38,18 @@ public class MethodFilter extends Filter {
   private final String className;
   private final String methodName;
   private final String methodDescriptor;
+  private final boolean virtual;
 
   public MethodFilter(String className, String methodName, String methodDescriptor) {
+    this(className, methodName, methodDescriptor, false);
+  }
+
+  public MethodFilter(String className, String methodName, String methodDescriptor,
+      boolean virtual) {
     this.className = className;
     this.methodName = methodName;
     this.methodDescriptor = methodDescriptor;
+    this.virtual = virtual;
   }
 
   public String getClassName() {
@@ -60,7 +67,25 @@ public class MethodFilter extends Filter {
   @Override
   public boolean instrumentClass(String className, ProtectionDomain protectionDomain,
       ClassLoader cl) {
-    return this.className.equals(className);
+    if (!virtual) {
+      // No virtual and different class name => End filtering
+      return this.className.equals(className);
+    } else {
+      return true;
+    }
+  }
+
+  @Override
+  public boolean instrumentClass(BctraceClass clazz, ProtectionDomain protectionDomain,
+      ClassLoader cl) {
+
+    if (!virtual) {
+      // Already filtered by name in previous method.
+      return true;
+    } else {
+      // If virtual, check inheritance
+      return clazz.isInstanceOf(className.replace('/', '.'));
+    }
   }
 
   @Override

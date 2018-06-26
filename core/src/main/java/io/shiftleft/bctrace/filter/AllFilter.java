@@ -35,8 +35,15 @@ import org.objectweb.asm.tree.MethodNode;
  */
 public class AllFilter extends Filter {
 
+  private static final AllFilter INSTANCE = new AllFilter();
+
+  public static AllFilter getInstance() {
+    return INSTANCE;
+  }
+
   @Override
-  public boolean instrumentClass(String className, ProtectionDomain protectionDomain, ClassLoader cl) {
+  public boolean instrumentClass(String className, ProtectionDomain protectionDomain,
+      ClassLoader cl) {
     return true;
   }
 
