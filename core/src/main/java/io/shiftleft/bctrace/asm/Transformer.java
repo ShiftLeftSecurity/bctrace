@@ -29,7 +29,6 @@ import io.shiftleft.bctrace.InstrumentationImpl;
 import io.shiftleft.bctrace.MethodInfo;
 import io.shiftleft.bctrace.MethodRegistry;
 import io.shiftleft.bctrace.SystemProperty;
-import io.shiftleft.bctrace.asm.helper.generic.NativeWrapperHelper;
 import io.shiftleft.bctrace.asm.helper.generic.ReturnHelper;
 import io.shiftleft.bctrace.asm.helper.generic.StartHelper;
 import io.shiftleft.bctrace.asm.helper.generic.ThrowHelper;
@@ -65,7 +64,6 @@ public class Transformer implements ClassFileTransformer {
       .replace('.', '/');
 
   private static final File DUMP_FOLDER;
-  private final String nativeWrapperPrefix;
   private final CallbackTransformer cbTransformer;
 
   private final StartHelper startHelper = new StartHelper();
@@ -74,7 +72,6 @@ public class Transformer implements ClassFileTransformer {
   private final CallSiteHelper callSiteHelper = new CallSiteHelper();
   private final DirectStartHelper directStartHelper = new DirectStartHelper();
   private final DirectReturnHelper directReturnHelper = new DirectReturnHelper();
-  private final NativeWrapperHelper nativeWrapperHelper = new NativeWrapperHelper();
 
   static {
     if (System.getProperty(SystemProperty.DUMP_FOLDER) != null) {
@@ -99,7 +96,6 @@ public class Transformer implements ClassFileTransformer {
   public Transformer(InstrumentationImpl instrumentation, String nativeWrapperPrefix,
       Bctrace bctrace, CallbackTransformer cbTransformer) {
     this.instrumentation = instrumentation;
-    this.nativeWrapperPrefix = nativeWrapperPrefix;
     this.bctrace = bctrace;
     this.hooks = bctrace.getHooks();
     this.cbTransformer = cbTransformer;
@@ -110,7 +106,6 @@ public class Transformer implements ClassFileTransformer {
     this.callSiteHelper.setBctrace(bctrace);
     this.directStartHelper.setBctrace(bctrace);
     this.directReturnHelper.setBctrace(bctrace);
-    this.nativeWrapperHelper.setBctrace(bctrace);
 
   }
 
@@ -156,7 +151,6 @@ public class Transformer implements ClassFileTransformer {
       if (matchingHooks == null || matchingHooks.isEmpty()) {
         return ret;
       }
-
       ClassReader cr = new ClassReader(classfileBuffer);
       ClassNode cn = new ClassNode();
       cr.accept(cn, 0);
@@ -261,6 +255,7 @@ public class Transformer implements ClassFileTransformer {
     List<MethodNode> newMethods = new ArrayList<MethodNode>();
     for (int m = 0; m < methods.size(); m++) {
       MethodNode mn = methods.get(m);
+
       ArrayList<Integer> hooksToUse = new ArrayList<Integer>(matchingHooks.size());
       for (int h = 0; h < matchingHooks.size(); h++) {
         Integer i = matchingHooks.get(h);
@@ -310,9 +305,6 @@ public class Transformer implements ClassFileTransformer {
         hasGenericHooks = true;
         break;
       }
-    }
-    if (ASMUtils.isNative(mn.access)) {
-      nativeWrapperHelper.createWrapperImpl(cn, mn, nativeWrapperPrefix, newMethods);
     }
     if (hasGenericHooks) {
       Integer methodId = MethodRegistry.getInstance()
