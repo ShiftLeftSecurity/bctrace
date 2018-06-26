@@ -84,6 +84,7 @@ public class CallbackTransformer implements ClassFileTransformer {
         }
       }
       if (dynamicListeners.size() == 0) {
+        this.completed = true;
         return null;
       }
       ClassReader cr = new ClassReader(
