@@ -117,7 +117,7 @@ public class ReturnHelper extends Helper {
       il.add(new InsnNode(Opcodes.ACONST_NULL)); // return value
       il.add(ASMUtils.getPushInstruction(methodId)); // method id
       il.add(getClassConstantReference(Type.getObjectType(cn.name), cn.version)); // class
-      pushInstance(il, mn); // current instance
+      pushInstance(il, mn, true); // current instance
       il.add(ASMUtils.getPushInstruction(index)); // hook id
 
       pushMethodArgsArray(il, mn);
@@ -145,7 +145,7 @@ public class ReturnHelper extends Helper {
       }
       il.add(ASMUtils.getPushInstruction(methodId)); // method id
       il.add(getClassConstantReference(Type.getObjectType(cn.name), cn.version)); // class
-      pushInstance(il, mn); // current instance
+      pushInstance(il, mn, true); // current instance
       il.add(ASMUtils.getPushInstruction(index)); // hook id
       pushMethodArgsArray(il, mn);
       il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,

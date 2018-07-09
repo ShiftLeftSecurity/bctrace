@@ -179,7 +179,16 @@ public class Helper {
    * method is static
    */
   protected void pushInstance(InsnList il, MethodNode mn) {
-    if (ASMUtils.isStatic(mn.access) || mn.name.equals("<init>")) { // current instance
+    pushInstance(il, mn, false);
+  }
+
+  /**
+   * Appends to the list bytecodes to push the instance on top of the operand stack, or null if the
+   * method is static
+   */
+  protected void pushInstance(InsnList il, MethodNode mn, boolean initialized) {
+    if (ASMUtils.isStatic(mn.access)
+        || mn.name.equals("<init>") && !initialized) { // current instance
       il.add(new InsnNode(Opcodes.ACONST_NULL));
     } else {
       il.add(new VarInsnNode(Opcodes.ALOAD, 0));
