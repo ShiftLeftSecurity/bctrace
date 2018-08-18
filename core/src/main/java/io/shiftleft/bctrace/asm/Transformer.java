@@ -42,6 +42,7 @@ import io.shiftleft.bctrace.hook.GenericHook;
 import io.shiftleft.bctrace.hook.Hook;
 import io.shiftleft.bctrace.logging.Level;
 import io.shiftleft.bctrace.runtime.Callback;
+import io.shiftleft.bctrace.runtime.CallbackEnabled;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.lang.instrument.ClassFileTransformer;
@@ -117,26 +118,27 @@ public class Transformer implements ClassFileTransformer {
       final byte[] classfileBuffer)
       throws IllegalClassFormatException {
 
-    // Wait for CallbackTransformer to finish
-    if (this.cbTransformer != null && !this.cbTransformer.isCompleted()) {
-      return null;
-    }
-
-    if (className == null) {
-      return null;
-    }
-
-    if (DebugInfo.isEnabled()) {
-      DebugInfo.getInstance().addInstrumentable(className, loader);
-    }
-    instrumentation.removeTransformedClass(className.replace('/', '.'), loader);
-
-    int counter = TRANSFORMATION_COUNTER.incrementAndGet();
-
     byte[] ret = null;
     boolean transformed = false;
+    int counter = TRANSFORMATION_COUNTER.incrementAndGet();
+    boolean threadNotificationEnabled = CallbackEnabled.isThreadNotificationEnabled();
+
     try {
-      Callback.disableThreadNotification();
+      CallbackEnabled.disableThreadNotification();
+      // Wait for CallbackTransformer to finish
+      if (this.cbTransformer != null && !this.cbTransformer.isCompleted()) {
+        return null;
+      }
+
+      if (className == null) {
+        return null;
+      }
+
+      if (DebugInfo.isEnabled()) {
+        DebugInfo.getInstance().addInstrumentable(className, loader);
+      }
+      instrumentation.removeTransformedClass(className.replace('/', '.'), loader);
+
       if (classfileBuffer == null) {
         return ret;
       }
@@ -173,13 +175,15 @@ public class Transformer implements ClassFileTransformer {
           .log(Level.ERROR, "Error found instrumenting class " + className, th);
       return ret;
     } finally {
-      Callback.enableThreadNotification();
       if (DUMP_FOLDER != null) {
         dump(counter, className, classfileBuffer, ret);
       }
       instrumentation.addLoadedClass(className.replace('/', '.'), loader);
       if (transformed) {
         instrumentation.addTransformedClass(className.replace('/', '.'), loader);
+      }
+      if (threadNotificationEnabled) {
+        CallbackEnabled.enableThreadNotification();
       }
     }
   }
@@ -249,7 +253,7 @@ public class Transformer implements ClassFileTransformer {
   }
 
   private boolean transformMethods(UnloadedClass ci, ArrayList<Integer> matchingHooks) {
-    ClassNode cn = ci.getRawClassNode();
+    ClassNode cn = ci.getClassNode();
     List<MethodNode> methods = cn.methods;
     boolean transformed = false;
     List<MethodNode> newMethods = new ArrayList<MethodNode>();

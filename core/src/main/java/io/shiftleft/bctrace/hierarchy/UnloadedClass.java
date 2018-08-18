@@ -61,7 +61,7 @@ public class UnloadedClass extends BctraceClass {
     }
   }
 
-  public ClassNode getRawClassNode() {
+  public ClassNode getClassNode() {
     return cn;
   }
 

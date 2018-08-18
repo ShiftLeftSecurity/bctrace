@@ -33,6 +33,7 @@ import io.shiftleft.bctrace.logging.AgentLoggerFactory;
 import io.shiftleft.bctrace.logging.Level;
 import io.shiftleft.bctrace.logging.Logger;
 import io.shiftleft.bctrace.runtime.Callback;
+import io.shiftleft.bctrace.runtime.CallbackEnabled;
 import java.net.URL;
 
 /**
@@ -85,15 +86,15 @@ public final class Bctrace {
   }
 
   public void disableThreadNotification() {
-    Callback.disableThreadNotification();
+    CallbackEnabled.disableThreadNotification();
   }
 
   public void enableThreadNotification() {
-    Callback.enableThreadNotification();
+    CallbackEnabled.enableThreadNotification();
   }
 
   public void isThreadNotificationEnabled() {
-    Callback.isThreadNotificationEnabled();
+    CallbackEnabled.isThreadNotificationEnabled();
   }
 
   public static URL getURL(Class clazz) {
