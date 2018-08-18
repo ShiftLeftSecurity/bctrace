@@ -33,90 +33,72 @@ import io.shiftleft.bctrace.runtime.listener.generic.StartListener;
  */
 public final class Callback {
 
-  private static final ThreadLocal<Boolean> NOTIFY_DISABLED_FLAG = new ThreadLocal<Boolean>();
-  private static final ThreadLocal<Boolean> NOTIFYING_FLAG = new ThreadLocal<Boolean>();
-
   public static Object[] listeners;
 
   @SuppressWarnings("BoxedValueEquality")
   public static void onStart(Object[] args, int methodId, Class clazz, Object instance, int i) {
-    if (!isThreadNotificationEnabled()) {
+    if (!CallbackEnabled.isThreadNotificationEnabled()) {
       return;
     }
-    if (Boolean.TRUE == NOTIFYING_FLAG.get()) {
+    if (Boolean.TRUE == CallbackEnabled.NOTIFYING_FLAG.get()) {
       return;
     }
     try {
-      NOTIFYING_FLAG.set(Boolean.TRUE);
+      CallbackEnabled.NOTIFYING_FLAG.set(Boolean.TRUE);
       ((StartListener) listeners[i]).onStart(methodId, clazz, instance, args);
     } finally {
-      NOTIFYING_FLAG.set(Boolean.FALSE);
+      CallbackEnabled.NOTIFYING_FLAG.set(Boolean.FALSE);
     }
   }
 
   @SuppressWarnings("BoxedValueEquality")
   public static void onReturn(Object ret, int methodId, Class clazz, Object instance,
       int i, Object[] args) {
-    if (!isThreadNotificationEnabled()) {
+    if (!CallbackEnabled.isThreadNotificationEnabled()) {
       return;
     }
-    if (Boolean.TRUE == NOTIFYING_FLAG.get()) {
+    if (Boolean.TRUE == CallbackEnabled.NOTIFYING_FLAG.get()) {
       return;
     }
     try {
-      NOTIFYING_FLAG.set(Boolean.TRUE);
+      CallbackEnabled.NOTIFYING_FLAG.set(Boolean.TRUE);
       ((ReturnListener) listeners[i])
           .onReturn(methodId, clazz, instance, args, ret);
     } finally {
-      NOTIFYING_FLAG.set(Boolean.FALSE);
+      CallbackEnabled.NOTIFYING_FLAG.set(Boolean.FALSE);
     }
   }
 
   @SuppressWarnings("BoxedValueEquality")
   public static void onBeforeThrown(Throwable th, int methodId, Class clazz, Object instance,
       int i) {
-    if (!isThreadNotificationEnabled()) {
+    if (!CallbackEnabled.isThreadNotificationEnabled()) {
       return;
     }
-    if (Boolean.TRUE == NOTIFYING_FLAG.get()) {
+    if (Boolean.TRUE == CallbackEnabled.NOTIFYING_FLAG.get()) {
       return;
     }
     try {
-      NOTIFYING_FLAG.set(Boolean.TRUE);
+      CallbackEnabled.NOTIFYING_FLAG.set(Boolean.TRUE);
       ((BeforeThrownListener) listeners[i]).onBeforeThrown(methodId, clazz, instance, th);
     } finally {
-      NOTIFYING_FLAG.set(Boolean.FALSE);
+      CallbackEnabled.NOTIFYING_FLAG.set(Boolean.FALSE);
     }
   }
 
   @SuppressWarnings("BoxedValueEquality")
   private static void dynamicTemplate(int i) {
-    if (!isThreadNotificationEnabled()) {
+    if (!CallbackEnabled.isThreadNotificationEnabled()) {
       return;
     }
-    if (Boolean.TRUE == NOTIFYING_FLAG.get()) {
+    if (Boolean.TRUE == CallbackEnabled.NOTIFYING_FLAG.get()) {
       return;
     }
     try {
-      NOTIFYING_FLAG.set(Boolean.TRUE);
+      CallbackEnabled.NOTIFYING_FLAG.set(Boolean.TRUE);
       (listeners[i]).notify();
     } finally {
-      NOTIFYING_FLAG.set(Boolean.FALSE);
+      CallbackEnabled.NOTIFYING_FLAG.set(Boolean.FALSE);
     }
-  }
-
-  @SuppressWarnings("BoxedValueEquality")
-  public static boolean isThreadNotificationEnabled() {
-    return NOTIFY_DISABLED_FLAG.get() != Boolean.TRUE;
-  }
-
-  @SuppressWarnings("BoxedValueEquality")
-  public static void enableThreadNotification() {
-    NOTIFY_DISABLED_FLAG.set(Boolean.FALSE);
-  }
-
-  @SuppressWarnings("BoxedValueEquality")
-  public static void disableThreadNotification() {
-    NOTIFY_DISABLED_FLAG.set(Boolean.TRUE);
   }
 }

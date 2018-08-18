@@ -30,6 +30,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.Arrays;
 
 /**
  * DirectListener instances are notified directly from the instrumented method without creating
@@ -71,6 +72,10 @@ public abstract class DirectListener {
       for (int j = 0; j < declaredMethods.length; j++) {
         if (declaredMethods[j].getAnnotation(ListenerMethod.class) != null) {
           if (ret != null) {
+            if (ret.getName().equals(declaredMethods[j].getName()) &&
+                Arrays.equals(ret.getParameterTypes(), declaredMethods[j].getParameterTypes())) {
+              continue;
+            }
             throw new Error("Only one @ListenerMethod method is allowed in " + getClass());
           }
           ret = declaredMethods[j];
