@@ -25,9 +25,13 @@
 package io.shiftleft.bctrace;
 
 import io.shiftleft.bctrace.debug.DebugHttpServer;
+import io.shiftleft.bctrace.runtime.CallbackEnabled;
 import java.io.IOException;
 import java.lang.instrument.Instrumentation;
+import java.util.Map.Entry;
+import java.util.Properties;
 import java.util.Scanner;
+import java.util.Set;
 
 /**
  * Framework entry point.
@@ -49,7 +53,8 @@ public class Init {
   }
 
   private static void bootstrap(String agentArgs, Instrumentation inst) throws Exception {
-    updateOsgiDelegationSystemProperty();
+    CallbackEnabled.disableThreadNotification();
+    wrapSystemProperties();
     String factoryImpClass = readAgentFactoryImpClass();
     if (factoryImpClass == null) {
       throw new Error("No agent factory found in classpath resource " + DESCRIPTOR_NAME);
@@ -58,14 +63,23 @@ public class Init {
     Bctrace bctrace = new Bctrace(inst, agentFactory.createAgent());
     bctrace.init();
     DebugHttpServer.init();
+    CallbackEnabled.enableThreadNotification();
   }
 
-  private static void updateOsgiDelegationSystemProperty() {
-    String prop = System.getProperty(OSGI_PACKAGE_DELEGATION_PROP);
-    if (prop == null) {
-      System.setProperty(OSGI_PACKAGE_DELEGATION_PROP, OSGI_PACKAGE_DELEGATION_VALUE);
-    } else {
-      System.setProperty(OSGI_PACKAGE_DELEGATION_PROP, prop + "," + OSGI_PACKAGE_DELEGATION_VALUE);
+  private static void wrapSystemProperties() {
+    Properties initialProperties = System.getProperties();
+    System.setProperties(new Properties() {
+      @Override
+      public synchronized Object put(Object key, Object value) {
+        if (key.equals(OSGI_PACKAGE_DELEGATION_PROP)) {
+          value = value + "," + OSGI_PACKAGE_DELEGATION_VALUE;
+        }
+        return super.put(key, value);
+      }
+    });
+    Set<Entry<Object, Object>> entries = initialProperties.entrySet();
+    for (Entry entry : entries) {
+      System.setProperty((String) (entry.getKey()), (String) (entry.getValue()));
     }
   }
 
