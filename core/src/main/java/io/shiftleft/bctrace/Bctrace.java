@@ -73,7 +73,7 @@ public final class Bctrace {
       if (instrumentation != null && instrumentation.getJavaInstrumentation() != null) {
         CallbackTransformer cbTransformer = new CallbackTransformer(hooks);
         instrumentation.getJavaInstrumentation()
-            .addTransformer(cbTransformer, true);
+            .addTransformer(cbTransformer, false);
         Callback.listeners = listeners;
         Transformer transformer = new Transformer(this.instrumentation, NATIVE_WRAPPER_PREFIX,
             this, cbTransformer);
