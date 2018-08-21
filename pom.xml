@@ -146,5 +146,6 @@
   <modules>
     <module>core</module>
     <module>runtime</module>
+    <module>spi</module>
   </modules>
 </project>
