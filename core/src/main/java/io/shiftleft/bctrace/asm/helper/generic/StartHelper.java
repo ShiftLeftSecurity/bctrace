@@ -45,10 +45,10 @@ import org.objectweb.asm.tree.VarInsnNode;
  */
 public class StartHelper extends Helper {
 
-  public void addByteCodeInstructions(int methodId, ClassNode cn, MethodNode mn,
+  public boolean addByteCodeInstructions(int methodId, ClassNode cn, MethodNode mn,
       ArrayList<Integer> hooksToUse) {
 
-    addTraceStart(methodId, cn, mn, hooksToUse);
+    return addTraceStart(methodId, cn, mn, hooksToUse);
   }
 
 
@@ -75,12 +75,12 @@ public class StartHelper extends Helper {
    * }
    * </pre>
    */
-  private void addTraceStart(int methodId, ClassNode cn, MethodNode mn,
+  private boolean addTraceStart(int methodId, ClassNode cn, MethodNode mn,
       ArrayList<Integer> hooksToUse) {
     ArrayList<Integer> listenersToUse = getListenersOfType(hooksToUse,
         StartListener.class);
     if (!isInstrumentationNeeded(listenersToUse)) {
-      return;
+      return false;
     }
     InsnList il = new InsnList();
     pushMethodArgsArray(il, mn);
@@ -99,5 +99,6 @@ public class StartHelper extends Helper {
           "([Ljava/lang/Object;ILjava/lang/Class;Ljava/lang/Object;I)V", false));
     }
     mn.instructions.insert(il);
+    return true;
   }
 }

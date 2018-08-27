@@ -424,24 +424,6 @@ public class FeatureTest extends BcTraceTest {
   }
 
   @Test
-  public void testConstructor() throws Exception {
-    Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
-        new GenericHook() {
-          @Override
-          public Filter getFilter() {
-            return new AllFilter();
-          }
-
-          @Override
-          public GenericListener getListener() {
-            return null;
-          }
-        }
-    });
-    clazz.newInstance();
-  }
-
-  @Test
   public void testThrown() throws Exception {
     final StringBuilder steps = new StringBuilder();
     Class clazz = getInstrumentClass(TestClass.class, new Hook[]{

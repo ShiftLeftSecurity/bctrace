@@ -1,9 +1,8 @@
 package io.shiftleft.bctrace.runtime;
 
-public class CallbackEnabled {
+public class CallbackEnabler {
 
   public static final ThreadLocal<Boolean> NOTIFY_DISABLED_FLAG = new ThreadLocal<Boolean>();
-  public static final ThreadLocal<Boolean> NOTIFYING_FLAG = new ThreadLocal<Boolean>();
 
   @SuppressWarnings("BoxedValueEquality")
   public static boolean isThreadNotificationEnabled() {

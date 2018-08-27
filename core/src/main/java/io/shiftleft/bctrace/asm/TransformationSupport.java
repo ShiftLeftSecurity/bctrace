@@ -61,7 +61,8 @@ public class TransformationSupport {
         }
       }
       if (System.getProperty(SystemProperty.IGNORE_FILE) != null) {
-        Scanner scanner = new Scanner(new FileInputStream(System.getProperty(SystemProperty.IGNORE_FILE)));
+        Scanner scanner = new Scanner(
+            new FileInputStream(System.getProperty(SystemProperty.IGNORE_FILE)));
         while (scanner.hasNextLine()) {
           String line = scanner.nextLine().trim();
           if (!line.isEmpty()) {
@@ -90,6 +91,12 @@ public class TransformationSupport {
       }
     }
     if (loader != null && loader == Bctrace.class.getClassLoader()) {
+      return false;
+    }
+    if (jvmClassName.equals(Transformer.CALL_BACK_ENABLED_CLASS_NAME)) {
+      return false;
+    }
+    if (jvmClassName.equals(Transformer.CALL_BACK_CLASS_NAME)) {
       return false;
     }
     return true;

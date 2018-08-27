@@ -59,7 +59,7 @@ public class DebugHttpServer {
   }
 
   private DebugHttpServer(String hostName, int port) throws IOException {
-    com.sun.net.httpserver.HttpServer server = com.sun.net.httpserver.HttpServer
+    final com.sun.net.httpserver.HttpServer server = com.sun.net.httpserver.HttpServer
         .create(new InetSocketAddress(hostName, port), 0);
     server.createContext("/", new RootHandler());
     server.createContext("/methods", new MethodRegistryHandler());
@@ -67,6 +67,12 @@ public class DebugHttpServer {
     server.createContext("/classes/instrumentable", new InstrumentableClassesHandler());
     server.createContext("/classes/requested", new RequestedToInstrumentClassesHandler());
     server.start();
+    Runtime.getRuntime().addShutdownHook(new Thread(){
+      @Override
+      public void run() {
+        server.stop(0);
+      }
+    });
   }
 
   private static class RequestedToInstrumentClassesHandler implements HttpHandler {

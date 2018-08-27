@@ -25,7 +25,7 @@
 package io.shiftleft.bctrace;
 
 import io.shiftleft.bctrace.debug.DebugHttpServer;
-import io.shiftleft.bctrace.runtime.CallbackEnabled;
+import io.shiftleft.bctrace.runtime.CallbackEnabler;
 import java.io.IOException;
 import java.lang.instrument.Instrumentation;
 import java.util.Map.Entry;
@@ -53,7 +53,7 @@ public class Init {
   }
 
   private static void bootstrap(String agentArgs, Instrumentation inst) throws Exception {
-    CallbackEnabled.disableThreadNotification();
+    CallbackEnabler.disableThreadNotification();
     wrapSystemProperties();
     String factoryImpClass = readAgentFactoryImpClass();
     if (factoryImpClass == null) {
@@ -63,7 +63,7 @@ public class Init {
     Bctrace bctrace = new Bctrace(inst, agentFactory.createAgent());
     bctrace.init();
     DebugHttpServer.init();
-    CallbackEnabled.enableThreadNotification();
+    CallbackEnabler.enableThreadNotification();
   }
 
   private static void wrapSystemProperties() {

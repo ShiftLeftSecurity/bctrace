@@ -61,13 +61,13 @@ import org.objectweb.asm.tree.MethodNode;
 public class ThrowHelper extends Helper {
 
 
-  public void addByteCodeInstructions(int methodId, ClassNode cn, MethodNode mn,
+  public boolean addByteCodeInstructions(int methodId, ClassNode cn, MethodNode mn,
       ArrayList<Integer> hooksToUse) {
     ArrayList<Integer> listenersToUse = getListenersOfType(hooksToUse,
         BeforeThrownListener.class);
 
     if (!isInstrumentationNeeded(listenersToUse)) {
-      return;
+      return false;
     }
     InsnList il = mn.instructions;
     Iterator<AbstractInsnNode> it = il.iterator();
@@ -81,6 +81,7 @@ public class ThrowHelper extends Helper {
           break;
       }
     }
+    return true;
   }
 
   private InsnList getThrowTraceInstructions(int methodId, ClassNode cn, MethodNode mn,

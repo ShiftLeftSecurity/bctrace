@@ -80,7 +80,7 @@ public abstract class BcTraceTest {
       throws Exception {
     ByteClassLoader cl = new ByteClassLoader(hooks);
     Bctrace bctrace = init(cl, hooks);
-    Transformer transformer = new Transformer(new InstrumentationImpl(null), "BctraceNativePrefix",
+    Transformer transformer = new Transformer(new InstrumentationImpl(null),
         bctrace, null);
     String className = clazz.getCanonicalName();
     String resourceName = className.replace('.', '/') + ".class";

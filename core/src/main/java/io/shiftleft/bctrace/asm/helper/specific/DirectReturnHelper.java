@@ -42,14 +42,15 @@ import org.objectweb.asm.tree.MethodNode;
 
 public class DirectReturnHelper extends Helper {
 
-  public void addByteCodeInstructions(ClassNode cn, MethodNode mn,
+  public boolean addByteCodeInstructions(ClassNode cn, MethodNode mn,
       ArrayList<Integer> hooksToUse) {
 
     ArrayList<Integer> listenersToUse = getDirectListenersOfType(hooksToUse, ListenerType.onFinish);
     if (!isInstrumentationNeeded(listenersToUse)) {
-      return;
+      return false;
     }
     addReturnTrace(cn, mn, listenersToUse);
+    return true;
   }
 
   private void addReturnTrace(ClassNode cn, MethodNode mn,

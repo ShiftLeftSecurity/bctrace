@@ -68,20 +68,21 @@ import org.objectweb.asm.tree.MethodNode;
 public class ReturnHelper extends Helper {
 
 
-  public void addByteCodeInstructions(int methodId, ClassNode cn, MethodNode mn,
+  public boolean addByteCodeInstructions(int methodId, ClassNode cn, MethodNode mn,
       ArrayList<Integer> hooksToUse) {
 
-    addReturnTraceWithArguments(methodId, cn, mn, hooksToUse);
+    return addReturnTraceWithArguments(methodId, cn, mn, hooksToUse);
   }
 
-  private void addReturnTraceWithArguments(int methodId, ClassNode cn, MethodNode mn,
+  private boolean addReturnTraceWithArguments(int methodId, ClassNode cn, MethodNode mn,
       ArrayList<Integer> hooksToUse) {
     ArrayList<Integer> listenersToUse = getListenersOfType(hooksToUse,
         ReturnListener.class);
     if (!isInstrumentationNeeded(listenersToUse)) {
-      return;
+      return false;
     }
     addReturnTrace(methodId, cn, mn, listenersToUse);
+    return true;
   }
 
   private void addReturnTrace(int methodId, ClassNode cn, MethodNode mn,

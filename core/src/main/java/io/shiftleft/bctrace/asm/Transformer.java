@@ -42,7 +42,7 @@ import io.shiftleft.bctrace.hook.GenericHook;
 import io.shiftleft.bctrace.hook.Hook;
 import io.shiftleft.bctrace.logging.Level;
 import io.shiftleft.bctrace.runtime.Callback;
-import io.shiftleft.bctrace.runtime.CallbackEnabled;
+import io.shiftleft.bctrace.runtime.CallbackEnabler;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.lang.instrument.ClassFileTransformer;
@@ -61,7 +61,11 @@ import org.objectweb.asm.tree.MethodNode;
  */
 public class Transformer implements ClassFileTransformer {
 
-  private static String TRANSFORMATION_SUPPORT_CLASS_NAME = TransformationSupport.class.getName()
+  static String TRANSFORMATION_SUPPORT_CLASS_NAME = TransformationSupport.class.getName()
+      .replace('.', '/');
+  static String CALL_BACK_ENABLED_CLASS_NAME = CallbackEnabler.class.getName()
+      .replace('.', '/');
+  static String CALL_BACK_CLASS_NAME = Callback.class.getName()
       .replace('.', '/');
 
   private static final File DUMP_FOLDER;
@@ -94,8 +98,8 @@ public class Transformer implements ClassFileTransformer {
   private final Bctrace bctrace;
   private final AtomicInteger TRANSFORMATION_COUNTER = new AtomicInteger();
 
-  public Transformer(InstrumentationImpl instrumentation, String nativeWrapperPrefix,
-      Bctrace bctrace, CallbackTransformer cbTransformer) {
+  public Transformer(InstrumentationImpl instrumentation, Bctrace bctrace,
+      CallbackTransformer cbTransformer) {
     this.instrumentation = instrumentation;
     this.bctrace = bctrace;
     this.hooks = bctrace.getHooks();
@@ -121,10 +125,14 @@ public class Transformer implements ClassFileTransformer {
     byte[] ret = null;
     boolean transformed = false;
     int counter = TRANSFORMATION_COUNTER.incrementAndGet();
-    boolean threadNotificationEnabled = CallbackEnabled.isThreadNotificationEnabled();
+    boolean threadNotificationEnabled = CallbackEnabler.isThreadNotificationEnabled();
+
+    if (className.equals(CALL_BACK_ENABLED_CLASS_NAME)) {
+      return ret;
+    }
 
     try {
-      CallbackEnabled.disableThreadNotification();
+      CallbackEnabler.disableThreadNotification();
       // Wait for CallbackTransformer to finish
       if (this.cbTransformer != null && !this.cbTransformer.isCompleted()) {
         return null;
@@ -148,9 +156,9 @@ public class Transformer implements ClassFileTransformer {
       if (!TransformationSupport.isTransformable(className, loader)) {
         return ret;
       }
-      ArrayList<Integer> matchingHooks = getMatchingHooksByName(className, protectionDomain,
+      ArrayList<Integer> classMatchingHooks = getMatchingHooksByName(className, protectionDomain,
           loader);
-      if (matchingHooks == null || matchingHooks.isEmpty()) {
+      if (classMatchingHooks == null || classMatchingHooks.isEmpty()) {
         return ret;
       }
       ClassReader cr = new ClassReader(classfileBuffer);
@@ -159,9 +167,9 @@ public class Transformer implements ClassFileTransformer {
 
       UnloadedClass ci = new UnloadedClass(className.replace('/', '.'), loader, cn, bctrace);
 
-      matchingHooks = getMatchingHooksByClassInfo(matchingHooks, ci, protectionDomain, loader);
+      classMatchingHooks = getMatchingHooksByClassInfo(classMatchingHooks, ci, protectionDomain, loader);
 
-      transformed = transformMethods(ci, matchingHooks);
+      transformed = transformMethods(ci, classMatchingHooks);
       if (!transformed) {
         return ret;
       } else {
@@ -183,7 +191,7 @@ public class Transformer implements ClassFileTransformer {
         instrumentation.addTransformedClass(className.replace('/', '.'), loader);
       }
       if (threadNotificationEnabled) {
-        CallbackEnabled.enableThreadNotification();
+        CallbackEnabler.enableThreadNotification();
       }
     }
   }
@@ -252,36 +260,30 @@ public class Transformer implements ClassFileTransformer {
     return ret;
   }
 
-  private boolean transformMethods(UnloadedClass ci, ArrayList<Integer> matchingHooks) {
+  private boolean transformMethods(UnloadedClass ci, ArrayList<Integer> classMatchingHooks) {
     ClassNode cn = ci.getClassNode();
     List<MethodNode> methods = cn.methods;
-    boolean transformed = false;
-    List<MethodNode> newMethods = new ArrayList<MethodNode>();
+    boolean classTransformed = false;
     for (int m = 0; m < methods.size(); m++) {
+      boolean methodTransformed = false;
       MethodNode mn = methods.get(m);
-
-      ArrayList<Integer> hooksToUse = new ArrayList<Integer>(matchingHooks.size());
-      for (int h = 0; h < matchingHooks.size(); h++) {
-        Integer i = matchingHooks.get(h);
+      ArrayList<Integer> hooksToUse = new ArrayList<Integer>(classMatchingHooks.size());
+      for (int h = 0; h < classMatchingHooks.size(); h++) {
+        Integer i = classMatchingHooks.get(h);
         if (hooks[i] != null && hooks[i].getFilter() != null && hooks[i].getFilter()
             .instrumentMethod(ci, mn)) {
           hooksToUse.add(i);
         }
       }
-      if (ASMUtils.isAbstract(mn.access)) {
+      if (ASMUtils.isAbstract(mn.access) || ASMUtils.isNative(mn.access)) {
         continue;
       }
       if (!hooksToUse.isEmpty()) {
-        boolean useGeneric = false;
-        // Add additional hooks
-        for (int h = 0; h < matchingHooks.size(); h++) {
-          Integer i = matchingHooks.get(h);
-          if (hooks[i].getFilter() == null) {
-            hooksToUse.add(i);
-          }
-        }
-        modifyMethod(cn, mn, hooksToUse, newMethods);
-        transformed = true;
+        methodTransformed = modifyMethod(cn, mn, hooksToUse);
+      }
+      if (methodTransformed) {
+        modifyMethod(cn, mn, getAdditionalHooks(classMatchingHooks));
+        classTransformed = true;
         if (DebugInfo.getInstance() != null) {
           Integer methodId = MethodRegistry.getInstance().getMethodId(MethodInfo.from(cn.name, mn));
           DebugInfo.getInstance().setInstrumented(methodId, true);
@@ -293,14 +295,23 @@ public class Transformer implements ClassFileTransformer {
         }
       }
     }
-    cn.methods.addAll(newMethods);
-    return transformed;
+    return classTransformed;
   }
 
-  private void modifyMethod(ClassNode cn, MethodNode mn,
-      ArrayList<Integer> hooksToUse,
-      List<MethodNode> newMethods) {
+  private  ArrayList<Integer> getAdditionalHooks(ArrayList<Integer> classMatchingHooks){
+    ArrayList<Integer> additionalHooks = new ArrayList<Integer>(1);
+    // Add additional hooks
+    for (int h = 0; h < classMatchingHooks.size(); h++) {
+      Integer i = classMatchingHooks.get(h);
+      if (hooks[i].getFilter() == null) {
+        additionalHooks.add(i);
+      }
+    }
+    return additionalHooks;
+  }
 
+  private boolean modifyMethod(ClassNode cn, MethodNode mn, ArrayList<Integer> hooksToUse) {
+    boolean transformed = false;
     boolean hasGenericHooks = false;
     for (int h = 0; h < hooksToUse.size(); h++) {
       Integer i = hooksToUse.get(h);
@@ -317,12 +328,25 @@ public class Transformer implements ClassFileTransformer {
       if (DebugInfo.getInstance() != null) {
         DebugInfo.getInstance().setInstrumented(methodId, true);
       }
-      startHelper.addByteCodeInstructions(methodId, cn, mn, hooksToUse);
-      returnHelper.addByteCodeInstructions(methodId, cn, mn, hooksToUse);
-      throwHelper.addByteCodeInstructions(methodId, cn, mn, hooksToUse);
+      if (startHelper.addByteCodeInstructions(methodId, cn, mn, hooksToUse)) {
+        transformed = true;
+      }
+      if (returnHelper.addByteCodeInstructions(methodId, cn, mn, hooksToUse)) {
+        transformed = true;
+      }
+      if (throwHelper.addByteCodeInstructions(methodId, cn, mn, hooksToUse)) {
+        transformed = true;
+      }
     }
-    callSiteHelper.addByteCodeInstructions(cn, mn, hooksToUse);
-    directStartHelper.addByteCodeInstructions(cn, mn, hooksToUse);
-    directReturnHelper.addByteCodeInstructions(cn, mn, hooksToUse);
+    if (callSiteHelper.addByteCodeInstructions(cn, mn, hooksToUse)) {
+      transformed = true;
+    }
+    if (directStartHelper.addByteCodeInstructions(cn, mn, hooksToUse)) {
+      transformed = true;
+    }
+    if (directReturnHelper.addByteCodeInstructions(cn, mn, hooksToUse)) {
+      transformed = true;
+    }
+    return transformed;
   }
 }

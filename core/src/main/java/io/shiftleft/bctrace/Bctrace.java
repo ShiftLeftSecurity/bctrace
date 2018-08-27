@@ -29,11 +29,13 @@ import io.shiftleft.bctrace.asm.Transformer;
 import io.shiftleft.bctrace.debug.CallCounterHook;
 import io.shiftleft.bctrace.debug.DebugInfo;
 import io.shiftleft.bctrace.hook.Hook;
+import io.shiftleft.bctrace.hook.MainMethodEndHook;
 import io.shiftleft.bctrace.logging.AgentLoggerFactory;
 import io.shiftleft.bctrace.logging.Level;
 import io.shiftleft.bctrace.logging.Logger;
 import io.shiftleft.bctrace.runtime.Callback;
-import io.shiftleft.bctrace.runtime.CallbackEnabled;
+import io.shiftleft.bctrace.runtime.Callback.ErrorListener;
+import io.shiftleft.bctrace.runtime.CallbackEnabler;
 import java.net.URL;
 
 /**
@@ -44,8 +46,6 @@ import java.net.URL;
 public final class Bctrace {
 
   private static final Logger LOGGER = createLogger();
-  private static final String NATIVE_WRAPPER_PREFIX =
-      "$$$Bctrace_Wrapper_" + System.currentTimeMillis() + "$$$_";
 
   private final InstrumentationImpl instrumentation;
   private final Hook[] hooks;
@@ -55,9 +55,18 @@ public final class Bctrace {
     this.agent = agent;
     this.instrumentation = new InstrumentationImpl(javaInstrumentation);
     if (DebugInfo.isEnabled()) {
-      this.hooks = new Hook[agent.getHooks().length + 1];
+      this.hooks = new Hook[agent.getHooks().length + 2];
       System.arraycopy(agent.getHooks(), 0, this.hooks, 0, agent.getHooks().length);
-      this.hooks[agent.getHooks().length] = new CallCounterHook();
+      this.hooks[this.hooks.length - 1] = new CallCounterHook();
+      this.hooks[this.hooks.length - 2] = new MainMethodEndHook() {
+        @Override
+        protected void onMainReturn() {
+          // Not terminate right away because the app might have started other threads and the user
+          // must be interested in continuing the debuggins session for them
+          LOGGER.log(Level.ERROR,
+              "Main method has finished. Send SIGTERM to finish debugging session");
+        }
+      };
     } else {
       this.hooks = agent.getHooks();
     }
@@ -75,26 +84,31 @@ public final class Bctrace {
         instrumentation.getJavaInstrumentation()
             .addTransformer(cbTransformer, false);
         Callback.listeners = listeners;
-        Transformer transformer = new Transformer(this.instrumentation, NATIVE_WRAPPER_PREFIX,
-            this, cbTransformer);
+        Callback.errorListener = new ErrorListener() {
+          @Override
+          public void onError(Throwable th) {
+            LOGGER.log(Level.ERROR, th.getMessage(), th);
+          }
+        };
+        Transformer transformer = new Transformer(this.instrumentation, this, cbTransformer);
         instrumentation.getJavaInstrumentation().addTransformer(transformer, true);
-        instrumentation.getJavaInstrumentation()
-            .setNativeMethodPrefix(transformer, NATIVE_WRAPPER_PREFIX);
       }
+      disableThreadNotification();
       agent.afterRegistration();
+      enableThreadNotification();
     }
   }
 
   public void disableThreadNotification() {
-    CallbackEnabled.disableThreadNotification();
+    CallbackEnabler.disableThreadNotification();
   }
 
   public void enableThreadNotification() {
-    CallbackEnabled.enableThreadNotification();
+    CallbackEnabler.enableThreadNotification();
   }
 
   public void isThreadNotificationEnabled() {
-    CallbackEnabled.isThreadNotificationEnabled();
+    CallbackEnabler.isThreadNotificationEnabled();
   }
 
   public static URL getURL(Class clazz) {

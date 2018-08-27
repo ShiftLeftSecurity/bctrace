@@ -40,14 +40,15 @@ import org.objectweb.asm.tree.MethodNode;
 
 public class DirectStartHelper extends Helper {
 
-  public void addByteCodeInstructions(ClassNode cn, MethodNode mn,
+  public boolean addByteCodeInstructions(ClassNode cn, MethodNode mn,
       ArrayList<Integer> hooksToUse) {
 
     ArrayList<Integer> listenersToUse = getDirectListenersOfType(hooksToUse, ListenerType.onStart);
     if (!isInstrumentationNeeded(listenersToUse)) {
-      return;
+      return false;
     }
     addTraceStart(cn, mn, listenersToUse);
+    return true;
   }
 
   private void addTraceStart(ClassNode cn, MethodNode mn,
