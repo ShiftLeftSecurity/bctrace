@@ -28,7 +28,7 @@ public abstract class MainMethodStartHook extends GenericHook<Filter, StartListe
     @Override
     public synchronized void onStart(int methodId, Class clazz, Object instance, Object[] args) {
       if (active) {
-        onMainStart((String[]) args[0]);
+        onMainStart(clazz.getName(), (String[]) args[0]);
         active = false;
       }
     }
@@ -44,5 +44,5 @@ public abstract class MainMethodStartHook extends GenericHook<Filter, StartListe
     return listener;
   }
 
-  protected abstract void onMainStart(String[] args);
+  protected abstract void onMainStart(String className, String[] args);
 }

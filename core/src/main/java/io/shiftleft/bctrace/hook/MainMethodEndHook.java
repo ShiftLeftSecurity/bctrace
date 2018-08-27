@@ -28,7 +28,7 @@ public abstract class MainMethodEndHook extends GenericHook<Filter, ReturnListen
     @Override
     public void onReturn(int methodId, Class clazz, Object instance, Object[] args, Object ret) {
       if (active) {
-        onMainReturn();
+        onMainReturn(clazz.getName());
         active = false;
       }
     }
@@ -44,5 +44,5 @@ public abstract class MainMethodEndHook extends GenericHook<Filter, ReturnListen
     return listener;
   }
 
-  protected abstract void onMainReturn();
+  protected abstract void onMainReturn(String className);
 }

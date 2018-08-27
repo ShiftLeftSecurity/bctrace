@@ -60,7 +60,7 @@ public final class Bctrace {
       this.hooks[this.hooks.length - 1] = new CallCounterHook();
       this.hooks[this.hooks.length - 2] = new MainMethodEndHook() {
         @Override
-        protected void onMainReturn() {
+        protected void onMainReturn(String className) {
           // Not terminate right away because the app might have started other threads and the user
           // must be interested in continuing the debuggins session for them
           LOGGER.log(Level.ERROR,
