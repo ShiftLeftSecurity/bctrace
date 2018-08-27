@@ -61,7 +61,7 @@ node {
              }
         } catch (e) {
             if(e instanceof hudson.AbortException && ae.getMessage().contains('code 143')) {
-                currentBuild.result = "CANCELLED"
+                println("build aborted")
             } else {
                 currentBuild.result = "FAILED"
                 notifyFailed()
