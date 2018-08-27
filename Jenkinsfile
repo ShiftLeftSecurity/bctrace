@@ -60,9 +60,12 @@ node {
                 }
              }
         } catch (e) {
+            if(e instanceof hudson.AbortException && ae.getMessage().contains('code 143')) {
+                currentBuild.result = "CANCELLED"
+            } else {
                 currentBuild.result = "FAILED"
-                println("build failed: " + e)
                 notifyFailed()
+            }
         }
 }
 
