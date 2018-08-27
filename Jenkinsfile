@@ -61,6 +61,7 @@ node {
              }
         } catch (e) {
                 currentBuild.result = "FAILED"
+                println("build failed: " + e)
                 notifyFailed()
         }
 }
