@@ -1,5 +1,5 @@
 #!groovy
-aaa.po()
+
 env.REPO_NAME = "github.com/ShiftLeftSecurity/bctrace"
 env.REGISTRY_NAME = "docker.dev.sltr.io"
 
@@ -18,6 +18,7 @@ node {
         git poll: true, url: "ssh://git@${env.REPO_NAME}"
     }
     try {
+        aaa.po()
         stage('cleanUp') {
             try {
                 deleteDir()
