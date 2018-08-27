@@ -18,7 +18,6 @@ node {
         git poll: true, url: "ssh://git@${env.REPO_NAME}"
     }
     try {
-        aaa.po()
         stage('cleanUp') {
             try {
                 deleteDir()
