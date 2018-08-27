@@ -1,5 +1,5 @@
 #!groovy
-
+aaa.po()
 env.REPO_NAME = "github.com/ShiftLeftSecurity/bctrace"
 env.REGISTRY_NAME = "docker.dev.sltr.io"
 
