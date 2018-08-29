@@ -51,7 +51,7 @@ public final class Callback {
       NOTIFYING_FLAG.set(Boolean.TRUE);
       ((StartListener) listeners[i]).onStart(methodId, clazz, instance, args);
     } catch (Throwable th) {
-      errorListener.onError(th);
+      handleThrowable(th);
     } finally {
       NOTIFYING_FLAG.set(Boolean.FALSE);
     }
@@ -71,7 +71,7 @@ public final class Callback {
       ((ReturnListener) listeners[i])
           .onReturn(methodId, clazz, instance, args, ret);
     } catch (Throwable th) {
-      errorListener.onError(th);
+      handleThrowable(th);
     } finally {
       NOTIFYING_FLAG.set(Boolean.FALSE);
     }
@@ -90,7 +90,7 @@ public final class Callback {
       NOTIFYING_FLAG.set(Boolean.TRUE);
       ((BeforeThrownListener) listeners[i]).onBeforeThrown(methodId, clazz, instance, throwable);
     } catch (Throwable th) {
-      errorListener.onError(th);
+      handleThrowable(th);
     } finally {
       NOTIFYING_FLAG.set(Boolean.FALSE);
     }
@@ -108,9 +108,17 @@ public final class Callback {
       NOTIFYING_FLAG.set(Boolean.TRUE);
       (listeners[i]).notify();
     } catch (Throwable th) {
-      errorListener.onError(th);
+      handleThrowable(th);
     } finally {
       NOTIFYING_FLAG.set(Boolean.FALSE);
+    }
+  }
+
+  private static void handleThrowable(Throwable th) {
+    if (th instanceof BctraceRuntimeException) {
+      throw ((BctraceRuntimeException) th).getWrappedException();
+    } else {
+      errorListener.onError(th);
     }
   }
 
