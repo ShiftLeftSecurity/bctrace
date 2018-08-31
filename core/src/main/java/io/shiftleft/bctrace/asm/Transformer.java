@@ -125,7 +125,6 @@ public class Transformer implements ClassFileTransformer {
     byte[] ret = null;
     boolean transformed = false;
     int counter = TRANSFORMATION_COUNTER.incrementAndGet();
-    boolean threadNotificationEnabled = CallbackEnabler.isThreadNotificationEnabled();
 
     if (className.equals(CALL_BACK_ENABLED_CLASS_NAME)) {
       return ret;
@@ -167,7 +166,8 @@ public class Transformer implements ClassFileTransformer {
 
       UnloadedClass ci = new UnloadedClass(className.replace('/', '.'), loader, cn, bctrace);
 
-      classMatchingHooks = getMatchingHooksByClassInfo(classMatchingHooks, ci, protectionDomain, loader);
+      classMatchingHooks = getMatchingHooksByClassInfo(classMatchingHooks, ci, protectionDomain,
+          loader);
 
       transformed = transformMethods(ci, classMatchingHooks);
       if (!transformed) {
@@ -179,8 +179,7 @@ public class Transformer implements ClassFileTransformer {
         return ret;
       }
     } catch (Throwable th) {
-      Bctrace.getAgentLogger()
-          .log(Level.ERROR, "Error found instrumenting class " + className, th);
+      th.printStackTrace(System.err);
       return ret;
     } finally {
       if (DUMP_FOLDER != null) {
@@ -190,9 +189,7 @@ public class Transformer implements ClassFileTransformer {
       if (transformed) {
         instrumentation.addTransformedClass(className.replace('/', '.'), loader);
       }
-      if (threadNotificationEnabled) {
-        CallbackEnabler.enableThreadNotification();
-      }
+      CallbackEnabler.enableThreadNotification();
     }
   }
 
@@ -298,7 +295,7 @@ public class Transformer implements ClassFileTransformer {
     return classTransformed;
   }
 
-  private  ArrayList<Integer> getAdditionalHooks(ArrayList<Integer> classMatchingHooks){
+  private ArrayList<Integer> getAdditionalHooks(ArrayList<Integer> classMatchingHooks) {
     ArrayList<Integer> additionalHooks = new ArrayList<Integer>(1);
     // Add additional hooks
     for (int h = 0; h < classMatchingHooks.size(); h++) {
