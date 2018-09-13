@@ -126,39 +126,33 @@ public class Transformer implements ClassFileTransformer {
     boolean transformed = false;
     int counter = TRANSFORMATION_COUNTER.incrementAndGet();
 
-    if (className.equals(CALL_BACK_ENABLED_CLASS_NAME)) {
-      return ret;
-    }
-
     try {
       CallbackEnabler.disableThreadNotification();
+      if (className == null || className.equals(CALL_BACK_ENABLED_CLASS_NAME)) {
+        return null;
+      }
       // Wait for CallbackTransformer to finish
       if (this.cbTransformer != null && !this.cbTransformer.isCompleted()) {
         return null;
       }
-
-      if (className == null) {
-        return null;
-      }
-
       if (DebugInfo.isEnabled()) {
         DebugInfo.getInstance().addInstrumentable(className, loader);
       }
       instrumentation.removeTransformedClass(className.replace('/', '.'), loader);
 
       if (classfileBuffer == null) {
-        return ret;
+        return null;
       }
       if (className.equals(TRANSFORMATION_SUPPORT_CLASS_NAME)) {
-        return ret;
+        return null;
       }
       if (!TransformationSupport.isTransformable(className, loader)) {
-        return ret;
+        return null;
       }
       ArrayList<Integer> classMatchingHooks = getMatchingHooksByName(className, protectionDomain,
           loader);
       if (classMatchingHooks == null || classMatchingHooks.isEmpty()) {
-        return ret;
+        return null;
       }
       ClassReader cr = new ClassReader(classfileBuffer);
       ClassNode cn = new ClassNode();
@@ -171,7 +165,7 @@ public class Transformer implements ClassFileTransformer {
 
       transformed = transformMethods(ci, classMatchingHooks);
       if (!transformed) {
-        return ret;
+        return null;
       } else {
         ClassWriter cw = new StaticClassWriter(cr, ClassWriter.COMPUTE_MAXS, loader);
         cn.accept(cw);
@@ -180,16 +174,22 @@ public class Transformer implements ClassFileTransformer {
       }
     } catch (Throwable th) {
       th.printStackTrace(System.err);
-      return ret;
+      return null;
     } finally {
-      if (DUMP_FOLDER != null) {
-        dump(counter, className, classfileBuffer, ret);
+      try {
+        if (className != null) {
+          if (DUMP_FOLDER != null) {
+            dump(counter, className, classfileBuffer, ret);
+          }
+          instrumentation.addLoadedClass(className.replace('/', '.'), loader);
+          if (transformed) {
+            instrumentation.addTransformedClass(className.replace('/', '.'), loader);
+          }
+        }
+        CallbackEnabler.enableThreadNotification();
+      } catch (Throwable th) {
+        th.printStackTrace(System.err);
       }
-      instrumentation.addLoadedClass(className.replace('/', '.'), loader);
-      if (transformed) {
-        instrumentation.addTransformedClass(className.replace('/', '.'), loader);
-      }
-      CallbackEnabler.enableThreadNotification();
     }
   }
 
