@@ -30,8 +30,8 @@ import io.shiftleft.bctrace.SystemProperty;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.LinkedList;
 import java.util.Scanner;
 
 /**
@@ -42,6 +42,7 @@ public class TransformationSupport {
   private static final String IGNORE_LIST_DESCRIPTOR_NAME = "bctrace.ignore";
   private static final String[] CLASSNAME_PREFIX_IGNORE_LIST = readIgnoreClassNamesFromDescriptors();
 
+
   private static String[] readIgnoreClassNamesFromDescriptors() {
     try {
       ClassLoader cl = Init.class.getClassLoader();
@@ -49,14 +50,18 @@ public class TransformationSupport {
         cl = ClassLoader.getSystemClassLoader().getParent();
       }
       Enumeration<URL> resources = cl.getResources(IGNORE_LIST_DESCRIPTOR_NAME);
-      ArrayList<String> list = new ArrayList<String>();
+      LinkedList<String> list = new LinkedList<String>();
       while (resources.hasMoreElements()) {
         URL url = resources.nextElement();
         Scanner scanner = new Scanner(url.openStream());
         while (scanner.hasNextLine()) {
           String line = scanner.nextLine().trim();
           if (!line.isEmpty()) {
-            list.add(line);
+            if (line.charAt(0) == '+') {
+              list.addFirst(line);
+            } else {
+              list.add(line);
+            }
           }
         }
       }
@@ -66,7 +71,11 @@ public class TransformationSupport {
         while (scanner.hasNextLine()) {
           String line = scanner.nextLine().trim();
           if (!line.isEmpty()) {
-            list.add(line);
+            if (line.charAt(0) == '+') {
+              list.addFirst(line);
+            } else {
+              list.add(line);
+            }
           }
         }
       }
@@ -86,8 +95,14 @@ public class TransformationSupport {
     }
     for (int i = 0; i < CLASSNAME_PREFIX_IGNORE_LIST.length; i++) {
       String prefix = CLASSNAME_PREFIX_IGNORE_LIST[i];
-      if (jvmClassName.startsWith(prefix)) {
-        return false;
+      if (prefix.charAt(0) == '+') {
+        if (jvmClassName.startsWith(prefix.substring(1))) {
+          break;
+        }
+      } else {
+        if (jvmClassName.startsWith(prefix)) {
+          return false;
+        }
       }
     }
     if (loader != null && loader == Bctrace.class.getClassLoader()) {
