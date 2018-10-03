@@ -16,7 +16,10 @@ target/
 # idea intelij files for IDE state
 .idea/
 *.iml
+*.ipr
+*.iws
 
 # files being edited while vim crashed
 .*.swp
+
 
