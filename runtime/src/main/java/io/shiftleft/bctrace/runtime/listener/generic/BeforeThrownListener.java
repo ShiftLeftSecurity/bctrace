@@ -31,11 +31,9 @@ import java.lang.reflect.Method;
  */
 public abstract class BeforeThrownListener extends GenericListener {
 
-  private static final Method METHOD = BeforeThrownListener.class.getDeclaredMethods()[0];
-
   @Override
   protected final Method getListenerSuperMethod() {
-    return METHOD;
+    return getMethodByName(BeforeThrownListener.class, "onBeforeThrown");
   }
 
   public final boolean requiresThrowable() {
@@ -51,6 +49,7 @@ public abstract class BeforeThrownListener extends GenericListener {
    * @param args arguments passed to the method.
    * @param th throwable to be thrown
    */
-  public abstract void onBeforeThrown(int methodId, Class clazz, Object instance, Object[] args, Throwable th);
+  public abstract void onBeforeThrown(int methodId, Class clazz, Object instance, Object[] args,
+      Throwable th);
 
 }

@@ -14,11 +14,24 @@ public abstract class GenericListener {
 
   protected final Method getListenerMethod() {
     Method superMethod = getListenerSuperMethod();
+    if (superMethod == null) {
+      throw new AssertionError();
+    }
     try {
       return getClass().getMethod(superMethod.getName(), superMethod.getParameterTypes());
     } catch (NoSuchMethodException ex) {
-      throw new AssertionError();
+      throw new AssertionError(ex);
     }
+  }
+
+  protected static Method getMethodByName(Class clazz, String methodName) {
+    Method[] declaredMethods = clazz.getDeclaredMethods();
+    for (int i = 0; i < declaredMethods.length; i++) {
+      if (declaredMethods[i].getName().equals(methodName)) {
+        return declaredMethods[i];
+      }
+    }
+    return null;
   }
 
   protected final boolean[] getDisabledArguments() {

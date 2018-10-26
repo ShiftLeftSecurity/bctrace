@@ -33,11 +33,9 @@ import java.util.Arrays;
  */
 public abstract class ReturnListener extends GenericListener {
 
-  private static final Method METHOD = ReturnListener.class.getDeclaredMethods()[0];
-
   @Override
   protected final Method getListenerSuperMethod() {
-    return METHOD;
+    return getMethodByName(ReturnListener.class, "onReturn");
   }
 
   /**
