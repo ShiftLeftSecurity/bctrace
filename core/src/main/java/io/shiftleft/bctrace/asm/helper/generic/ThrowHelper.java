@@ -27,6 +27,7 @@ package io.shiftleft.bctrace.asm.helper.generic;
 import io.shiftleft.bctrace.asm.helper.Helper;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
 import io.shiftleft.bctrace.runtime.listener.generic.BeforeThrownListener;
+import io.shiftleft.bctrace.runtime.listener.generic.StartListener;
 import java.util.ArrayList;
 import java.util.Iterator;
 import org.objectweb.asm.Opcodes;
@@ -89,15 +90,38 @@ public class ThrowHelper extends Helper {
     InsnList il = new InsnList();
     for (int i = 0; i < listenersToUse.size(); i++) {
       Integer index = listenersToUse.get(i);
-      il.add(new InsnNode(Opcodes.DUP)); // dup throwable
-      il.add(ASMUtils.getPushInstruction(methodId)); // method id
-      il.add(getClassConstantReference(Type.getObjectType(cn.name), cn.version));
-      pushInstance(il, mn); // current instance
+      BeforeThrownListener listener = (BeforeThrownListener) bctrace.getHooks()[index]
+          .getListener();
+      if (listener.requiresThrowable()) {
+        il.add(new InsnNode(Opcodes.DUP)); // dup throwable
+      } else {
+        il.add(new InsnNode(Opcodes.ACONST_NULL));
+      }
+      if (listener.requiresMethodId()) {
+        il.add(ASMUtils.getPushInstruction(methodId)); // method id
+      } else {
+        il.add(ASMUtils.getPushInstruction(0));
+      }
+      if (listener.requiresClass()) {
+        il.add(getClassConstantReference(Type.getObjectType(cn.name), cn.version));
+      } else {
+        il.add(new InsnNode(Opcodes.ACONST_NULL));
+      }
+      if (listener.requiresInstance()) {
+        pushInstance(il, mn); // current instance
+      } else {
+        il.add(new InsnNode(Opcodes.ACONST_NULL));
+      }
       il.add(ASMUtils.getPushInstruction(index)); // hook id
-      pushMethodArgsArray(il, mn);
+      if (listener.requiresArguments()) {
+        pushMethodArgsArray(il, mn);
+      } else {
+        il.add(new InsnNode(Opcodes.ACONST_NULL));
+      }
       il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
           "io/shiftleft/bctrace/runtime/Callback", "onBeforeThrown",
-          "(Ljava/lang/Throwable;ILjava/lang/Class;Ljava/lang/Object;I[Ljava/lang/Object;)V", false));
+          "(Ljava/lang/Throwable;ILjava/lang/Class;Ljava/lang/Object;I[Ljava/lang/Object;)V",
+          false));
     }
     return il;
   }

@@ -137,7 +137,11 @@ public class ReturnHelper extends Helper {
         il.add(new InsnNode(Opcodes.ACONST_NULL));
       }
       il.add(ASMUtils.getPushInstruction(index)); // hook id
-      pushMethodArgsArray(il, mn);
+      if (listener.requiresArguments()) {
+        pushMethodArgsArray(il, mn);
+      } else {
+        il.add(new InsnNode(Opcodes.ACONST_NULL));
+      }
       il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
           "io/shiftleft/bctrace/runtime/Callback", "onReturn",
           "(Ljava/lang/Object;ILjava/lang/Class;Ljava/lang/Object;I[Ljava/lang/Object;)V",
