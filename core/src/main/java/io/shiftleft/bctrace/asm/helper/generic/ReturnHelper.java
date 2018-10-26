@@ -26,8 +26,12 @@ package io.shiftleft.bctrace.asm.helper.generic;
 
 import io.shiftleft.bctrace.asm.helper.Helper;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
+import io.shiftleft.bctrace.runtime.listener.generic.Disabled;
 import io.shiftleft.bctrace.runtime.listener.generic.ReturnListener;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -115,13 +119,29 @@ public class ReturnHelper extends Helper {
     InsnList il = new InsnList();
     for (int i = listenersToUse.size() - 1; i >= 0; i--) {
       Integer index = listenersToUse.get(i);
+      ReturnListener listener = (ReturnListener) bctrace.getHooks()[index].getListener();
       il.add(new InsnNode(Opcodes.ACONST_NULL)); // return value
-      il.add(ASMUtils.getPushInstruction(methodId)); // method id
-      il.add(getClassConstantReference(Type.getObjectType(cn.name), cn.version)); // class
-      pushInstance(il, mn, true); // current instance
+      if (listener.requiresMethodId()) {
+        il.add(ASMUtils.getPushInstruction(methodId)); // method id
+      } else {
+        il.add(ASMUtils.getPushInstruction(0));
+      }
+      if (listener.requiresClass()) {
+        il.add(getClassConstantReference(Type.getObjectType(cn.name), cn.version)); // class
+      } else {
+        il.add(new InsnNode(Opcodes.ACONST_NULL));
+      }
+      if (listener.requiresInstance()) {
+        pushInstance(il, mn, true); // current instance
+      } else {
+        il.add(new InsnNode(Opcodes.ACONST_NULL));
+      }
       il.add(ASMUtils.getPushInstruction(index)); // hook id
-
-      pushMethodArgsArray(il, mn);
+      if (listener.requiresArguments()) {
+        pushMethodArgsArray(il, mn);
+      } else {
+        il.add(new InsnNode(Opcodes.ACONST_NULL));
+      }
       il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
           "io/shiftleft/bctrace/runtime/Callback", "onReturn",
           "(Ljava/lang/Object;ILjava/lang/Class;Ljava/lang/Object;I[Ljava/lang/Object;)V",
@@ -135,18 +155,35 @@ public class ReturnHelper extends Helper {
     InsnList il = new InsnList();
     for (int i = listenersToUse.size() - 1; i >= 0; i--) {
       Integer index = listenersToUse.get(i);
-      if (returnType.getSize() == 1) {
-        il.add(new InsnNode(Opcodes.DUP));
+      ReturnListener listener = (ReturnListener) bctrace.getHooks()[index].getListener();
+      if (listener.requiresReturnValue()) {
+        if (returnType.getSize() == 1) {
+          il.add(new InsnNode(Opcodes.DUP));
+        } else {
+          il.add(new InsnNode(Opcodes.DUP2));
+        }
+        MethodInsnNode primitiveToWrapperInst = ASMUtils.getPrimitiveToWrapperInst(returnType);
+        if (primitiveToWrapperInst != null) {
+          il.add(primitiveToWrapperInst);
+        }
       } else {
-        il.add(new InsnNode(Opcodes.DUP2));
+        il.add(new InsnNode(Opcodes.ACONST_NULL));
       }
-      MethodInsnNode primitiveToWrapperInst = ASMUtils.getPrimitiveToWrapperInst(returnType);
-      if (primitiveToWrapperInst != null) {
-        il.add(primitiveToWrapperInst);
+      if (listener.requiresMethodId()) {
+        il.add(ASMUtils.getPushInstruction(methodId)); // method id
+      } else {
+        il.add(ASMUtils.getPushInstruction(0));
       }
-      il.add(ASMUtils.getPushInstruction(methodId)); // method id
-      il.add(getClassConstantReference(Type.getObjectType(cn.name), cn.version)); // class
-      pushInstance(il, mn, true); // current instance
+      if (listener.requiresClass()) {
+        il.add(getClassConstantReference(Type.getObjectType(cn.name), cn.version)); // class
+      } else {
+        il.add(new InsnNode(Opcodes.ACONST_NULL));
+      }
+      if (listener.requiresInstance()) {
+        pushInstance(il, mn, true); // current instance
+      } else {
+        il.add(new InsnNode(Opcodes.ACONST_NULL));
+      }
       il.add(ASMUtils.getPushInstruction(index)); // hook id
       pushMethodArgsArray(il, mn);
       il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,

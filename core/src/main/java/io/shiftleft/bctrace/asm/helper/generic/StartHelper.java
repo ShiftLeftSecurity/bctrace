@@ -35,7 +35,6 @@ import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
-import org.objectweb.asm.tree.VarInsnNode;
 
 /**
  * Inserts the bytecode instructions within method node, needed to handle the different start
@@ -53,8 +52,8 @@ public class StartHelper extends Helper {
 
 
   /**
-   * Depending on the {@link StartListener} listeners that apply to this method,  this
-   * helper turns the method node instructions of a method like this:
+   * Depending on the {@link StartListener} listeners that apply to this method,  this helper turns
+   * the method node instructions of a method like this:
    * <br><pre>{@code
    * public Object foo(Object arg1, Object arg2, ..., Object argn){
    *   return void(arg1, arg2, ..., argn);
@@ -83,16 +82,41 @@ public class StartHelper extends Helper {
       return false;
     }
     InsnList il = new InsnList();
-    pushMethodArgsArray(il, mn);
-
+    boolean someRequiresArguments = false;
     for (int i = 0; i < listenersToUse.size(); i++) {
       Integer index = listenersToUse.get(i);
+      StartListener listener = (StartListener) bctrace.getHooks()[index].getListener();
+      if (listener.requiresArguments()) {
+        someRequiresArguments = true;
+        break;
+      }
+    }
+    if (someRequiresArguments) {
+      pushMethodArgsArray(il, mn);
+    } else {
+      il.add(new InsnNode(Opcodes.ACONST_NULL));
+    }
+    for (int i = 0; i < listenersToUse.size(); i++) {
+      Integer index = listenersToUse.get(i);
+      StartListener listener = (StartListener) bctrace.getHooks()[index].getListener();
       if (i < listenersToUse.size() - 1) {
         il.add(new InsnNode(Opcodes.DUP));
       }
-      il.add(ASMUtils.getPushInstruction(methodId));
-      il.add(getClassConstantReference(Type.getObjectType(cn.name), cn.version));
-      pushInstance(il, mn); // current instance
+      if (listener.requiresMethodId()) {
+        il.add(ASMUtils.getPushInstruction(methodId));
+      } else {
+        il.add(ASMUtils.getPushInstruction(0));
+      }
+      if (listener.requiresClass()) {
+        il.add(getClassConstantReference(Type.getObjectType(cn.name), cn.version)); // class
+      } else {
+        il.add(new InsnNode(Opcodes.ACONST_NULL));
+      }
+      if (listener.requiresInstance()) {
+        pushInstance(il, mn); // current instance
+      } else {
+        il.add(new InsnNode(Opcodes.ACONST_NULL));
+      }
       il.add(ASMUtils.getPushInstruction(index));
       il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
           "io/shiftleft/bctrace/runtime/Callback", "onStart",

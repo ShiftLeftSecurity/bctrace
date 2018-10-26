@@ -22,14 +22,14 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.asm.helper.specific;
+package io.shiftleft.bctrace.asm.helper.direct;
 
 import io.shiftleft.bctrace.asm.CallbackTransformer;
 import io.shiftleft.bctrace.asm.helper.Helper;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
 import io.shiftleft.bctrace.hook.Hook;
-import io.shiftleft.bctrace.runtime.listener.specific.CallSiteListener;
-import io.shiftleft.bctrace.runtime.listener.specific.DirectListener.ListenerType;
+import io.shiftleft.bctrace.runtime.listener.direct.CallSiteListener;
+import io.shiftleft.bctrace.runtime.listener.direct.DirectListener.ListenerType;
 import java.util.ArrayList;
 import java.util.Iterator;
 import org.objectweb.asm.Opcodes;

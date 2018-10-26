@@ -1,10 +1,11 @@
-package io.shiftleft.bctrace.hook;
+package io.shiftleft.bctrace.hook.direct;
 
 import io.shiftleft.bctrace.filter.Filter;
-import io.shiftleft.bctrace.runtime.listener.specific.DirectListener;
-import io.shiftleft.bctrace.runtime.listener.specific.DirectListener.DynamicArgsType;
-import io.shiftleft.bctrace.runtime.listener.specific.DirectListener.ListenerMethod;
-import io.shiftleft.bctrace.runtime.listener.specific.DirectListener.ListenerType;
+import io.shiftleft.bctrace.hook.Hook;
+import io.shiftleft.bctrace.runtime.listener.direct.DirectListener;
+import io.shiftleft.bctrace.runtime.listener.direct.DirectListener.DynamicArgsType;
+import io.shiftleft.bctrace.runtime.listener.direct.DirectListener.ListenerMethod;
+import io.shiftleft.bctrace.runtime.listener.direct.DirectListener.ListenerType;
 import java.lang.reflect.Method;
 import org.objectweb.asm.Type;
 

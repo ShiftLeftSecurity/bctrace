@@ -26,10 +26,10 @@ package io.shiftleft.bctrace.asm;
 
 import io.shiftleft.bctrace.Bctrace;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
-import io.shiftleft.bctrace.hook.DirectHook;
+import io.shiftleft.bctrace.hook.direct.DirectHook;
 import io.shiftleft.bctrace.hook.Hook;
 import io.shiftleft.bctrace.logging.Level;
-import io.shiftleft.bctrace.runtime.listener.specific.DirectListener;
+import io.shiftleft.bctrace.runtime.listener.direct.DirectListener;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.lang.reflect.Method;

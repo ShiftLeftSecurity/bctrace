@@ -22,55 +22,88 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.asm.helper.specific;
+package io.shiftleft.bctrace.asm.helper.direct;
 
 import io.shiftleft.bctrace.asm.CallbackTransformer;
 import io.shiftleft.bctrace.asm.helper.Helper;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
 import io.shiftleft.bctrace.hook.Hook;
-import io.shiftleft.bctrace.runtime.listener.specific.DirectListener;
-import io.shiftleft.bctrace.runtime.listener.specific.DirectListener.ListenerType;
+import io.shiftleft.bctrace.runtime.listener.direct.DirectListener;
+import io.shiftleft.bctrace.runtime.listener.direct.DirectListener.ListenerType;
 import java.util.ArrayList;
+import java.util.Iterator;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
+import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
-public class DirectStartHelper extends Helper {
+public class DirectReturnHelper extends Helper {
 
   public boolean addByteCodeInstructions(ClassNode cn, MethodNode mn,
       ArrayList<Integer> hooksToUse) {
 
-    ArrayList<Integer> listenersToUse = getDirectListenersOfType(hooksToUse, ListenerType.onStart);
+    ArrayList<Integer> listenersToUse = getDirectListenersOfType(hooksToUse, ListenerType.onFinish);
     if (!isInstrumentationNeeded(listenersToUse)) {
       return false;
     }
-    addTraceStart(cn, mn, listenersToUse);
+    addReturnTrace(cn, mn, listenersToUse);
     return true;
   }
 
-  private void addTraceStart(ClassNode cn, MethodNode mn,
+  private void addReturnTrace(ClassNode cn, MethodNode mn,
       ArrayList<Integer> listenersToUse) {
 
+    InsnList il = mn.instructions;
+    Iterator<AbstractInsnNode> it = il.iterator();
+    Type returnType = Type.getReturnType(mn.desc);
+
+    while (it.hasNext()) {
+      AbstractInsnNode abstractInsnNode = it.next();
+      switch (abstractInsnNode.getOpcode()) {
+        case Opcodes.RETURN:
+        case Opcodes.IRETURN:
+        case Opcodes.LRETURN:
+        case Opcodes.FRETURN:
+        case Opcodes.ARETURN:
+        case Opcodes.DRETURN:
+          il.insertBefore(abstractInsnNode,
+              getReturnTraceInstructions(cn, mn, returnType, listenersToUse));
+      }
+    }
+  }
+
+  private InsnList getReturnTraceInstructions(ClassNode cn, MethodNode mn,
+      Type returnType, ArrayList<Integer> listenersToUse) {
     InsnList il = new InsnList();
     Hook[] hooks = bctrace.getHooks();
-    for (int i = 0; i < listenersToUse.size(); i++) {
+    int returnVarIndex = mn.maxLocals;
+    if (!returnType.getDescriptor().equals("V")) {
+      mn.maxLocals = mn.maxLocals + returnType.getSize();
+      il.add(ASMUtils.getStoreInst(returnType, returnVarIndex));
+    }
+    for (int i = listenersToUse.size() - 1; i >= 0; i--) {
       Integer index = listenersToUse.get(i);
       DirectListener listener = (DirectListener) hooks[index].getListener();
       il.add(ASMUtils.getPushInstruction(index)); // hook id
       il.add(getClassConstantReference(Type.getObjectType(cn.name), cn.version)); // caller class
       pushInstance(il, mn); // current instance
       pushMethodArgs(il, mn); // method args
-
+      if (!returnType.getDescriptor().equals("V")) {
+        il.add(ASMUtils.getLoadInst(returnType, returnVarIndex));
+      }
       // Invoke dynamically generated callback method. See CallbackTransformer
       il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
           "io/shiftleft/bctrace/runtime/Callback",
           CallbackTransformer.getDynamicListenerMethodName(listener),
           CallbackTransformer.getDynamicListenerMethodDescriptor(listener),
           false));
+      if (!returnType.getDescriptor().equals("V")) {
+        il.add(ASMUtils.getLoadInst(returnType, returnVarIndex));
+      }
     }
-    mn.instructions.insert(il);
+    return il;
   }
 }

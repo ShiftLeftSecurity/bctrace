@@ -27,9 +27,13 @@ package io.shiftleft.bctrace.asm.helper;
 import io.shiftleft.bctrace.Bctrace;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
 import io.shiftleft.bctrace.hook.Hook;
-import io.shiftleft.bctrace.runtime.listener.specific.DirectListener;
-import io.shiftleft.bctrace.runtime.listener.specific.DirectListener.ListenerType;
+import io.shiftleft.bctrace.runtime.listener.direct.DirectListener;
+import io.shiftleft.bctrace.runtime.listener.direct.DirectListener.ListenerType;
+import io.shiftleft.bctrace.runtime.listener.generic.Disabled;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.InsnList;
@@ -43,7 +47,7 @@ import org.objectweb.asm.tree.VarInsnNode;
 /**
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public class Helper {
+public abstract class Helper {
 
   protected Bctrace bctrace;
 

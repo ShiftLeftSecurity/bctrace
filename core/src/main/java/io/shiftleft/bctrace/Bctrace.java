@@ -29,7 +29,7 @@ import io.shiftleft.bctrace.asm.Transformer;
 import io.shiftleft.bctrace.debug.CallCounterHook;
 import io.shiftleft.bctrace.debug.DebugInfo;
 import io.shiftleft.bctrace.hook.Hook;
-import io.shiftleft.bctrace.hook.MainMethodEndHook;
+import io.shiftleft.bctrace.hook.direct.MainMethodEndHook;
 import io.shiftleft.bctrace.logging.AgentLoggerFactory;
 import io.shiftleft.bctrace.logging.Level;
 import io.shiftleft.bctrace.logging.Logger;

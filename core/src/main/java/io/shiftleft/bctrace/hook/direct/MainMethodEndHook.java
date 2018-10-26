@@ -1,8 +1,9 @@
-package io.shiftleft.bctrace.hook;
+package io.shiftleft.bctrace.hook.direct;
 
 import io.shiftleft.bctrace.asm.util.ASMUtils;
 import io.shiftleft.bctrace.filter.Filter;
 import io.shiftleft.bctrace.hierarchy.BctraceClass;
+import io.shiftleft.bctrace.hook.generic.GenericHook;
 import io.shiftleft.bctrace.runtime.listener.generic.ReturnListener;
 import java.security.ProtectionDomain;
 import org.objectweb.asm.tree.MethodNode;
