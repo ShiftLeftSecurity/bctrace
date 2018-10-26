@@ -33,16 +33,17 @@ import io.shiftleft.bctrace.TestClass.TestRuntimeException;
 import io.shiftleft.bctrace.filter.AllFilter;
 import io.shiftleft.bctrace.filter.Filter;
 import io.shiftleft.bctrace.filter.MethodFilter;
-import io.shiftleft.bctrace.hook.CallSiteHook;
-import io.shiftleft.bctrace.hook.GenericHook;
+import io.shiftleft.bctrace.hook.direct.CallSiteHook;
+import io.shiftleft.bctrace.hook.generic.GenericHook;
 import io.shiftleft.bctrace.hook.Hook;
-import io.shiftleft.bctrace.hook.MethodHook;
+import io.shiftleft.bctrace.hook.direct.MethodHook;
 import io.shiftleft.bctrace.runtime.listener.generic.BeforeThrownListener;
+import io.shiftleft.bctrace.runtime.listener.generic.Disabled;
 import io.shiftleft.bctrace.runtime.listener.generic.GenericListener;
 import io.shiftleft.bctrace.runtime.listener.generic.ReturnListener;
 import io.shiftleft.bctrace.runtime.listener.generic.StartListener;
-import io.shiftleft.bctrace.runtime.listener.specific.CallSiteListener;
-import io.shiftleft.bctrace.runtime.listener.specific.DirectListener;
+import io.shiftleft.bctrace.runtime.listener.direct.CallSiteListener;
+import io.shiftleft.bctrace.runtime.listener.direct.DirectListener;
 import java.lang.reflect.InvocationTargetException;
 import org.junit.Test;
 
@@ -94,6 +95,63 @@ public class FeatureTest extends BcTraceTest {
     clazz.getMethod("execVoid").invoke(null);
     System.out.println(clazz.getClassLoader());
     assertEquals("12", steps.toString());
+  }
+
+  @Test
+  public void testReturnDisabled() throws Exception {
+    final StringBuilder steps = new StringBuilder();
+    Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
+        new GenericHook() {
+          @Override
+          public Filter getFilter() {
+            return new AllFilter();
+          }
+
+          @Override
+          public GenericListener getListener() {
+            return new ReturnListener() {
+              @Override
+              public void onReturn(@Disabled int methodId, @Disabled Class clazz,
+                  @Disabled Object instance,
+                  @Disabled Object[] args, @Disabled Object ret) {
+                if (clazz == null && args == null) {
+                  steps.append("1");
+                }
+              }
+            };
+          }
+        }
+    });
+    clazz.getMethod("execVoid").invoke(null);
+    assertEquals("1", steps.toString());
+  }
+
+  @Test
+  public void testStartDisabled() throws Exception {
+    final StringBuilder steps = new StringBuilder();
+    Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
+        new GenericHook() {
+          @Override
+          public Filter getFilter() {
+            return new AllFilter();
+          }
+
+          @Override
+          public GenericListener getListener() {
+            return new StartListener() {
+              @Override
+              public void onStart(@Disabled int methodId, @Disabled Class clazz,
+                  @Disabled Object instance, @Disabled Object[] args) {
+                if (clazz == null && args == null) {
+                  steps.append("1");
+                }
+              }
+            };
+          }
+        }
+    });
+    clazz.getMethod("execVoid").invoke(null);
+    assertEquals("1", steps.toString());
   }
 
   @Test
@@ -437,7 +495,8 @@ public class FeatureTest extends BcTraceTest {
           public GenericListener getListener() {
             return new BeforeThrownListener() {
               @Override
-              public void onBeforeThrown(int methodId, Class clazz, Object instance, Throwable th) {
+              public void onBeforeThrown(int methodId, Class clazz, Object instance, Object[] args,
+                  Throwable th) {
                 assertEquals(clazz.getName(), TestClass.class.getName());
                 assertTrue(th instanceof TestRuntimeException);
                 steps.append("1");
@@ -455,7 +514,8 @@ public class FeatureTest extends BcTraceTest {
           public GenericListener getListener() {
             return new BeforeThrownListener() {
               @Override
-              public void onBeforeThrown(int methodId, Class clazz, Object instance, Throwable th) {
+              public void onBeforeThrown(int methodId, Class clazz, Object instance, Object[] args,
+                  Throwable th) {
                 assertEquals(clazz.getName(), TestClass.class.getName());
                 assertTrue(th instanceof TestRuntimeException);
                 steps.append("2");

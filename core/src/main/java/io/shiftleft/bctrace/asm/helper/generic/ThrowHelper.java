@@ -94,9 +94,10 @@ public class ThrowHelper extends Helper {
       il.add(getClassConstantReference(Type.getObjectType(cn.name), cn.version));
       pushInstance(il, mn); // current instance
       il.add(ASMUtils.getPushInstruction(index)); // hook id
+      pushMethodArgsArray(il, mn);
       il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
           "io/shiftleft/bctrace/runtime/Callback", "onBeforeThrown",
-          "(Ljava/lang/Throwable;ILjava/lang/Class;Ljava/lang/Object;I)V", false));
+          "(Ljava/lang/Throwable;ILjava/lang/Class;Ljava/lang/Object;I[Ljava/lang/Object;)V", false));
     }
     return il;
   }

@@ -24,20 +24,33 @@
  */
 package io.shiftleft.bctrace.runtime.listener.generic;
 
+import java.lang.reflect.Method;
+
 /**
- *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-  public abstract class BeforeThrownListener extends GenericListener {
+public abstract class BeforeThrownListener extends GenericListener {
+
+  private static final Method METHOD = BeforeThrownListener.class.getDeclaredMethods()[0];
+
+  @Override
+  protected final Method getListenerSuperMethod() {
+    return METHOD;
+  }
+
+  public final boolean requiresThrowable() {
+    return !getDisabledArguments()[4];
+  }
+
   /**
-   * Invoked by instrumented methods just before the actual method throws a
-   * throwable.
+   * Invoked by instrumented methods just before the actual method throws a throwable.
    *
    * @param methodId method id (as defined by MethodRegistry)
    * @param clazz class defining the method.
    * @param instance instance where the method is invoked. Null if the method is static
+   * @param args arguments passed to the method.
    * @param th throwable to be thrown
    */
-  public abstract void onBeforeThrown(int methodId, Class clazz, Object instance, Throwable th);
+  public abstract void onBeforeThrown(int methodId, Class clazz, Object instance, Object[] args, Throwable th);
 
 }

@@ -24,11 +24,19 @@
  */
 package io.shiftleft.bctrace.runtime.listener.generic;
 
+import java.lang.reflect.Method;
+
 /**
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
 public abstract class StartListener extends GenericListener {
 
+  private static final Method METHOD = StartListener.class.getDeclaredMethods()[0];
+
+  @Override
+  protected final Method getListenerSuperMethod() {
+    return METHOD;
+  }
 /**
    * Invoked by instrumented methods before any of its original instructions (if
    * multiple plugins are registered, listener notification is performed

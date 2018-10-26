@@ -25,7 +25,7 @@
 package io.shiftleft.bctrace.debug;
 
 import io.shiftleft.bctrace.filter.Filter;
-import io.shiftleft.bctrace.hook.GenericHook;
+import io.shiftleft.bctrace.hook.generic.GenericHook;
 import io.shiftleft.bctrace.runtime.listener.generic.StartListener;
 
 /**

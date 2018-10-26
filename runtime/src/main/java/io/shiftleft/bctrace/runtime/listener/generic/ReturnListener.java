@@ -24,26 +24,40 @@
  */
 package io.shiftleft.bctrace.runtime.listener.generic;
 
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
+import java.util.Arrays;
+
 /**
- *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
 public abstract class ReturnListener extends GenericListener {
 
+  private static final Method METHOD = ReturnListener.class.getDeclaredMethods()[0];
+
+  @Override
+  protected final Method getListenerSuperMethod() {
+    return METHOD;
+  }
+
   /**
-   * Invoked by instrumented methods just before return (if multiple plugins are
-   * registered, listener notification is performed according to their
-   * respective plugin <b>reverse</b> registration order).
-   * 
+   * Invoked by instrumented methods just before return (if multiple plugins are registered,
+   * listener notification is performed according to their respective plugin <b>reverse</b>
+   * registration order).
+   *
    * @param methodId method id (as defined by MethodRegistry)
    * @param clazz class defining the method.
    * @param instance instance where the method is invoked. Null if the method is static
    * @param args arguments passed to the method.
-   * @param ret Object being returned by the method. Wrapper type if the
-   * original return type is primitive. <code>null</code> if the method return
-   * type is <code>void</code>
+   * @param ret Object being returned by the method. Wrapper type if the original return type is
+   * primitive. <code>null</code> if the method return type is <code>void</code>
    */
-  
-  public abstract void onReturn(int methodId, Class clazz, Object instance, Object[] args, Object ret);
 
+  public abstract void onReturn(int methodId, Class clazz, Object instance, Object[] args,
+      Object ret);
+
+
+  public final boolean requiresReturnValue() {
+    return !getDisabledArguments()[4];
+  }
 }

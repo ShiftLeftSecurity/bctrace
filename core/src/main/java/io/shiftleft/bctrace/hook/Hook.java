@@ -34,7 +34,7 @@ import io.shiftleft.bctrace.filter.Filter;
  */
 public abstract class Hook<F extends Filter, L> {
 
-  Hook() {
+  protected Hook() {
   }
 
   /**

@@ -22,22 +22,19 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.runtime.listener.specific;
+package io.shiftleft.bctrace.hook.direct;
+
+import io.shiftleft.bctrace.filter.MethodFilter;
+import io.shiftleft.bctrace.runtime.listener.direct.DirectListener;
 
 /**
+ * A hook targeted exclusively to a concrete method.
+ *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public abstract class CallSiteListener extends DirectListener {
+public class MethodHook extends DirectHook<MethodFilter, DirectListener> {
 
-  public CallSiteListener() {
-    if (getType() != ListenerType.onBeforeCall && getType() != ListenerType.onAfterCall) {
-      throw new Error("Invalid @ListenerType type for listener method in " + getClass());
-    }
+  public MethodHook(MethodFilter filter, DirectListener listener) {
+    super(filter, listener, filter.getMethodDescriptor());
   }
-
-  public abstract String getCallSiteClassName();
-
-  public abstract String getCallSiteMethodName();
-
-  public abstract String getCallSiteMethodDescriptor();
 }

@@ -79,7 +79,7 @@ public final class Callback {
 
   @SuppressWarnings("BoxedValueEquality")
   public static void onBeforeThrown(Throwable throwable, int methodId, Class clazz, Object instance,
-      int i) {
+      int i, Object[] args) {
     if (!CallbackEnabler.isThreadNotificationEnabled()) {
       return;
     }
@@ -88,7 +88,7 @@ public final class Callback {
     }
     try {
       NOTIFYING_FLAG.set(Boolean.TRUE);
-      ((BeforeThrownListener) listeners[i]).onBeforeThrown(methodId, clazz, instance, throwable);
+      ((BeforeThrownListener) listeners[i]).onBeforeThrown(methodId, clazz, instance, args, throwable);
     } catch (Throwable th) {
       handleThrowable(th);
     } finally {

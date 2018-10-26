@@ -22,7 +22,7 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.runtime.listener.specific;
+package io.shiftleft.bctrace.runtime.listener.direct;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -33,8 +33,8 @@ import java.lang.reflect.Modifier;
 import java.util.Arrays;
 
 /**
- * DirectListener instances are notified directly from the instrumented method without creating
- * intermediate object instance. They are used for high performance notification.
+ * DirectListener instances are notified directly from the instrumented method without wrapping or
+ * boxing arguments. They are used for high performance notification.
  *
  * DirectListener does not define a fixed interface. They are used in TargetedHooks, and they must
  * define a single method (with name defined in the ListenerType enum) whose signature matches the
