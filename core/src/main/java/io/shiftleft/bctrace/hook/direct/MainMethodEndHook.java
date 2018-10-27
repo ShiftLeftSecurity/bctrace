@@ -27,11 +27,12 @@ public abstract class MainMethodEndHook extends GenericHook<Filter, ReturnListen
 
   private final ReturnListener listener = new ReturnListener() {
     @Override
-    public void onReturn(int methodId, Class clazz, Object instance, Object[] args, Object ret) {
+    public Object onReturn(int methodId, Class clazz, Object instance, Object[] args, Object ret) {
       if (active) {
         onMainReturn(clazz.getName());
         active = false;
       }
+      return ret;
     }
   };
 

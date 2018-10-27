@@ -49,9 +49,10 @@ public abstract class ReturnListener extends GenericListener {
    * @param args arguments passed to the method.
    * @param ret Object being returned by the method. Wrapper type if the original return type is
    * primitive. <code>null</code> if the method return type is <code>void</code>
+   * @return Object to be returned by the instrumented method. Ignored if target method return type
+   * is void
    */
-
-  public abstract void onReturn(int methodId, Class clazz, Object instance, Object[] args,
+  public abstract Object onReturn(int methodId, Class clazz, Object instance, Object[] args,
       Object ret);
 
 
