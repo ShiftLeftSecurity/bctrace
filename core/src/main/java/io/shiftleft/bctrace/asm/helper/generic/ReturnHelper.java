@@ -41,6 +41,7 @@ import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.TypeInsnNode;
 
 /**
  * Inserts the bytecode instructions within method node, needed to handle the return listeners
@@ -144,8 +145,9 @@ public class ReturnHelper extends Helper {
       }
       il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
           "io/shiftleft/bctrace/runtime/Callback", "onReturn",
-          "(Ljava/lang/Object;ILjava/lang/Class;Ljava/lang/Object;I[Ljava/lang/Object;)V",
+          "(Ljava/lang/Object;ILjava/lang/Class;Ljava/lang/Object;I[Ljava/lang/Object;)Ljava/lang/Object;",
           false));
+      il.add(new InsnNode(Opcodes.POP));
     }
     return il;
   }
@@ -153,15 +155,21 @@ public class ReturnHelper extends Helper {
   private InsnList getReturnTraceInstructions(int methodId, ClassNode cn, MethodNode mn,
       Type returnType, ArrayList<Integer> listenersToUse) {
     InsnList il = new InsnList();
+    // Auxiliar local variables
+    int retVarIndex = mn.maxLocals;
+    if (returnType.getSize() == 1) {
+      mn.maxLocals = mn.maxLocals + 1;
+    } else {
+      mn.maxLocals = mn.maxLocals + 2;
+    }
+    // Store original return value into a local variable
+    il.add(ASMUtils.getStoreInst(returnType, retVarIndex));
     for (int i = listenersToUse.size() - 1; i >= 0; i--) {
       Integer index = listenersToUse.get(i);
       ReturnListener listener = (ReturnListener) bctrace.getHooks()[index].getListener();
       if (listener.requiresReturnValue()) {
-        if (returnType.getSize() == 1) {
-          il.add(new InsnNode(Opcodes.DUP));
-        } else {
-          il.add(new InsnNode(Opcodes.DUP2));
-        }
+        il.add(ASMUtils
+            .getLoadInst(returnType, retVarIndex)); // Pop original return value to the stack
         MethodInsnNode primitiveToWrapperInst = ASMUtils.getPrimitiveToWrapperInst(returnType);
         if (primitiveToWrapperInst != null) {
           il.add(primitiveToWrapperInst);
@@ -188,8 +196,27 @@ public class ReturnHelper extends Helper {
       pushMethodArgsArray(il, mn);
       il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
           "io/shiftleft/bctrace/runtime/Callback", "onReturn",
-          "(Ljava/lang/Object;ILjava/lang/Class;Ljava/lang/Object;I[Ljava/lang/Object;)V",
+          "(Ljava/lang/Object;ILjava/lang/Class;Ljava/lang/Object;I[Ljava/lang/Object;)Ljava/lang/Object;",
           false));
+
+      String castType = returnType.getInternalName();
+      String wrapperType = ASMUtils.getWrapper(returnType);
+      if (wrapperType != null) {
+        castType = wrapperType;
+      }
+      il.add(new TypeInsnNode(Opcodes.CHECKCAST, castType));
+      MethodInsnNode wrapperToPrimitiveInst = ASMUtils.getWrapperToPrimitiveInst(returnType);
+      if (wrapperToPrimitiveInst != null) {
+        il.add(wrapperToPrimitiveInst);
+      }
+      if (returnType.getSize() == 1) {
+        il.add(new InsnNode(Opcodes.DUP));
+      } else {
+        il.add(new InsnNode(Opcodes.DUP2));
+      }
+      // Update return value local variable, so each listener receives the modified value from the ones before
+      // instead of getting all of them the original value
+      il.add(ASMUtils.getStoreInst(returnType, retVarIndex));
     }
     return il;
   }

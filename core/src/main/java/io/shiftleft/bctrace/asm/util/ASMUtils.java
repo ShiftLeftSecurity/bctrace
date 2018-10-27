@@ -148,12 +148,12 @@ public class ASMUtils {
     return new InsnNode(opCode);
   }
 
-  public static String getWrapper(Type type) {
+  public static String getWrapper(Type primitiveType) {
 
-    if (type.getDescriptor().length() != 1) {
+    if (primitiveType.getDescriptor().length() != 1) {
       return null;
     }
-    char charType = type.getDescriptor().charAt(0);
+    char charType = primitiveType.getDescriptor().charAt(0);
     String wrapper;
     switch (charType) {
       case 'B':
@@ -186,7 +186,7 @@ public class ASMUtils {
         break;
       default:
         throw new ClassFormatError("Invalid type descriptor: "
-            + type.getDescriptor());
+            + primitiveType.getDescriptor());
     }
     return wrapper;
   }

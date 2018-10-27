@@ -58,20 +58,21 @@ public final class Callback {
   }
 
   @SuppressWarnings("BoxedValueEquality")
-  public static void onReturn(Object ret, int methodId, Class clazz, Object instance,
+  public static Object onReturn(Object ret, int methodId, Class clazz, Object instance,
       int i, Object[] args) {
     if (!CallbackEnabler.isThreadNotificationEnabled()) {
-      return;
+      return ret;
     }
     if (Boolean.TRUE == NOTIFYING_FLAG.get()) {
-      return;
+      return ret;
     }
     try {
       NOTIFYING_FLAG.set(Boolean.TRUE);
-      ((ReturnListener) listeners[i])
+      return ((ReturnListener) listeners[i])
           .onReturn(methodId, clazz, instance, args, ret);
     } catch (Throwable th) {
       handleThrowable(th);
+      return ret;
     } finally {
       NOTIFYING_FLAG.set(Boolean.FALSE);
     }

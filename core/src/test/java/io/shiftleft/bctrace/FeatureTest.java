@@ -111,12 +111,13 @@ public class FeatureTest extends BcTraceTest {
           public GenericListener getListener() {
             return new ReturnListener() {
               @Override
-              public void onReturn(@Disabled int methodId, @Disabled Class clazz,
+              public Object onReturn(@Disabled int methodId, @Disabled Class clazz,
                   @Disabled Object instance,
-                  @Disabled Object[] args, @Disabled Object ret) {
+                  @Disabled Object[] args, Object ret) {
                 if (clazz == null && args == null) {
                   steps.append("1");
                 }
+                return ret;
               }
             };
           }
@@ -154,8 +155,9 @@ public class FeatureTest extends BcTraceTest {
     assertEquals("1", steps.toString());
   }
 
+
   @Test
-  public void testReturn() throws Exception {
+  public void testReturnModification() throws Exception {
     final StringBuilder steps = new StringBuilder();
     Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
         new GenericHook() {
@@ -168,10 +170,11 @@ public class FeatureTest extends BcTraceTest {
           public GenericListener getListener() {
             return new ReturnListener() {
               @Override
-              public void onReturn(int methodId, Class clazz, Object instance, Object[] args,
+              public Object onReturn(int methodId, Class clazz, Object instance, Object[] args,
                   Object ret) {
-                assertEquals(clazz.getName(), TestClass.class.getName());
-                steps.append("1");
+                Long value = (Long) ret;
+                assertEquals((long) value, 3l);
+                return value + 1;
               }
             };
           }
@@ -186,10 +189,59 @@ public class FeatureTest extends BcTraceTest {
           public GenericListener getListener() {
             return new ReturnListener() {
               @Override
-              public void onReturn(int methodId, Class clazz, Object instance, Object[] args,
+              public Object onReturn(int methodId, Class clazz, Object instance, Object[] args,
+                  Object ret) {
+                Long value = (Long) ret;
+                assertEquals((long) value, 2l);
+                return value + 1;
+              }
+            };
+          }
+        }
+    });
+    Object ret = clazz.getMethod("getLong").invoke(null);
+    Long value = (Long) ret;
+    assertEquals((long) value, 4l);
+  }
+
+  @Test
+  public void testReturn() throws Exception {
+    final StringBuilder steps = new StringBuilder();
+    Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
+        new GenericHook() {
+          @Override
+          public Filter getFilter() {
+            return new AllFilter();
+          }
+
+          @Override
+          public GenericListener getListener() {
+            return new ReturnListener() {
+              @Override
+              public Object onReturn(int methodId, Class clazz, Object instance, Object[] args,
+                  Object ret) {
+                assertEquals(clazz.getName(), TestClass.class.getName());
+                steps.append("1");
+                return ret;
+              }
+            };
+          }
+        },
+        new GenericHook() {
+          @Override
+          public Filter getFilter() {
+            return new AllFilter();
+          }
+
+          @Override
+          public GenericListener getListener() {
+            return new ReturnListener() {
+              @Override
+              public Object onReturn(int methodId, Class clazz, Object instance, Object[] args,
                   Object ret) {
                 assertEquals(clazz.getName(), TestClass.class.getName());
                 steps.append("2");
+                return ret;
               }
             };
           }
