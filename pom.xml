@@ -1,11 +1,9 @@
 <?xml version="1.0"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>io.shiftleft</groupId>
   <artifactId>bctrace</artifactId>
-  <version>0.0.0-SNAPSHOT</version>
+  <version>1.2.0</version>
   <packaging>pom</packaging>
   <name>${project.groupId}:${project.artifactId}</name>
   <description>Extensible java agent framework to instrument programs running on the JVM
@@ -47,7 +45,7 @@
     <connection>scm:git:https://github.com/ShiftLeftSecurity/bctrace.git</connection>
     <developerConnection>scm:git:https://github.com/ShiftLeftSecurity/bctrace.git
     </developerConnection>
-    <tag>HEAD</tag>
+    <tag>v1.2.0</tag>
   </scm>
   <build>
     <pluginManagement>
