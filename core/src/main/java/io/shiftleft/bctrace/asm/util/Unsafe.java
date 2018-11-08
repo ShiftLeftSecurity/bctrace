@@ -25,6 +25,7 @@
 package io.shiftleft.bctrace.asm.util;
 
 import java.lang.reflect.Field;
+import java.security.ProtectionDomain;
 
 /**
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
@@ -73,21 +74,21 @@ public class Unsafe {
 
     public void setValue(long index, int value) {
       if (destroyed) {
-        throw new IllegalStateException("Instance has been detroyed");
+        throw new IllegalStateException("Instance has been destroyed");
       }
       unsafe.putInt(index(index), value);
     }
 
     public int getValue(long index) {
       if (destroyed) {
-        throw new IllegalStateException("Instance has been detroyed");
+        throw new IllegalStateException("Instance has been destroyed");
       }
       return unsafe.getInt(index(index));
     }
 
     private long index(long offset) {
       if (destroyed) {
-        throw new IllegalStateException("Instance has been detroyed");
+        throw new IllegalStateException("Instance has been destroyed");
       }
       return startIndex + offset * INT_SIZE_IN_BYTES;
     }
@@ -98,10 +99,19 @@ public class Unsafe {
 
     public void destroy() {
       if (destroyed) {
-        throw new IllegalStateException("Instance has already been detroyed");
+        throw new IllegalStateException("Instance has already been destroyed");
       }
       unsafe.freeMemory(startIndex);
       destroyed = true;
     }
+  }
+
+  public static Class defineClass(String name, byte[] bytecode, ClassLoader classLoader,
+      ProtectionDomain protectionDomain) {
+
+    Class ret = unsafe
+        .defineClass(name, bytecode, 0, bytecode.length, classLoader, protectionDomain);
+    unsafe.ensureClassInitialized(ret);
+    return ret;
   }
 }

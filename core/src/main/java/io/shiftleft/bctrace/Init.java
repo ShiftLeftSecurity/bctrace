@@ -24,8 +24,10 @@
  */
 package io.shiftleft.bctrace;
 
+import io.shiftleft.bctrace.asm.DirectListenerTransformer;
 import io.shiftleft.bctrace.debug.DebugHttpServer;
 import io.shiftleft.bctrace.runtime.CallbackEnabler;
+import io.shiftleft.bctrace.runtime.listener.direct.DirectListener;
 import java.io.IOException;
 import java.lang.instrument.Instrumentation;
 import java.util.Map.Entry;
@@ -59,8 +61,11 @@ public class Init {
     if (factoryImpClass == null) {
       throw new Error("No agent factory found in classpath resource " + DESCRIPTOR_NAME);
     }
+    InstrumentationImpl instrumentation = new InstrumentationImpl(inst);
+    DirectListenerTransformer directListenerTransformer = new DirectListenerTransformer(instrumentation);
+    inst.addTransformer(directListenerTransformer, false);
     AgentFactory agentFactory = (AgentFactory) Class.forName(factoryImpClass).newInstance();
-    Bctrace bctrace = new Bctrace(inst, agentFactory.createAgent());
+    Bctrace bctrace = new Bctrace(instrumentation, agentFactory.createAgent());
     bctrace.init();
     DebugHttpServer.init();
     CallbackEnabler.enableThreadNotification();

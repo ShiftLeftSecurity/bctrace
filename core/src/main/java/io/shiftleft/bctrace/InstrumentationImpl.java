@@ -156,7 +156,8 @@ public final class InstrumentationImpl implements Instrumentation {
 
   private synchronized void removeClass(String className, ClassLoader cl,
       Map<String, List<WeakReference<ClassLoader>>> map) {
-    LinkedList<WeakReference<ClassLoader>> list = (LinkedList) map.get(className);
+    LinkedList<WeakReference<ClassLoader>> list = (LinkedList<WeakReference<ClassLoader>>) map
+        .get(className);
     if (list != null) {
       if (cl == null) { // Bootstrap classloader
         list.remove(null);
@@ -219,8 +220,8 @@ public final class InstrumentationImpl implements Instrumentation {
       return null;
     }
     try {
-       for (int i = 0; i < classloaders.size(); i++) {
-      WeakReference<ClassLoader> wk = classloaders.get(i);
+      for (int i = 0; i < classloaders.size(); i++) {
+        WeakReference<ClassLoader> wk = classloaders.get(i);
         if (cl == null) {
           if (wk == null) {
             return Class.forName(name, false, null);
@@ -244,7 +245,7 @@ public final class InstrumentationImpl implements Instrumentation {
     if (classloaders == null) {
       return false;
     }
-     for (int i = 0; i < classloaders.size(); i++) {
+    for (int i = 0; i < classloaders.size(); i++) {
       WeakReference<ClassLoader> wk = classloaders.get(i);
       if (cl == null) {
         if (wk == null) {

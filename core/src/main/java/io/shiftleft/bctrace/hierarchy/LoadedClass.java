@@ -25,16 +25,19 @@
 package io.shiftleft.bctrace.hierarchy;
 
 import io.shiftleft.bctrace.Bctrace;
+import io.shiftleft.bctrace.Instrumentation;
 
 /**
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
 public class LoadedClass extends BctraceClass {
 
+  static final LoadedClass OBJECT_CLASS = new LoadedClass(Object.class, null);
+
   private final Class clazz;
 
-  LoadedClass(Class clazz, Bctrace bctrace) {
-    super(clazz.getName(), clazz.getClassLoader(), bctrace);
+  LoadedClass(Class clazz, Instrumentation inst) {
+    super(clazz.getName(), clazz.getClassLoader(), inst);
     this.clazz = clazz;
   }
 

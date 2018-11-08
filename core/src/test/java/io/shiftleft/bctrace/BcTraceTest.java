@@ -88,29 +88,9 @@ public abstract class BcTraceTest {
     byte[] bytes = ASMUtils.toByteArray(is);
     byte[] newBytes = transformer.transform(null, className.replace('.', '/'), clazz, null, bytes);
     if (trace) {
-      BcTraceTest.viewByteCode(newBytes);
+      ASMUtils.viewByteCode(newBytes);
     }
     return cl.loadClass(className, newBytes);
-  }
-
-  public static void viewByteCode(byte[] bytecode) {
-    ClassReader cr = new ClassReader(bytecode);
-    ClassNode cn = new ClassNode();
-    cr.accept(cn, 0);
-    final List<MethodNode> mns = cn.methods;
-    Printer printer = new Textifier();
-    TraceMethodVisitor mp = new TraceMethodVisitor(printer);
-    for (MethodNode mn : mns) {
-      InsnList inList = mn.instructions;
-      System.out.println(mn.name);
-      for (int i = 0; i < inList.size(); i++) {
-        inList.get(i).accept(mp);
-        StringWriter sw = new StringWriter();
-        printer.print(new PrintWriter(sw));
-        printer.getText().clear();
-        System.out.print(sw.toString());
-      }
-    }
   }
 
   public static class ByteClassLoader extends ClassLoader {

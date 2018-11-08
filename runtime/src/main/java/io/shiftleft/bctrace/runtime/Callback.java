@@ -24,6 +24,7 @@
  */
 package io.shiftleft.bctrace.runtime;
 
+import io.shiftleft.bctrace.runtime.listener.direct.DirectListener;
 import io.shiftleft.bctrace.runtime.listener.generic.BeforeThrownListener;
 import io.shiftleft.bctrace.runtime.listener.generic.ReturnListener;
 import io.shiftleft.bctrace.runtime.listener.generic.StartListener;
@@ -89,7 +90,8 @@ public final class Callback {
     }
     try {
       NOTIFYING_FLAG.set(Boolean.TRUE);
-      ((BeforeThrownListener) listeners[i]).onBeforeThrown(methodId, clazz, instance, args, throwable);
+      ((BeforeThrownListener) listeners[i])
+          .onBeforeThrown(methodId, clazz, instance, args, throwable);
     } catch (Throwable th) {
       handleThrowable(th);
     } finally {
@@ -97,6 +99,9 @@ public final class Callback {
     }
   }
 
+  /**
+   * This is a template method that is used for generating other methods at CallbackTransformer.
+   */
   @SuppressWarnings("BoxedValueEquality")
   private static void dynamicTemplate(int i) {
     if (!CallbackEnabler.isThreadNotificationEnabled()) {
@@ -107,12 +112,18 @@ public final class Callback {
     }
     try {
       NOTIFYING_FLAG.set(Boolean.TRUE);
-      (listeners[i]).notify();
+      // notify() method will be changed by CallbackTransformer
+      test(listeners[i]);
+      listeners[i].notify();
     } catch (Throwable th) {
       handleThrowable(th);
     } finally {
       NOTIFYING_FLAG.set(Boolean.FALSE);
     }
+  }
+
+  private static void test(Object o){
+    System.out.println(o.getClass());
   }
 
   private static void handleThrowable(Throwable th) {

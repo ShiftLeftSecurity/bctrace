@@ -69,14 +69,6 @@ public class Transformer implements ClassFileTransformer {
       .replace('.', '/');
 
   private static final File DUMP_FOLDER;
-  private final CallbackTransformer cbTransformer;
-
-  private final StartHelper startHelper = new StartHelper();
-  private final ReturnHelper returnHelper = new ReturnHelper();
-  private final ThrowHelper throwHelper = new ThrowHelper();
-  private final CallSiteHelper callSiteHelper = new CallSiteHelper();
-  private final DirectStartHelper directStartHelper = new DirectStartHelper();
-  private final DirectReturnHelper directReturnHelper = new DirectReturnHelper();
 
   static {
     if (System.getProperty(SystemProperty.DUMP_FOLDER) != null) {
@@ -93,6 +85,14 @@ public class Transformer implements ClassFileTransformer {
     }
   }
 
+
+  private final CallbackTransformer cbTransformer;
+  private final StartHelper startHelper = new StartHelper();
+  private final ReturnHelper returnHelper = new ReturnHelper();
+  private final ThrowHelper throwHelper = new ThrowHelper();
+  private final CallSiteHelper callSiteHelper = new CallSiteHelper();
+  private final DirectStartHelper directStartHelper = new DirectStartHelper();
+  private final DirectReturnHelper directReturnHelper = new DirectReturnHelper();
   private final InstrumentationImpl instrumentation;
   private final Hook[] hooks;
   private final Bctrace bctrace;
@@ -158,7 +158,7 @@ public class Transformer implements ClassFileTransformer {
       ClassNode cn = new ClassNode();
       cr.accept(cn, 0);
 
-      UnloadedClass ci = new UnloadedClass(className.replace('/', '.'), loader, cn, bctrace);
+      UnloadedClass ci = new UnloadedClass(className.replace('/', '.'), loader, cn, instrumentation);
 
       classMatchingHooks = getMatchingHooksByClassInfo(classMatchingHooks, ci, protectionDomain,
           loader);
