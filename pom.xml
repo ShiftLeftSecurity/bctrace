@@ -1,12 +1,15 @@
 <?xml version="1.0"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>io.shiftleft</groupId>
   <artifactId>bctrace</artifactId>
   <version>0.0.0-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>${project.groupId}:${project.artifactId}</name>
-  <description>Extensible java agent framework to instrument programs running on the JVM</description>
+  <description>Extensible java agent framework to instrument programs running on the JVM
+  </description>
   <developers>
     <developer>
       <id>idelvall</id>
@@ -42,7 +45,8 @@
   <scm>
     <url>https://github.com/ShiftLeftSecurity/bctrace</url>
     <connection>scm:git:https://github.com/ShiftLeftSecurity/bctrace.git</connection>
-    <developerConnection>scm:git:https://github.com/ShiftLeftSecurity/bctrace.git</developerConnection>
+    <developerConnection>scm:git:https://github.com/ShiftLeftSecurity/bctrace.git
+    </developerConnection>
     <tag>HEAD</tag>
   </scm>
   <build>
@@ -51,7 +55,11 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
-          <version>2.12.4</version>
+          <configuration>
+            <reuseForks>true</reuseForks>
+            <useSystemClassLoader>false</useSystemClassLoader>
+          </configuration>
+          <version>2.20.1</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -77,7 +85,7 @@
           <artifactId>maven-source-plugin</artifactId>
           <version>2.4</version>
         </plugin>
-        <plugin>                
+        <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-jar-plugin</artifactId>
           <version>2.5</version>
