@@ -112,7 +112,7 @@ public class DirectListenerTransformer implements ClassFileTransformer {
     ClassNode itf = new ClassNode();
     itf.name = cn.name + "Interface";
     itf.access =
-        Opcodes.ACC_PUBLIC | Opcodes.ACC_INTERFACE | Opcodes.ACC_ABSTRACT;
+        Opcodes.ACC_PUBLIC | Opcodes.ACC_INTERFACE | Opcodes.ACC_ABSTRACT | Opcodes.ACC_SYNTHETIC;
     itf.version = Opcodes.V1_6;
     itf.superName = "java/lang/Object";
 

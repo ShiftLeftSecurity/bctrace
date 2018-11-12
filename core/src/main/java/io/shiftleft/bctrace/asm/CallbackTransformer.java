@@ -139,7 +139,7 @@ public class CallbackTransformer implements ClassFileTransformer {
     // Change method name from the template method
     mn.name = getDynamicListenerMethodName(listener);
     // Change signature of the method from private to public
-    mn.access = (mn.access | Opcodes.ACC_PUBLIC) & ~Opcodes.ACC_PRIVATE;
+    mn.access = (mn.access | Opcodes.ACC_PUBLIC | Opcodes.ACC_SYNTHETIC) & ~Opcodes.ACC_PRIVATE;
     updateMethodDescriptor(mn, listener.getListenerMethod());
     updateMethodByteCode(mn, listener.getListenerMethod());
     return mn;
