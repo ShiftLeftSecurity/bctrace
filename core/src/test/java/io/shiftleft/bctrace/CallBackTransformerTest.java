@@ -76,7 +76,13 @@ public class CallBackTransformerTest {
     assertEquals(listener2.toString(), Long.toString(aLong));
   }
 
-  public static class SampleListener1 extends DirectListener {
+
+  public static interface SampleListener1Interface {
+
+    public void onEvent1(Class clazz, Object instance, long n);
+  }
+
+  public static class SampleListener1 extends DirectListener implements SampleListener1Interface {
 
     final StringBuilder sb = new StringBuilder();
 
@@ -91,7 +97,12 @@ public class CallBackTransformerTest {
     }
   }
 
-  public static class SampleListener2 extends DirectListener {
+  public static interface SampleListener2Interface {
+
+    public void onEvent2(Class clazz, Object instance, Long n);
+  }
+
+  public static class SampleListener2 extends DirectListener implements SampleListener2Interface {
 
     final StringBuilder sb = new StringBuilder();
 

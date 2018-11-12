@@ -182,10 +182,9 @@ public class CallbackTransformer implements ClassFileTransformer {
 
   // Changes toString() by listenerMethod(arg1, arg2, ...)
   private static void updateMethodByteCode(MethodNode mn, Method listenerMethod) {
-    //
     InsnList listenerParams = new InsnList();
     String interfaceType = Type.getType(listenerMethod.getDeclaringClass())
-        .getInternalName().replace('$', '_') + "_Interface";
+        .getInternalName() + "Interface";
     listenerParams.add(new TypeInsnNode(Opcodes.CHECKCAST, interfaceType));
     Class<?>[] params = listenerMethod.getParameterTypes();
     StringBuilder descriptor = new StringBuilder("(");
@@ -200,7 +199,7 @@ public class CallbackTransformer implements ClassFileTransformer {
 
     for (int i = 0; i < instructions.size(); i++) {
       AbstractInsnNode node = instructions.get(i);
-       if (node instanceof MethodInsnNode) {
+      if (node instanceof MethodInsnNode) {
         MethodInsnNode methodCallSite = (MethodInsnNode) node;
         if (methodCallSite.name.equals("notify")) {
           listenerCallSite = methodCallSite;
@@ -208,6 +207,7 @@ public class CallbackTransformer implements ClassFileTransformer {
           listenerCallSite.owner = interfaceType;
           listenerCallSite.name = listenerMethod.getName();
           listenerCallSite.desc = descriptor.toString();
+          listenerCallSite.itf = true;
           break;
         }
       }

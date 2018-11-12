@@ -28,6 +28,7 @@ import io.shiftleft.bctrace.runtime.listener.direct.DirectListener;
 import io.shiftleft.bctrace.runtime.listener.generic.BeforeThrownListener;
 import io.shiftleft.bctrace.runtime.listener.generic.ReturnListener;
 import io.shiftleft.bctrace.runtime.listener.generic.StartListener;
+import java.lang.reflect.Modifier;
 
 /**
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
@@ -113,7 +114,6 @@ public final class Callback {
     try {
       NOTIFYING_FLAG.set(Boolean.TRUE);
       // notify() method will be changed by CallbackTransformer
-      test(listeners[i]);
       listeners[i].notify();
     } catch (Throwable th) {
       handleThrowable(th);
@@ -122,15 +122,15 @@ public final class Callback {
     }
   }
 
-  private static void test(Object o){
-    System.out.println(o.getClass());
-  }
-
   private static void handleThrowable(Throwable th) {
     if (th instanceof BctraceRuntimeException) {
       throw ((BctraceRuntimeException) th).getWrappedException();
     } else {
-      errorListener.onError(th);
+      if (errorListener != null) {
+        errorListener.onError(th);
+      } else {
+        th.printStackTrace();
+      }
     }
   }
 

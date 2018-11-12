@@ -252,7 +252,16 @@ public class FeatureTest extends BcTraceTest {
     assertEquals("21", steps.toString());
   }
 
-  public static class CallSiteListener1 extends CallSiteListener {
+  public static interface CallSiteListener1Interface {
+
+    public void onBeforeCall(Class clazz, Object instance,
+        Object callSiteInstance, Object src, int srcPos,
+        Object dest, int destPos,
+        int length);
+  }
+
+  public static class CallSiteListener1 extends CallSiteListener implements
+      CallSiteListener1Interface {
 
     private final StringBuilder sb;
 
@@ -289,7 +298,17 @@ public class FeatureTest extends BcTraceTest {
     }
   }
 
-  public static class CallSiteListener2 extends CallSiteListener {
+  public static interface CallSiteListener2Interface {
+
+    public void onBeforeCall(Class clazz, Object instance,
+        Object callSiteInstance, Object src, int srcPos,
+        Object dest, int destPos,
+        int length);
+  }
+
+
+  public static class CallSiteListener2 extends CallSiteListener implements
+      CallSiteListener2Interface {
 
     private final StringBuilder sb;
 
@@ -340,7 +359,12 @@ public class FeatureTest extends BcTraceTest {
     assertEquals("12", sb.toString());
   }
 
-  public static class DirectListener1 extends DirectListener {
+  public static interface DirectListener1Interface {
+
+    public void onBeforeCall(Class clazz, Object instance, String[] array1, String[] array2);
+  }
+
+  public static class DirectListener1 extends DirectListener implements DirectListener1Interface {
 
     private final StringBuilder sb;
 
@@ -358,7 +382,11 @@ public class FeatureTest extends BcTraceTest {
     }
   }
 
-  public static class DirectListener2 extends DirectListener {
+  public static interface DirectListener2Interface extends DirectListener1Interface {
+
+  }
+
+  public static class DirectListener2 extends DirectListener implements DirectListener2Interface {
 
     private final StringBuilder sb;
 
@@ -394,7 +422,13 @@ public class FeatureTest extends BcTraceTest {
     assertEquals("12", sb.toString());
   }
 
-  public static class DirectListener3 extends DirectListener {
+  public static interface DirectListener3Interface {
+
+    public void onFinish(Class clazz, Object instance, String[] array1, String[] array2,
+        String[] ret);
+  }
+
+  public static class DirectListener3 extends DirectListener implements DirectListener3Interface {
 
     private final StringBuilder sb;
 
@@ -414,7 +448,13 @@ public class FeatureTest extends BcTraceTest {
     }
   }
 
-  public static class DirectListener4 extends DirectListener {
+  public static interface DirectListener4Interface {
+
+    public void onFinish(Class clazz, Object instance, String[] array1, String[] array2,
+        String[] ret);
+  }
+
+  public static class DirectListener4 extends DirectListener implements DirectListener4Interface {
 
     private final StringBuilder sb;
 
@@ -452,7 +492,13 @@ public class FeatureTest extends BcTraceTest {
     assertEquals("21", sb.toString());
   }
 
-  public static class DirectListenerVoid extends DirectListener {
+  public static interface DirectListenerVoidInterface {
+
+    public void onFinish(Class clazz, Object instance);
+  }
+
+  public static class DirectListenerVoid extends DirectListener implements
+      DirectListenerVoidInterface {
 
     private final StringBuilder sb;
 
@@ -480,7 +526,16 @@ public class FeatureTest extends BcTraceTest {
     assertEquals("1", sb.toString());
   }
 
-  public static class AfterCallSiteListener extends CallSiteListener {
+  public static interface AfterCallSiteListenerInterface {
+
+    public void onBeforeCall(Class clazz, Object instance,
+        Object callSiteInstance, Object src, int srcPos,
+        Object dest, int destPos,
+        int length);
+  }
+
+  public static class AfterCallSiteListener extends CallSiteListener implements
+      AfterCallSiteListenerInterface {
 
     private final String token;
     private final StringBuilder sb;

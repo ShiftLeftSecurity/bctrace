@@ -98,6 +98,7 @@ public abstract class BcTraceTest {
     private Hook[] hooks;
 
     public ByteClassLoader(Hook[] hooks) {
+      super(ClassLoader.getSystemClassLoader());
       this.hooks = hooks;
     }
 
