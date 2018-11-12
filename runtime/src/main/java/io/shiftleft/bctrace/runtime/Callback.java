@@ -24,9 +24,11 @@
  */
 package io.shiftleft.bctrace.runtime;
 
+import io.shiftleft.bctrace.runtime.listener.direct.DirectListener;
 import io.shiftleft.bctrace.runtime.listener.generic.BeforeThrownListener;
 import io.shiftleft.bctrace.runtime.listener.generic.ReturnListener;
 import io.shiftleft.bctrace.runtime.listener.generic.StartListener;
+import java.lang.reflect.Modifier;
 
 /**
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
@@ -89,7 +91,8 @@ public final class Callback {
     }
     try {
       NOTIFYING_FLAG.set(Boolean.TRUE);
-      ((BeforeThrownListener) listeners[i]).onBeforeThrown(methodId, clazz, instance, args, throwable);
+      ((BeforeThrownListener) listeners[i])
+          .onBeforeThrown(methodId, clazz, instance, args, throwable);
     } catch (Throwable th) {
       handleThrowable(th);
     } finally {
@@ -97,6 +100,9 @@ public final class Callback {
     }
   }
 
+  /**
+   * This is a template method that is used for generating other methods at CallbackTransformer.
+   */
   @SuppressWarnings("BoxedValueEquality")
   private static void dynamicTemplate(int i) {
     if (!CallbackEnabler.isThreadNotificationEnabled()) {
@@ -107,7 +113,8 @@ public final class Callback {
     }
     try {
       NOTIFYING_FLAG.set(Boolean.TRUE);
-      (listeners[i]).notify();
+      // notify() method will be changed by CallbackTransformer
+      listeners[i].notify();
     } catch (Throwable th) {
       handleThrowable(th);
     } finally {
@@ -119,7 +126,11 @@ public final class Callback {
     if (th instanceof BctraceRuntimeException) {
       throw ((BctraceRuntimeException) th).getWrappedException();
     } else {
-      errorListener.onError(th);
+      if (errorListener != null) {
+        errorListener.onError(th);
+      } else {
+        th.printStackTrace();
+      }
     }
   }
 

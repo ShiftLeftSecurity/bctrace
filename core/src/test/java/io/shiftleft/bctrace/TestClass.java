@@ -126,7 +126,7 @@ public class TestClass {
     String resourceName = className.replace('.', '/') + ".class";
     InputStream is = clazz.getClassLoader().getResourceAsStream(resourceName);
     byte[] bytes = ASMUtils.toByteArray(is);
-    BcTraceTest.viewByteCode(bytes);
+    ASMUtils.viewByteCode(bytes);
   }
 
   public static class TestRuntimeException extends RuntimeException {

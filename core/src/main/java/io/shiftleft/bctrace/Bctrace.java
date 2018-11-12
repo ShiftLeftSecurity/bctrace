@@ -51,9 +51,9 @@ public final class Bctrace {
   private final Hook[] hooks;
   private final Agent agent;
 
-  public Bctrace(java.lang.instrument.Instrumentation javaInstrumentation, Agent agent) {
+  public Bctrace(InstrumentationImpl instrumentation, Agent agent) {
     this.agent = agent;
-    this.instrumentation = new InstrumentationImpl(javaInstrumentation);
+    this.instrumentation = instrumentation;
     if (DebugInfo.isEnabled()) {
       this.hooks = new Hook[agent.getHooks().length + 2];
       System.arraycopy(agent.getHooks(), 0, this.hooks, 0, agent.getHooks().length);

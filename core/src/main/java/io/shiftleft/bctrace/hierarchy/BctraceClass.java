@@ -25,6 +25,7 @@
 package io.shiftleft.bctrace.hierarchy;
 
 import io.shiftleft.bctrace.Bctrace;
+import io.shiftleft.bctrace.Instrumentation;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
 import io.shiftleft.bctrace.logging.Level;
 import java.net.URL;
@@ -34,10 +35,9 @@ import java.net.URL;
  */
 public abstract class BctraceClass {
 
-  private static final LoadedClass OBJECT_CLASS = new LoadedClass(Object.class, null);
   private static final BctraceClass[] EMPTY = new BctraceClass[0];
 
-  protected final Bctrace bctrace;
+  protected final Instrumentation inst;
   protected final String name;
   protected final ClassLoader cl;
   private volatile boolean computedURL;
@@ -45,10 +45,10 @@ public abstract class BctraceClass {
   protected volatile BctraceClass superClass;
   protected volatile BctraceClass[] interfaces;
 
-  BctraceClass(String name, ClassLoader cl, Bctrace bctrace) {
+  BctraceClass(String name, ClassLoader cl, Instrumentation inst) {
     this.name = name;
     this.cl = cl;
-    this.bctrace = bctrace;
+    this.inst = inst;
   }
 
   protected abstract String getSuperClassName();
@@ -78,7 +78,7 @@ public abstract class BctraceClass {
           if (superClassName == null) {
             return null;
           }
-          superClass = from(superClassName, cl, bctrace);
+          superClass = from(superClassName, cl, inst);
         }
       }
     }
@@ -95,7 +95,7 @@ public abstract class BctraceClass {
           } else {
             interfaces = new BctraceClass[interfaceNames.length];
             for (int i = 0; i < interfaceNames.length; i++) {
-              interfaces[i] = from(interfaceNames[i], cl, bctrace);
+              interfaces[i] = from(interfaceNames[i], cl, inst);
             }
           }
         }
@@ -135,34 +135,33 @@ public abstract class BctraceClass {
    *
    * @param name class name according to the Java Language Specification (dot separated)
    */
-  public static BctraceClass from(String name, ClassLoader cl, Bctrace bctrace) {
+  public static BctraceClass from(String name, ClassLoader cl, Instrumentation inst) {
     if (name == null) {
       return null;
     }
     if (name.equals("java.lang.Object")) {
-      return OBJECT_CLASS;
+      return LoadedClass.OBJECT_CLASS;
     }
 
-    if (bctrace == null) {
+    if (inst == null) {
       return null;
     }
 
     //If the class has been loaded try to create a LoadedClass implementation
-    if (bctrace.getInstrumentation().isLoadedByAnyClassLoader(name)) {
+    if (inst.isLoadedByAnyClassLoader(name)) {
       // First check if the class has been loaded by this classloader
-      Class clazz = bctrace.getInstrumentation()
-          .getClassIfLoadedByClassLoader(name, cl);
+      Class clazz = inst.getClassIfLoadedByClassLoader(name, cl);
       if (clazz == null) {
         // Then check if the class has been loaded by an ancestor
-        clazz = getClassIfLoadedByClassLoaderAncestors(name, cl, bctrace);
+        clazz = getClassIfLoadedByClassLoaderAncestors(name, cl, inst);
       }
       if (clazz != null) {
-        return new LoadedClass(clazz, bctrace);
+        return new LoadedClass(clazz, inst);
       }
     }
     BctraceClass ret;
     try {
-      ret = new UnloadedClass(name, cl, bctrace);
+      ret = new UnloadedClass(name, cl, inst);
     } catch (ClassNotFoundException ex) {
       Bctrace.getAgentLogger()
           .log(Level.WARNING, "Could not obtain class bytecode for unloaded class " + name);
@@ -172,14 +171,13 @@ public abstract class BctraceClass {
   }
 
   private static Class getClassIfLoadedByClassLoaderAncestors(String name, ClassLoader cl,
-      Bctrace bctrace) {
+      Instrumentation inst) {
     if (cl != null && cl.getParent() != null) {
-      Class clazz = bctrace.getInstrumentation()
-          .getClassIfLoadedByClassLoader(name, cl.getParent());
+      Class clazz = inst.getClassIfLoadedByClassLoader(name, cl.getParent());
       if (clazz != null) {
         return clazz;
       } else {
-        return getClassIfLoadedByClassLoaderAncestors(name, cl.getParent(), bctrace);
+        return getClassIfLoadedByClassLoaderAncestors(name, cl.getParent(), inst);
       }
     }
     return null;

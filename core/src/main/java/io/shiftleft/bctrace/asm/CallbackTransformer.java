@@ -114,7 +114,7 @@ public class CallbackTransformer implements ClassFileTransformer {
           methodsAdded.add(key);
         }
       }
-      ClassWriter cw = new StaticClassWriter(cr, ClassWriter.COMPUTE_MAXS, null);
+      ClassWriter cw = new ClassWriter(cr, ClassWriter.COMPUTE_FRAMES);
       cn.accept(cw);
       this.completed = true;
       return cw.toByteArray();
@@ -122,6 +122,7 @@ public class CallbackTransformer implements ClassFileTransformer {
       Bctrace.getAgentLogger().setLevel(Level.ERROR);
       Bctrace.getAgentLogger()
           .log(Level.ERROR, "Error found instrumenting class " + className, th);
+      th.printStackTrace();
       System.exit(1);
       return null;
     }
@@ -181,10 +182,10 @@ public class CallbackTransformer implements ClassFileTransformer {
 
   // Changes toString() by listenerMethod(arg1, arg2, ...)
   private static void updateMethodByteCode(MethodNode mn, Method listenerMethod) {
-    //
     InsnList listenerParams = new InsnList();
-    listenerParams.add(new TypeInsnNode(Opcodes.CHECKCAST,
-        Type.getInternalName(listenerMethod.getDeclaringClass())));
+    String interfaceType = Type.getType(listenerMethod.getDeclaringClass())
+        .getInternalName() + "Interface";
+    listenerParams.add(new TypeInsnNode(Opcodes.CHECKCAST, interfaceType));
     Class<?>[] params = listenerMethod.getParameterTypes();
     StringBuilder descriptor = new StringBuilder("(");
     for (int i = 0; i < params.length; i++) {
@@ -195,16 +196,18 @@ public class CallbackTransformer implements ClassFileTransformer {
     descriptor.append(")V");
     InsnList instructions = mn.instructions;
     MethodInsnNode listenerCallSite = null;
+
     for (int i = 0; i < instructions.size(); i++) {
       AbstractInsnNode node = instructions.get(i);
       if (node instanceof MethodInsnNode) {
         MethodInsnNode methodCallSite = (MethodInsnNode) node;
         if (methodCallSite.name.equals("notify")) {
           listenerCallSite = methodCallSite;
-          listenerCallSite.owner = Type.getType(listenerMethod.getDeclaringClass())
-              .getInternalName();
+          listenerCallSite.setOpcode(Opcodes.INVOKEINTERFACE);
+          listenerCallSite.owner = interfaceType;
           listenerCallSite.name = listenerMethod.getName();
           listenerCallSite.desc = descriptor.toString();
+          listenerCallSite.itf = true;
           break;
         }
       }

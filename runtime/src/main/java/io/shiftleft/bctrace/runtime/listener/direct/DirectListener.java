@@ -36,7 +36,7 @@ import java.util.Arrays;
  * DirectListener instances are notified directly from the instrumented method without wrapping or
  * boxing arguments. They are used for high performance notification.
  *
- * DirectListener does not define a fixed interface. They are used in TargetedHooks, and they must
+ * DirectListeners do not define a fixed interface. They are used in TargetedHooks, and they must
  * define a single method (with name defined in the ListenerType enum) whose signature matches the
  * signature of the TargetedFilter of the hook in the following way:
  *
@@ -52,16 +52,8 @@ public abstract class DirectListener {
   private final ListenerType type;
 
   public DirectListener() {
-    checkAccessibleClass();
     this.listenerMethod = searchListenerMethod();
     this.type = this.listenerMethod.getAnnotation(ListenerMethod.class).type();
-  }
-
-  private void checkAccessibleClass() {
-    if (!Modifier.isPublic(getClass().getModifiers())) {
-      throw new Error("Error found in " + getClass()
-          + ". DirectListener instances need to be defined in a public accessible class");
-    }
   }
 
   private Method searchListenerMethod() {
