@@ -78,8 +78,31 @@ public abstract class DirectListener {
     if (ret == null) {
       throw new Error("Listener does not define any @ListenerMethod method " + getClass());
     }
+    checkMethodSingature(ret);
     return ret;
   }
+
+  /**
+   * Checks that all parameters and return type are loaded by the bootstrap classloader
+   */
+  private static void checkMethodSingature(Method m) {
+    Class<?>[] parameterTypes = m.getParameterTypes();
+    for (Class paramClass : parameterTypes) {
+      if (!isLoadedByBootstrapClassLoader(paramClass)) {
+        throw new Error("Invalid @ListenerMethod parameter of type '" + paramClass.getName()
+            + "'. Only types loaded by bootstrap class loader are supported");
+      }
+    }
+    if (!isLoadedByBootstrapClassLoader(m.getReturnType())) {
+      throw new Error("Invalid @ListenerMethod return type '" + m.getReturnType().getName()
+          + "'. Only types loaded by bootstrap class loader are supported");
+    }
+  }
+
+  private static boolean isLoadedByBootstrapClassLoader(Class clazz) {
+    return clazz.getClassLoader() == null;
+  }
+
 
   public final Method getListenerMethod() {
     return listenerMethod;
