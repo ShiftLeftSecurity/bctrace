@@ -29,11 +29,11 @@ import java.lang.reflect.Method;
 /**
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public abstract class BeforeThrownListener extends GenericListener {
+public abstract class FinishedThrowableListener extends GenericListener {
 
   @Override
   protected final Method getListenerSuperMethod() {
-    return getMethodByName(BeforeThrownListener.class, "onBeforeThrow");
+    return getMethodByName(FinishedThrowableListener.class, "onFinishedThrowable");
   }
 
   public final boolean requiresThrowable() {
@@ -41,7 +41,7 @@ public abstract class BeforeThrownListener extends GenericListener {
   }
 
   /**
-   * Invoked by instrumented methods just before the actual method throws a throwable.
+   * Invoked by instrumented methods finishing with a throwable.
    *
    * @param methodId method id (as defined by MethodRegistry)
    * @param clazz class defining the method.
@@ -49,7 +49,7 @@ public abstract class BeforeThrownListener extends GenericListener {
    * @param args arguments passed to the method.
    * @param th throwable to be thrown
    */
-  public abstract void onBeforeThrow(int methodId, Class clazz, Object instance, Object[] args,
+  public abstract void onFinishedThrowable(int methodId, Class clazz, Object instance, Object[] args,
       Throwable th);
 
 }

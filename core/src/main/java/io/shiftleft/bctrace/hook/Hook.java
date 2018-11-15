@@ -32,18 +32,15 @@ import io.shiftleft.bctrace.filter.Filter;
  *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public abstract class Hook<F extends Filter, L> {
-
-  protected Hook() {
-  }
+public interface Hook<F extends Filter, L> {
 
   /**
    * Returns the filter, deciding what methods to instrument.
    */
-  public abstract F getFilter();
+  public F getFilter();
 
   /**
    * Returns the listener invoked by the instrumented method hooks.
    */
-  public abstract L getListener();
+  public L getListener();
 }

@@ -59,7 +59,7 @@ import org.objectweb.asm.tree.MethodNode;
  * }
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public class ThrowHelper extends Helper {
+public class BeforeThrowHelper extends Helper {
 
 
   public boolean addByteCodeInstructions(int methodId, ClassNode cn, MethodNode mn,
@@ -119,7 +119,7 @@ public class ThrowHelper extends Helper {
         il.add(new InsnNode(Opcodes.ACONST_NULL));
       }
       il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
-          "io/shiftleft/bctrace/runtime/Callback", "onBeforeThrown",
+          "io/shiftleft/bctrace/runtime/Callback", "onBeforeThrow",
           "(Ljava/lang/Throwable;ILjava/lang/Class;Ljava/lang/Object;I[Ljava/lang/Object;)V",
           false));
     }

@@ -9,7 +9,7 @@ import io.shiftleft.bctrace.runtime.listener.direct.DirectListener.ListenerType;
 import java.lang.reflect.Method;
 import org.objectweb.asm.Type;
 
-public abstract class DirectHook<F extends Filter, L extends DirectListener> extends
+public abstract class DirectHook<F extends Filter, L extends DirectListener> implements
     Hook<F, L> {
 
   private final F filter;
