@@ -26,7 +26,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <compileJavaVersion>1.6</compileJavaVersion>
-    <compileTestJavaVersion>1.6</compileTestJavaVersion>
+    <compileTestJavaVersion>1.7</compileTestJavaVersion>
   </properties>
   <distributionManagement>
     <repository>

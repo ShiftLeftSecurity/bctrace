@@ -29,9 +29,10 @@ import io.shiftleft.bctrace.InstrumentationImpl;
 import io.shiftleft.bctrace.MethodInfo;
 import io.shiftleft.bctrace.MethodRegistry;
 import io.shiftleft.bctrace.SystemProperty;
+import io.shiftleft.bctrace.asm.helper.generic.FinishedThrowableHelper;
 import io.shiftleft.bctrace.asm.helper.generic.ReturnHelper;
 import io.shiftleft.bctrace.asm.helper.generic.StartHelper;
-import io.shiftleft.bctrace.asm.helper.generic.ThrowHelper;
+import io.shiftleft.bctrace.asm.helper.generic.BeforeThrowHelper;
 import io.shiftleft.bctrace.asm.helper.direct.CallSiteHelper;
 import io.shiftleft.bctrace.asm.helper.direct.DirectReturnHelper;
 import io.shiftleft.bctrace.asm.helper.direct.DirectStartHelper;
@@ -89,10 +90,11 @@ public class Transformer implements ClassFileTransformer {
   private final CallbackTransformer cbTransformer;
   private final StartHelper startHelper = new StartHelper();
   private final ReturnHelper returnHelper = new ReturnHelper();
-  private final ThrowHelper throwHelper = new ThrowHelper();
+  private final BeforeThrowHelper throwHelper = new BeforeThrowHelper();
   private final CallSiteHelper callSiteHelper = new CallSiteHelper();
   private final DirectStartHelper directStartHelper = new DirectStartHelper();
   private final DirectReturnHelper directReturnHelper = new DirectReturnHelper();
+  private final FinishedThrowableHelper finishedThrowableHelper = new FinishedThrowableHelper();
   private final InstrumentationImpl instrumentation;
   private final Hook[] hooks;
   private final Bctrace bctrace;
@@ -111,6 +113,7 @@ public class Transformer implements ClassFileTransformer {
     this.callSiteHelper.setBctrace(bctrace);
     this.directStartHelper.setBctrace(bctrace);
     this.directReturnHelper.setBctrace(bctrace);
+    this.finishedThrowableHelper.setBctrace(bctrace);
 
   }
 
@@ -332,6 +335,9 @@ public class Transformer implements ClassFileTransformer {
         transformed = true;
       }
       if (throwHelper.addByteCodeInstructions(methodId, cn, mn, hooksToUse)) {
+        transformed = true;
+      }
+      if (finishedThrowableHelper.addByteCodeInstructions(methodId, cn, mn, hooksToUse)) {
         transformed = true;
       }
     }

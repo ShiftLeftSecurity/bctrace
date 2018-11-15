@@ -60,8 +60,8 @@ import org.objectweb.asm.tree.TypeInsnNode;
  *   Object ret = void(arg);
  *   // Notify listeners that apply to this method
  *   Callback.onFinish(ret, clazz, this, 0, arg);
- *   Callback.onFinishedThrowable(ret, clazz, this, 2, arg);
- *   Callback.onFinishedThrowable(ret, clazz, this, 10, arg);
+ *   Callback.onFinish(ret, clazz, this, 2, arg);
+ *   Callback.onFinish(ret, clazz, this, 10, arg);
  *   // Return the original value
  *   return ret;
  * }

@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.lang.reflect.Method;
 import java.util.List;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Opcodes;

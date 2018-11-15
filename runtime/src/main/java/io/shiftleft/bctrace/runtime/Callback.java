@@ -24,11 +24,10 @@
  */
 package io.shiftleft.bctrace.runtime;
 
-import io.shiftleft.bctrace.runtime.listener.direct.DirectListener;
 import io.shiftleft.bctrace.runtime.listener.generic.BeforeThrownListener;
+import io.shiftleft.bctrace.runtime.listener.generic.FinishedThrowableListener;
 import io.shiftleft.bctrace.runtime.listener.generic.ReturnListener;
 import io.shiftleft.bctrace.runtime.listener.generic.StartListener;
-import java.lang.reflect.Modifier;
 
 /**
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
@@ -81,7 +80,7 @@ public final class Callback {
   }
 
   @SuppressWarnings("BoxedValueEquality")
-  public static void onBeforeThrown(Throwable throwable, int methodId, Class clazz, Object instance,
+  public static void onBeforeThrow(Throwable throwable, int methodId, Class clazz, Object instance,
       int i, Object[] args) {
     if (!CallbackEnabler.isThreadNotificationEnabled()) {
       return;
@@ -92,7 +91,27 @@ public final class Callback {
     try {
       NOTIFYING_FLAG.set(Boolean.TRUE);
       ((BeforeThrownListener) listeners[i])
-          .onBeforeThrown(methodId, clazz, instance, args, throwable);
+          .onBeforeThrow(methodId, clazz, instance, args, throwable);
+    } catch (Throwable th) {
+      handleThrowable(th);
+    } finally {
+      NOTIFYING_FLAG.set(Boolean.FALSE);
+    }
+  }
+
+  @SuppressWarnings("BoxedValueEquality")
+  public static void onFinishedThrowable(Throwable throwable, int methodId, Class clazz, Object instance,
+      int i, Object[] args) {
+    if (!CallbackEnabler.isThreadNotificationEnabled()) {
+      return;
+    }
+    if (Boolean.TRUE == NOTIFYING_FLAG.get()) {
+      return;
+    }
+    try {
+      NOTIFYING_FLAG.set(Boolean.TRUE);
+      ((FinishedThrowableListener) listeners[i])
+          .onFinishedThrowable(methodId, clazz, instance, args, throwable);
     } catch (Throwable th) {
       handleThrowable(th);
     } finally {
