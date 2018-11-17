@@ -41,7 +41,7 @@ import org.junit.Test;
 public class CallBackTransformerTest {
 
   public static Class getCallBackClass(final Hook[] hooks) throws Exception {
-    ByteClassLoader cl = new ByteClassLoader(hooks);
+    ByteClassLoader cl = new ByteClassLoader(hooks, CallBackTransformerTest.class.getClassLoader());
     return cl.loadClass("io.shiftleft.bctrace.runtime.Callback");
   }
 

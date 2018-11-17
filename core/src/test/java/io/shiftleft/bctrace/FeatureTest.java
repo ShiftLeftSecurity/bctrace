@@ -46,6 +46,7 @@ import io.shiftleft.bctrace.runtime.listener.generic.ReturnListener;
 import io.shiftleft.bctrace.runtime.listener.generic.StartListener;
 import io.shiftleft.bctrace.runtime.listener.direct.CallSiteListener;
 import io.shiftleft.bctrace.runtime.listener.direct.DirectListener;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import org.junit.Test;
 import org.objectweb.asm.tree.MethodNode;
@@ -849,7 +850,7 @@ public class FeatureTest extends BcTraceTest {
     boolean captured = false;
     try {
       clazz.getMethod("getLongWithConditionalException", boolean.class)
-          .invoke(null,  true);
+          .invoke(null, true);
     } catch (InvocationTargetException ite) {
       if (ite.getTargetException() instanceof TestRuntimeException) {
         captured = true;
@@ -858,5 +859,48 @@ public class FeatureTest extends BcTraceTest {
     }
     assertTrue("Expected exception", captured);
   }
+
+  @Test
+  public void testConstructoreUncaughtThrowable() throws Exception {
+    final StringBuilder sb = new StringBuilder();
+
+    Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
+        new GenericHook() {
+          @Override
+          public Filter getFilter() {
+            return new AllFilter() {
+              @Override
+              public boolean instrumentMethod(BctraceClass clazz, MethodNode mn) {
+                return mn.name.equals("<init>");
+              }
+            };
+          }
+
+          @Override
+          public GenericListener getListener() {
+            return new FinishedThrowableListener() {
+              @Override
+              public void onFinishedThrowable(int methodId, Class clazz, Object instance,
+                  Object[] args, Throwable th) {
+                assertNotNull(th);
+                sb.append(th.getMessage());
+              }
+            };
+          }
+        }
+    });
+    boolean captured = false;
+    try {
+      Constructor constructor = clazz.getConstructor(int.class);
+      constructor.newInstance(2);
+    } catch (InvocationTargetException ite) {
+      if (ite.getTargetException() instanceof TestRuntimeException) {
+        captured = true;
+        assertEquals(sb.toString(), ite.getTargetException().getMessage());
+      }
+    }
+    assertTrue("Expected exception", captured);
+  }
+
 
 }

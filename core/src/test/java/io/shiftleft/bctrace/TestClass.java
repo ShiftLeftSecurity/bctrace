@@ -30,12 +30,18 @@ import java.io.InputStream;
 /**
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public class TestClass {
+public class TestClass extends TestSuperClass {
 
   public TestClass() {
+    super(1);
+  }
+
+  public TestClass(TestClass other) {
+    super(4);
   }
 
   public TestClass(int i) {
+    super("str" + i);
     throw new TestRuntimeException("This constructor throws a Runtime Exception");
   }
 
@@ -76,7 +82,7 @@ public class TestClass {
     throw new TestRuntimeException("A testing runtime exception");
   }
 
-  public static long getLongWithConditionalException( boolean throwException) {
+  public static long getLongWithConditionalException(boolean throwException) {
     if (throwException) {
       throwRuntimeException();
     }

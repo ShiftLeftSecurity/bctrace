@@ -78,7 +78,7 @@ public abstract class BcTraceTest {
 
   public static Class getInstrumentClass(Class clazz, final Hook[] hooks, boolean trace)
       throws Exception {
-    ByteClassLoader cl = new ByteClassLoader(hooks);
+    ByteClassLoader cl = new ByteClassLoader(hooks, clazz.getClassLoader());
     Bctrace bctrace = init(cl, hooks);
     Transformer transformer = new Transformer(new InstrumentationImpl(null),
         bctrace, null);
@@ -97,8 +97,8 @@ public abstract class BcTraceTest {
 
     private Hook[] hooks;
 
-    public ByteClassLoader(Hook[] hooks) {
-      super(ClassLoader.getSystemClassLoader());
+    public ByteClassLoader(Hook[] hooks, ClassLoader parentClassLoader) {
+      super(parentClassLoader);
       this.hooks = hooks;
     }
 

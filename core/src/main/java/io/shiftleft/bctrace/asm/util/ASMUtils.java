@@ -119,6 +119,44 @@ public class ASMUtils {
     return new VarInsnNode(opCode, position);
   }
 
+  public static Object[] getParametersFrameTypes(ClassNode cn, MethodNode mn) {
+    Type[] argumentTypes = Type.getArgumentTypes(mn.desc);
+    Object[] ret;
+    int offset;
+    if (!isStatic(mn.access)) {
+      offset = 1;
+      ret = new Object[argumentTypes.length + 1];
+      ret[0] = cn.name;
+    } else {
+      offset = 0;
+      ret = new Object[argumentTypes.length];
+    }
+    for (int i = 0; i < argumentTypes.length; i++) {
+      ret[i + offset] = getFrameType(argumentTypes[i]);
+    }
+    return ret;
+  }
+
+  private static Object getFrameType(Type type) {
+    int opCode = -1;
+    switch (type.getDescriptor().charAt(0)) {
+      case 'I':
+      case 'B':
+      case 'C':
+      case 'Z':
+      case 'S':
+        return Opcodes.INTEGER;
+      case 'D':
+        return Opcodes.DOUBLE;
+      case 'F':
+        return Opcodes.FLOAT;
+      case 'J':
+        return Opcodes.LONG;
+      default:
+        return type.getInternalName();
+    }
+  }
+
   public static InsnNode getReturnInst(Type type) {
     int opCode = -1;
     switch (type.getDescriptor().charAt(0)) {
