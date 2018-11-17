@@ -24,21 +24,29 @@
  */
 package io.shiftleft.bctrace.asm.helper.generic;
 
+import com.sun.org.apache.bcel.internal.generic.INVOKESPECIAL;
+import io.shiftleft.bctrace.Bctrace;
 import io.shiftleft.bctrace.asm.helper.Helper;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
+import io.shiftleft.bctrace.logging.Level;
 import io.shiftleft.bctrace.runtime.listener.generic.FinishedThrowableListener;
 import java.util.ArrayList;
+import java.util.Iterator;
 import jdk.nashorn.internal.runtime.regexp.joni.constants.OPCode;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
+import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FrameNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
+import org.objectweb.asm.tree.JumpInsnNode;
 import org.objectweb.asm.tree.LabelNode;
+import org.objectweb.asm.tree.LookupSwitchInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.TableSwitchInsnNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
@@ -80,25 +88,67 @@ public class FinishedThrowableHelper extends Helper {
     if (!isInstrumentationNeeded(listenersToUse)) {
       return false;
     }
-    if (mn.name.equals("<init>")) {
-      return false;
-    }
-    addTryCatchInstructions(methodId, cn, mn, listenersToUse);
-    return true;
+    return addTryCatchInstructions(methodId, cn, mn, listenersToUse);
   }
 
-  private void addTryCatchInstructions(int methodId, ClassNode cn, MethodNode mn,
+  private boolean addTryCatchInstructions(int methodId, ClassNode cn, MethodNode mn,
       ArrayList<Integer> listenersToUse) {
 
     LabelNode startNode = new LabelNode();
 
-    mn.instructions.insert(startNode);
+    // Look for call to super constructor in the top frame (before any jump)
+    if (mn.name.equals("<init>")) {
+      InsnList il = mn.instructions;
+      AbstractInsnNode superCall = null;
+      AbstractInsnNode node = il.getFirst();
+      int newCalls = 0;
+      while (node != null) {
+        if (node instanceof JumpInsnNode ||
+            node instanceof TableSwitchInsnNode ||
+            node instanceof LookupSwitchInsnNode) {
+          // No branching supported before call to super()
+          break;
+        }
+        if (node.getOpcode() == Opcodes.NEW) {
+          newCalls++;
+        }
+        if (node instanceof MethodInsnNode && node.getOpcode() == Opcodes.INVOKESPECIAL) {
+          MethodInsnNode min = (MethodInsnNode) node;
+          if (min.name.equals("<init>")) {
+            if (newCalls == 0) {
+              superCall = min;
+              break;
+            } else {
+              newCalls--;
+            }
+          }
+        }
+        node = node.getNext();
+      }
+      if (superCall == null) {
+        // Weird constructor, not generated from Java Language
+        Bctrace.getAgentLogger().log(Level.WARNING,
+            "Could not add try/catch handler to constructor " + cn.name + "." + mn.name + mn.desc);
+        return false;
+      } else {
+        // If super() call is found, then add the try/catch after that so the instance is initialized
+        // https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.10.1.9.invokespecial
+        if (superCall.getNext() == null) {
+          mn.instructions.add(startNode);
+        } else {
+          mn.instructions.insertBefore(superCall.getNext(), startNode);
+        }
+      }
+    } else {
+      mn.instructions.insert(startNode);
+    }
+
     LabelNode endNode = new LabelNode();
     mn.instructions.add(endNode);
 
     InsnList il = new InsnList();
-
-    il.add(new FrameNode(Opcodes.F_SAME1, 0, null, 0,
+    Object[] parametersFrameTypes = ASMUtils.getParametersFrameTypes(cn, mn);
+    il.add(new FrameNode(Opcodes.F_FULL, parametersFrameTypes.length, parametersFrameTypes, 1,
         new Object[]{"java/lang/Throwable"}));
 
     Label l = new Label();
@@ -152,5 +202,6 @@ public class FinishedThrowableHelper extends Helper {
 
     mn.tryCatchBlocks.add(blockNode);
     mn.instructions.add(il);
+    return true;
   }
 }
