@@ -82,14 +82,7 @@ public class TestClass extends TestSuperClass {
     throw new TestRuntimeException("A testing runtime exception");
   }
 
-  public static long getLongWithConditionalException( boolean throwException) {
-    if (throwException) {
-      throwRuntimeException();
-    }
-    return 1;
-  }
-
-  public static long getLongWithConditionalException(String name, boolean throwException) {
+  public static long getLongWithConditionalException(boolean throwException) {
     if (throwException) {
       throwRuntimeException();
     }
