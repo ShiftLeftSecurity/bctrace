@@ -29,27 +29,40 @@ import java.lang.reflect.Method;
 /**
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public abstract class FinishedThrowableListener extends GenericListener {
+public abstract class FinishListener extends GenericListener {
 
   @Override
   protected final Method getListenerSuperMethod() {
-    return getMethodByName(FinishedThrowableListener.class, "onFinishedThrowable");
-  }
-
-  public final boolean requiresThrowable() {
-    return !getDisabledArguments()[4];
+    return getMethodByName(FinishListener.class, "onFinish");
   }
 
   /**
-   * Invoked by instrumented methods finishing with a throwable.
+   * Invoked by instrumented methods just before returning or raising a throwable (if multiple
+   * plugins are registered, listener notification is performed according to their respective
+   * plugin
+   * <b>reverse</b> registration order).
    *
    * @param methodId method id (as defined by MethodRegistry)
    * @param clazz class defining the method.
    * @param instance instance where the method is invoked. Null if the method is static
    * @param args arguments passed to the method.
-   * @param th throwable to be thrown
+   * @param ret Object being returned by the method. Wrapper type if the original return type is
+   * primitive. <code>null</code> if the method return type is <code>void</code> or the method
+   * raises a throwable
+   * @param th The throwable raised by the target method.  <code>null</code> if the method returns
+   * normally
+   * @return Object to be returned by the instrumented method  (ignored if target method return type
+   * is void) or throwable to be raised
    */
-  public abstract void onFinishedThrowable(int methodId, Class clazz, Object instance, Object[] args,
-      Throwable th);
+  public abstract Object onFinish(int methodId, Class clazz, Object instance, Object[] args,
+      Object ret, Throwable th);
 
+
+  public final boolean requiresReturnValue() {
+    return !getDisabledArguments()[4];
+  }
+
+  public final boolean requiresThrowable() {
+    return !getDisabledArguments()[5];
+  }
 }

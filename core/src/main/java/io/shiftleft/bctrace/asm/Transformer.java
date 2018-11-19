@@ -29,8 +29,7 @@ import io.shiftleft.bctrace.InstrumentationImpl;
 import io.shiftleft.bctrace.MethodInfo;
 import io.shiftleft.bctrace.MethodRegistry;
 import io.shiftleft.bctrace.SystemProperty;
-import io.shiftleft.bctrace.asm.helper.generic.FinishedThrowableHelper;
-import io.shiftleft.bctrace.asm.helper.generic.ReturnHelper;
+import io.shiftleft.bctrace.asm.helper.generic.FinishHelper;
 import io.shiftleft.bctrace.asm.helper.generic.StartHelper;
 import io.shiftleft.bctrace.asm.helper.generic.BeforeThrowHelper;
 import io.shiftleft.bctrace.asm.helper.direct.CallSiteHelper;
@@ -89,12 +88,11 @@ public class Transformer implements ClassFileTransformer {
 
   private final CallbackTransformer cbTransformer;
   private final StartHelper startHelper = new StartHelper();
-  private final ReturnHelper returnHelper = new ReturnHelper();
   private final BeforeThrowHelper throwHelper = new BeforeThrowHelper();
   private final CallSiteHelper callSiteHelper = new CallSiteHelper();
   private final DirectStartHelper directStartHelper = new DirectStartHelper();
   private final DirectReturnHelper directReturnHelper = new DirectReturnHelper();
-  private final FinishedThrowableHelper finishedThrowableHelper = new FinishedThrowableHelper();
+  private final FinishHelper finishHelper = new FinishHelper();
   private final InstrumentationImpl instrumentation;
   private final Hook[] hooks;
   private final Bctrace bctrace;
@@ -108,13 +106,11 @@ public class Transformer implements ClassFileTransformer {
     this.cbTransformer = cbTransformer;
 
     this.startHelper.setBctrace(bctrace);
-    this.returnHelper.setBctrace(bctrace);
     this.throwHelper.setBctrace(bctrace);
     this.callSiteHelper.setBctrace(bctrace);
     this.directStartHelper.setBctrace(bctrace);
     this.directReturnHelper.setBctrace(bctrace);
-    this.finishedThrowableHelper.setBctrace(bctrace);
-
+    this.finishHelper.setBctrace(bctrace);
   }
 
   @Override
@@ -331,13 +327,10 @@ public class Transformer implements ClassFileTransformer {
       if (startHelper.addByteCodeInstructions(methodId, cn, mn, hooksToUse)) {
         transformed = true;
       }
-      if (returnHelper.addByteCodeInstructions(methodId, cn, mn, hooksToUse)) {
-        transformed = true;
-      }
       if (throwHelper.addByteCodeInstructions(methodId, cn, mn, hooksToUse)) {
         transformed = true;
       }
-      if (finishedThrowableHelper.addByteCodeInstructions(methodId, cn, mn, hooksToUse)) {
+      if (finishHelper.addByteCodeInstructions(methodId, cn, mn, hooksToUse)) {
         transformed = true;
       }
     }

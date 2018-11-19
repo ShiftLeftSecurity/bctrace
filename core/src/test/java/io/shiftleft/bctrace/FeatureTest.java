@@ -40,12 +40,13 @@ import io.shiftleft.bctrace.hook.Hook;
 import io.shiftleft.bctrace.hook.direct.MethodHook;
 import io.shiftleft.bctrace.runtime.listener.generic.BeforeThrownListener;
 import io.shiftleft.bctrace.runtime.listener.generic.Disabled;
-import io.shiftleft.bctrace.runtime.listener.generic.FinishedThrowableListener;
+import io.shiftleft.bctrace.runtime.listener.generic.FinishListener;
 import io.shiftleft.bctrace.runtime.listener.generic.GenericListener;
-import io.shiftleft.bctrace.runtime.listener.generic.ReturnListener;
 import io.shiftleft.bctrace.runtime.listener.generic.StartListener;
 import io.shiftleft.bctrace.runtime.listener.direct.CallSiteListener;
 import io.shiftleft.bctrace.runtime.listener.direct.DirectListener;
+import java.io.IOException;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import org.junit.Test;
 import org.objectweb.asm.tree.MethodNode;
@@ -112,11 +113,11 @@ public class FeatureTest extends BcTraceTest {
 
           @Override
           public GenericListener getListener() {
-            return new ReturnListener() {
+            return new FinishListener() {
               @Override
-              public Object onReturn(@Disabled int methodId, @Disabled Class clazz,
-                  @Disabled Object instance,
-                  @Disabled Object[] args, Object ret) {
+              public Object onFinish(@Disabled int methodId, @Disabled Class clazz,
+                  @Disabled Object instance, @Disabled Object[] args,
+                  Object ret, Throwable th) {
                 if (clazz == null && args == null) {
                   steps.append("1");
                 }
@@ -171,10 +172,10 @@ public class FeatureTest extends BcTraceTest {
 
           @Override
           public GenericListener getListener() {
-            return new ReturnListener() {
+            return new FinishListener() {
               @Override
-              public Object onReturn(int methodId, Class clazz, Object instance, Object[] args,
-                  Object ret) {
+              public Object onFinish(int methodId, Class clazz, Object instance, Object[] args,
+                  Object ret, Throwable th) {
                 Long value = (Long) ret;
                 assertEquals((long) value, 3l);
                 return value + 1;
@@ -190,10 +191,10 @@ public class FeatureTest extends BcTraceTest {
 
           @Override
           public GenericListener getListener() {
-            return new ReturnListener() {
+            return new FinishListener() {
               @Override
-              public Object onReturn(int methodId, Class clazz, Object instance, Object[] args,
-                  Object ret) {
+              public Object onFinish(int methodId, Class clazz, Object instance, Object[] args,
+                  Object ret, Throwable th) {
                 Long value = (Long) ret;
                 assertEquals((long) value, 2l);
                 return value + 1;
@@ -219,10 +220,10 @@ public class FeatureTest extends BcTraceTest {
 
           @Override
           public GenericListener getListener() {
-            return new ReturnListener() {
+            return new FinishListener() {
               @Override
-              public Object onReturn(int methodId, Class clazz, Object instance, Object[] args,
-                  Object ret) {
+              public Object onFinish(int methodId, Class clazz, Object instance, Object[] args,
+                  Object ret, Throwable th) {
                 assertEquals(clazz.getName(), TestClass.class.getName());
                 steps.append("1");
                 return ret;
@@ -238,10 +239,10 @@ public class FeatureTest extends BcTraceTest {
 
           @Override
           public GenericListener getListener() {
-            return new ReturnListener() {
+            return new FinishListener() {
               @Override
-              public Object onReturn(int methodId, Class clazz, Object instance, Object[] args,
-                  Object ret) {
+              public Object onFinish(int methodId, Class clazz, Object instance, Object[] args,
+                  Object ret, Throwable th) {
                 assertEquals(clazz.getName(), TestClass.class.getName());
                 steps.append("2");
                 return ret;
@@ -657,11 +658,12 @@ public class FeatureTest extends BcTraceTest {
 
           @Override
           public GenericListener getListener() {
-            return new ReturnListener() {
+            return new FinishListener() {
               @Override
-              public Object onReturn(int methodId, Class clazz, Object instance, Object[] args,
-                  Object ret) {
+              public Object onFinish(int methodId, Class clazz, Object instance, Object[] args,
+                  Object ret, Throwable th) {
                 assertNull(ret);
+                assertNull(th);
                 steps.append("1");
                 return ret;
               }
@@ -676,28 +678,10 @@ public class FeatureTest extends BcTraceTest {
 
           @Override
           public GenericListener getListener() {
-            return new FinishedThrowableListener() {
-
+            return new FinishListener() {
               @Override
-              public void onFinishedThrowable(int methodId, Class clazz, Object instance,
-                  Object[] args, Throwable th) {
-                assertTrue("This should not be called", false);
-              }
-            };
-          }
-        },
-        new GenericHook() {
-          @Override
-          public Filter getFilter() {
-            return new AllFilter();
-          }
-
-          @Override
-          public GenericListener getListener() {
-            return new ReturnListener() {
-              @Override
-              public Object onReturn(int methodId, Class clazz, Object instance, Object[] args,
-                  Object ret) {
+              public Object onFinish(int methodId, Class clazz, Object instance, Object[] args,
+                  Object ret, Throwable th) {
                 assertNull(ret);
                 steps.append("2");
                 return ret;
@@ -710,113 +694,6 @@ public class FeatureTest extends BcTraceTest {
     assertEquals("21", steps.toString());
   }
 
-
-  @Test
-  public void testUncaughtThrowable() throws Exception {
-    final StringBuilder steps = new StringBuilder();
-    Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
-        new GenericHook() {
-          @Override
-          public Filter getFilter() {
-            return new AllFilter();
-          }
-
-          @Override
-          public GenericListener getListener() {
-            return new ReturnListener() {
-              @Override
-              public Object onReturn(int methodId, Class clazz, Object instance, Object[] args,
-                  Object ret) {
-                assertNotNull(ret);
-                steps.append("1r");
-                return ret;
-              }
-            };
-          }
-        },
-        new GenericHook() {
-          @Override
-          public Filter getFilter() {
-            return new AllFilter();
-          }
-
-          @Override
-          public GenericListener getListener() {
-            return new FinishedThrowableListener() {
-              @Override
-              public void onFinishedThrowable(int methodId, Class clazz, Object instance,
-                  Object[] args, Throwable th) {
-                assertNotNull(th);
-                steps.append("1t");
-              }
-            };
-          }
-        },
-        new GenericHook() {
-          @Override
-          public Filter getFilter() {
-            return new AllFilter() {
-              @Override
-              public boolean instrumentMethod(BctraceClass clazz, MethodNode mn) {
-                return mn.name.equals("getLongWithConditionalException");
-              }
-            };
-          }
-
-          @Override
-          public GenericListener getListener() {
-            return new FinishedThrowableListener() {
-
-              @Override
-              public void onFinishedThrowable(int methodId, Class clazz, Object instance,
-                  Object[] args, Throwable th) {
-                assertNotNull(th);
-                steps.append("2t");
-              }
-            };
-          }
-        },
-        new GenericHook() {
-          @Override
-          public Filter getFilter() {
-            return new AllFilter() {
-              @Override
-              public boolean instrumentMethod(BctraceClass clazz, MethodNode mn) {
-                return mn.name.equals("getLongWithConditionalException");
-              }
-            };
-          }
-
-          @Override
-          public GenericListener getListener() {
-            return new ReturnListener() {
-
-              @Override
-              public Object onReturn(int methodId, Class clazz, Object instance, Object[] args,
-                  Object ret) {
-                assertNotNull(ret);
-                steps.append("2r");
-                return ret;
-              }
-            };
-          }
-        }
-    });
-    clazz.getMethod("getLongWithConditionalException", boolean.class).invoke(null, false);
-    assertEquals("2r1r", steps.toString());
-    steps.setLength(0);
-    boolean captured = false;
-    try {
-      clazz.getMethod("getLongWithConditionalException", boolean.class).invoke(null, true);
-      assertEquals(steps.toString(), "");
-    } catch (InvocationTargetException ite) {
-      if (ite.getTargetException() instanceof TestRuntimeException) {
-        captured = true;
-        assertEquals("1t1t2t", steps.toString());
-      }
-    }
-    assertTrue("Expected exception", captured);
-  }
 
   @Test
   public void testSimpleUncaughtThrowable() throws Exception {
@@ -835,12 +712,13 @@ public class FeatureTest extends BcTraceTest {
 
           @Override
           public GenericListener getListener() {
-            return new FinishedThrowableListener() {
+            return new FinishListener() {
               @Override
-              public void onFinishedThrowable(int methodId, Class clazz, Object instance,
-                  Object[] args, Throwable th) {
+              public Object onFinish(int methodId, Class clazz, Object instance, Object[] args,
+                  Object ret, Throwable th) {
                 assertNotNull(th);
                 steps.append("1t");
+                return th;
               }
             };
           }
@@ -849,11 +727,235 @@ public class FeatureTest extends BcTraceTest {
     boolean captured = false;
     try {
       clazz.getMethod("getLongWithConditionalException", boolean.class)
-          .invoke(null,  true);
+          .invoke(null, true);
     } catch (InvocationTargetException ite) {
       if (ite.getTargetException() instanceof TestRuntimeException) {
         captured = true;
         assertEquals("1t", steps.toString());
+      }
+    }
+    assertTrue("Expected exception", captured);
+  }
+
+  @Test
+  public void testConstructorUncaughtThrowable() throws Exception {
+    final StringBuilder sb = new StringBuilder();
+
+    Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
+        new GenericHook() {
+          @Override
+          public Filter getFilter() {
+            return new AllFilter() {
+              @Override
+              public boolean instrumentMethod(BctraceClass clazz, MethodNode mn) {
+                return mn.name.equals("<init>");
+              }
+            };
+          }
+
+          @Override
+          public GenericListener getListener() {
+            return new FinishListener() {
+              @Override
+              public Object onFinish(int methodId, Class clazz, Object instance, Object[] args,
+                  Object ret, Throwable th) {
+                assertNotNull(th);
+                sb.append(th.getMessage());
+                return th;
+              }
+            };
+          }
+        }
+    });
+    boolean captured = false;
+    try {
+      Constructor constructor = clazz.getConstructor(int.class);
+      constructor.newInstance(2);
+    } catch (InvocationTargetException ite) {
+      if (ite.getTargetException() instanceof TestRuntimeException) {
+        captured = true;
+        assertEquals(sb.toString(), ite.getTargetException().getMessage());
+      }
+    }
+    assertTrue("Expected exception", captured);
+  }
+
+  @Test
+  public void testFinishReturnModification() throws Exception {
+    final StringBuilder steps = new StringBuilder();
+    Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
+        new GenericHook() {
+          @Override
+          public Filter getFilter() {
+            return new AllFilter();
+          }
+
+          @Override
+          public GenericListener getListener() {
+            return new FinishListener() {
+              @Override
+              public Object onFinish(int methodId, Class clazz, Object instance, Object[] args,
+                  Object ret, Throwable th) {
+                Long value = (Long) ret;
+                assertEquals((long) value, 3l);
+                return value + 1;
+              }
+            };
+          }
+        },
+        new GenericHook() {
+          @Override
+          public Filter getFilter() {
+            return new AllFilter();
+          }
+
+          @Override
+          public GenericListener getListener() {
+            return new FinishListener() {
+              @Override
+              public Object onFinish(int methodId, Class clazz, Object instance, Object[] args,
+                  Object ret, Throwable th) {
+                Long value = (Long) ret;
+                assertEquals((long) value, 2l);
+                return value + 1;
+              }
+            };
+          }
+        }
+    });
+    Object ret = clazz.getMethod("getLong").invoke(null);
+    Long value = (Long) ret;
+    assertEquals((long) value, 4l);
+  }
+
+  @Test
+  public void testFinishReturn() throws Exception {
+    final StringBuilder steps = new StringBuilder();
+    Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
+        new GenericHook() {
+          @Override
+          public Filter getFilter() {
+            return new AllFilter();
+          }
+
+          @Override
+          public GenericListener getListener() {
+            return new FinishListener() {
+              @Override
+              public Object onFinish(int methodId, Class clazz, Object instance, Object[] args,
+                  @Disabled Object ret, Throwable th) {
+                assertNull(ret);
+                steps.append("1");
+                return null;
+              }
+            };
+          }
+        },
+        new GenericHook() {
+          @Override
+          public Filter getFilter() {
+            return new AllFilter();
+          }
+
+          @Override
+          public GenericListener getListener() {
+            return new FinishListener() {
+              @Override
+              public Object onFinish(int methodId, Class clazz, Object instance, Object[] args,
+                  @Disabled Object ret, Throwable th) {
+                assertNull(ret);
+                steps.append("2");
+                return null;
+              }
+            };
+          }
+        }
+    });
+    Object ret = clazz.getMethod("getLong").invoke(null);
+    Long value = (Long) ret;
+    assertEquals((long) value, 2l);
+    assertEquals(steps.toString(), "21");
+  }
+
+  @Test
+  public void testFinishException() throws Exception {
+    final StringBuilder steps = new StringBuilder();
+    Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
+        new GenericHook() {
+          @Override
+          public Filter getFilter() {
+            return new AllFilter() {
+              @Override
+              public boolean instrumentMethod(BctraceClass clazz, MethodNode mn) {
+                return mn.name.equals("<init>");
+              }
+            };
+          }
+
+          @Override
+          public GenericListener getListener() {
+            return new FinishListener() {
+              @Override
+              public Object onFinish(int methodId, Class clazz, Object instance, Object[] args,
+                  Object ret, @Disabled Throwable th) {
+                steps.append("1");
+                assertNull(th);
+                return null;
+              }
+            };
+          }
+        }
+    });
+    boolean captured = false;
+    try {
+      Constructor constructor = clazz.getConstructor(int.class);
+      constructor.newInstance(2);
+    } catch (InvocationTargetException ite) {
+      if (ite.getTargetException() instanceof TestRuntimeException) {
+        captured = true;
+        assertEquals(steps.toString(), "1");
+      }
+    }
+    assertTrue("Expected exception", captured);
+  }
+
+  @Test
+  public void testFinishExceptionModification() throws Exception {
+    final StringBuilder sb = new StringBuilder();
+    Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
+        new GenericHook() {
+          @Override
+          public Filter getFilter() {
+            return new AllFilter() {
+              @Override
+              public boolean instrumentMethod(BctraceClass clazz, MethodNode mn) {
+                return mn.name.equals("<init>");
+              }
+            };
+          }
+
+          @Override
+          public GenericListener getListener() {
+            return new FinishListener() {
+              @Override
+              public Object onFinish(int methodId, Class clazz, Object instance, Object[] args,
+                  Object ret, Throwable th) {
+                assertNotNull(th);
+                sb.append(th.getMessage());
+                return new IOException(th.getMessage(), th);
+              }
+            };
+          }
+        }
+    });
+    boolean captured = false;
+    try {
+      Constructor constructor = clazz.getConstructor(int.class);
+      constructor.newInstance(2);
+    } catch (InvocationTargetException ite) {
+      if (ite.getTargetException() instanceof IOException) {
+        captured = true;
+        assertEquals(sb.toString(), ite.getTargetException().getMessage());
       }
     }
     assertTrue("Expected exception", captured);

@@ -25,8 +25,7 @@
 package io.shiftleft.bctrace.runtime;
 
 import io.shiftleft.bctrace.runtime.listener.generic.BeforeThrownListener;
-import io.shiftleft.bctrace.runtime.listener.generic.FinishedThrowableListener;
-import io.shiftleft.bctrace.runtime.listener.generic.ReturnListener;
+import io.shiftleft.bctrace.runtime.listener.generic.FinishListener;
 import io.shiftleft.bctrace.runtime.listener.generic.StartListener;
 
 /**
@@ -59,7 +58,8 @@ public final class Callback {
   }
 
   @SuppressWarnings("BoxedValueEquality")
-  public static Object onReturn(Object ret, int methodId, Class clazz, Object instance,
+  public static Object onFinish(Object ret, Throwable th, int methodId, Class clazz,
+      Object instance,
       int i, Object[] args) {
     if (!CallbackEnabler.isThreadNotificationEnabled()) {
       return ret;
@@ -69,10 +69,10 @@ public final class Callback {
     }
     try {
       NOTIFYING_FLAG.set(Boolean.TRUE);
-      return ((ReturnListener) listeners[i])
-          .onReturn(methodId, clazz, instance, args, ret);
-    } catch (Throwable th) {
-      handleThrowable(th);
+      return ((FinishListener) listeners[i])
+          .onFinish(methodId, clazz, instance, args, ret, th);
+    } catch (Throwable thr) {
+      handleThrowable(thr);
       return ret;
     } finally {
       NOTIFYING_FLAG.set(Boolean.FALSE);
@@ -92,26 +92,6 @@ public final class Callback {
       NOTIFYING_FLAG.set(Boolean.TRUE);
       ((BeforeThrownListener) listeners[i])
           .onBeforeThrow(methodId, clazz, instance, args, throwable);
-    } catch (Throwable th) {
-      handleThrowable(th);
-    } finally {
-      NOTIFYING_FLAG.set(Boolean.FALSE);
-    }
-  }
-
-  @SuppressWarnings("BoxedValueEquality")
-  public static void onFinishedThrowable(Throwable throwable, int methodId, Class clazz, Object instance,
-      int i, Object[] args) {
-    if (!CallbackEnabler.isThreadNotificationEnabled()) {
-      return;
-    }
-    if (Boolean.TRUE == NOTIFYING_FLAG.get()) {
-      return;
-    }
-    try {
-      NOTIFYING_FLAG.set(Boolean.TRUE);
-      ((FinishedThrowableListener) listeners[i])
-          .onFinishedThrowable(methodId, clazz, instance, args, throwable);
     } catch (Throwable th) {
       handleThrowable(th);
     } finally {
