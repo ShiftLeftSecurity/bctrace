@@ -98,23 +98,19 @@ public class FinishHelper extends Helper {
       ArrayList<Integer> listenersToUse) {
     InsnList il = mn.instructions;
     Iterator<AbstractInsnNode> it = il.iterator();
-    Type returnType = Type.getReturnType(mn.desc);
 
     while (it.hasNext()) {
       AbstractInsnNode abstractInsnNode = it.next();
 
       switch (abstractInsnNode.getOpcode()) {
         case Opcodes.RETURN:
-          il.insertBefore(abstractInsnNode,
-              getVoidReturnTraceInstructions(methodId, cn, mn, listenersToUse));
-          break;
         case Opcodes.IRETURN:
         case Opcodes.LRETURN:
         case Opcodes.FRETURN:
         case Opcodes.ARETURN:
         case Opcodes.DRETURN:
           il.insertBefore(abstractInsnNode,
-              getReturnTraceInstructions(methodId, cn, mn, returnType, listenersToUse));
+              getReturnInstructions(methodId, cn, mn, listenersToUse));
       }
     }
   }
@@ -157,24 +153,24 @@ public class FinishHelper extends Helper {
     return il;
   }
 
-  private InsnList getReturnTraceInstructions(int methodId, ClassNode cn, MethodNode mn,
-      Type returnType, ArrayList<Integer> listenersToUse) {
+  private InsnList getReturnInstructions(int methodId, ClassNode cn, MethodNode mn,
+      ArrayList<Integer> listenersToUse) {
+    Type returnType = Type.getReturnType(mn.desc);
     InsnList il = new InsnList();
     // Auxiliar local variables
-    int retVarIndex = mn.maxLocals;
-    if (returnType.getSize() == 1) {
-      mn.maxLocals = mn.maxLocals + 1;
-    } else {
-      mn.maxLocals = mn.maxLocals + 2;
+    int returnVarIndex = mn.maxLocals;
+    if (!returnType.getDescriptor().equals("V")) {
+      mn.maxLocals = mn.maxLocals + returnType.getSize();
+      // Store original return value into a local variable
+      il.add(ASMUtils.getStoreInst(returnType, returnVarIndex));
     }
-    // Store original return value into a local variable
-    il.add(ASMUtils.getStoreInst(returnType, retVarIndex));
     for (int i = listenersToUse.size() - 1; i >= 0; i--) {
       Integer index = listenersToUse.get(i);
       FinishListener listener = (FinishListener) bctrace.getHooks()[index].getListener();
-      if (listener.requiresReturnValue()) {
+
+      if (listener.requiresReturnValue() && !returnType.getDescriptor().equals("V")) {
         il.add(ASMUtils
-            .getLoadInst(returnType, retVarIndex)); // Pop original return value to the stack
+            .getLoadInst(returnType, returnVarIndex)); // Pop original return value to the stack
         MethodInsnNode primitiveToWrapperInst = ASMUtils.getPrimitiveToWrapperInst(returnType);
         if (primitiveToWrapperInst != null) {
           il.add(primitiveToWrapperInst);
@@ -205,28 +201,32 @@ public class FinishHelper extends Helper {
           "(Ljava/lang/Object;Ljava/lang/Throwable;ILjava/lang/Class;Ljava/lang/Object;I[Ljava/lang/Object;)Ljava/lang/Object;",
           false));
 
-      if (listener.requiresReturnValue()) {
-        String castType = returnType.getInternalName();
-        String wrapperType = ASMUtils.getWrapper(returnType);
-        if (wrapperType != null) {
-          castType = wrapperType;
-        }
-        il.add(new TypeInsnNode(Opcodes.CHECKCAST, castType));
-        MethodInsnNode wrapperToPrimitiveInst = ASMUtils.getWrapperToPrimitiveInst(returnType);
-        if (wrapperToPrimitiveInst != null) {
-          il.add(wrapperToPrimitiveInst);
-        }
-        if (returnType.getSize() == 1) {
-          il.add(new InsnNode(Opcodes.DUP));
-        } else {
-          il.add(new InsnNode(Opcodes.DUP2));
-        }
-        // Update return value local variable, so each listener receives the modified value from the ones before
-        // instead of getting all of them the original value
-        il.add(ASMUtils.getStoreInst(returnType, retVarIndex));
-      } else {
+      if (returnType.getDescriptor().equals("V")) {
         il.add(new InsnNode(Opcodes.POP));
-        il.add(ASMUtils.getLoadInst(returnType, retVarIndex));
+      } else {
+        if (listener.requiresReturnValue()) {
+          String castType = returnType.getInternalName();
+          String wrapperType = ASMUtils.getWrapper(returnType);
+          if (wrapperType != null) {
+            castType = wrapperType;
+          }
+          il.add(new TypeInsnNode(Opcodes.CHECKCAST, castType));
+          MethodInsnNode wrapperToPrimitiveInst = ASMUtils.getWrapperToPrimitiveInst(returnType);
+          if (wrapperToPrimitiveInst != null) {
+            il.add(wrapperToPrimitiveInst);
+          }
+          if (returnType.getSize() == 1) {
+            il.add(new InsnNode(Opcodes.DUP));
+          } else {
+            il.add(new InsnNode(Opcodes.DUP2));
+          }
+          // Update return value local variable, so each listener receives the modified value from the ones before
+          // instead of getting all of them the original value
+          il.add(ASMUtils.getStoreInst(returnType, returnVarIndex));
+        } else {
+          il.add(new InsnNode(Opcodes.POP));
+          il.add(ASMUtils.getLoadInst(returnType, returnVarIndex));
+        }
       }
     }
     return il;
@@ -292,7 +292,6 @@ public class FinishHelper extends Helper {
     il.add(new FrameNode(Opcodes.F_FULL, parametersFrameTypes.length, parametersFrameTypes, 1,
         new Object[]{"java/lang/Throwable"}));
 
-    Label l = new Label();
     LabelNode handlerNode = new LabelNode();
     il.add(handlerNode);
 

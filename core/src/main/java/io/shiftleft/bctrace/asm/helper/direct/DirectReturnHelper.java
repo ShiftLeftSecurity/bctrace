@@ -37,6 +37,7 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.InsnList;
+import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
@@ -58,52 +59,79 @@ public class DirectReturnHelper extends Helper {
 
     InsnList il = mn.instructions;
     Iterator<AbstractInsnNode> it = il.iterator();
-    Type returnType = Type.getReturnType(mn.desc);
 
     while (it.hasNext()) {
       AbstractInsnNode abstractInsnNode = it.next();
       switch (abstractInsnNode.getOpcode()) {
         case Opcodes.RETURN:
+          il.insertBefore(abstractInsnNode,
+              getReturnVoidTraceInstructions(cn, mn, listenersToUse));
+          break;
         case Opcodes.IRETURN:
         case Opcodes.LRETURN:
         case Opcodes.FRETURN:
         case Opcodes.ARETURN:
         case Opcodes.DRETURN:
           il.insertBefore(abstractInsnNode,
-              getReturnTraceInstructions(cn, mn, returnType, listenersToUse));
+              getReturnMutatorTraceInstructions(cn, mn, listenersToUse));
       }
     }
   }
 
-  private InsnList getReturnTraceInstructions(ClassNode cn, MethodNode mn,
-      Type returnType, ArrayList<Integer> listenersToUse) {
+  private InsnList getReturnVoidTraceInstructions(ClassNode cn, MethodNode mn,
+      ArrayList<Integer> listenersToUse) {
+
     InsnList il = new InsnList();
     Hook[] hooks = bctrace.getHooks();
-    int returnVarIndex = mn.maxLocals;
-    if (!returnType.getDescriptor().equals("V")) {
-      mn.maxLocals = mn.maxLocals + returnType.getSize();
-      il.add(ASMUtils.getStoreInst(returnType, returnVarIndex));
-    }
     for (int i = listenersToUse.size() - 1; i >= 0; i--) {
       Integer index = listenersToUse.get(i);
       DirectListener listener = (DirectListener) hooks[index].getListener();
+
       il.add(ASMUtils.getPushInstruction(index)); // hook id
       il.add(getClassConstantReference(Type.getObjectType(cn.name), cn.version)); // caller class
       pushInstance(il, mn); // current instance
       pushMethodArgs(il, mn); // method args
-      if (!returnType.getDescriptor().equals("V")) {
-        il.add(ASMUtils.getLoadInst(returnType, returnVarIndex));
-      }
       // Invoke dynamically generated callback method. See CallbackTransformer
       il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
           "io/shiftleft/bctrace/runtime/Callback",
           CallbackTransformer.getDynamicListenerMethodName(listener),
-          CallbackTransformer.getDynamicListenerMethodDescriptor(listener),
+          CallbackTransformer.getDynamicListenerVoidMethodDescriptor(listener),
           false));
-      if (!returnType.getDescriptor().equals("V")) {
-        il.add(ASMUtils.getLoadInst(returnType, returnVarIndex));
-      }
     }
+    return il;
+  }
+
+  private InsnList getReturnMutatorTraceInstructions(ClassNode cn, MethodNode mn,
+      ArrayList<Integer> listenersToUse) {
+
+    Type returnType = Type.getReturnType(mn.desc);
+    InsnList il = new InsnList();
+    Hook[] hooks = bctrace.getHooks();
+    int returnVarIndex = mn.maxLocals;
+    mn.maxLocals = mn.maxLocals + returnType.getSize();
+    // Store original return value into a local variable
+    il.add(ASMUtils.getStoreInst(returnType, returnVarIndex));
+    for (int i = listenersToUse.size() - 1; i >= 0; i--) {
+      Integer index = listenersToUse.get(i);
+      DirectListener listener = (DirectListener) hooks[index].getListener();
+
+      il.add(ASMUtils.getPushInstruction(index)); // hook id
+      il.add(ASMUtils.getLoadInst(returnType, returnVarIndex)); // original value consumed from the stack
+      il.add(getClassConstantReference(Type.getObjectType(cn.name), cn.version)); // caller class
+      pushInstance(il, mn); // current instance
+      pushMethodArgs(il, mn); // method args
+      il.add(ASMUtils.getLoadInst(returnType, returnVarIndex));
+      // Invoke dynamically generated callback method. See CallbackTransformer
+      il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
+          "io/shiftleft/bctrace/runtime/Callback",
+          CallbackTransformer.getDynamicListenerMethodName(listener),
+          CallbackTransformer.getDynamicListenerMutatorMethodDescriptor(listener),
+          false));
+      // Update return value local variable, so each listener receives the modified value from the ones before
+      // instead of getting all of them the original value
+      il.add(ASMUtils.getStoreInst(returnType, returnVarIndex));
+    }
+    il.add(ASMUtils.getLoadInst(returnType, returnVarIndex));
     return il;
   }
 }

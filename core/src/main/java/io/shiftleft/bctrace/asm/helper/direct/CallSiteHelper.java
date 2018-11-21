@@ -167,7 +167,7 @@ public class CallSiteHelper extends Helper {
             il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
                 "io/shiftleft/bctrace/runtime/Callback",
                 CallbackTransformer.getDynamicListenerMethodName(listener),
-                CallbackTransformer.getDynamicListenerMethodDescriptor(listener),
+                CallbackTransformer.getDynamicListenerVoidMethodDescriptor(listener),
                 false));
           }
         }
@@ -229,7 +229,7 @@ public class CallSiteHelper extends Helper {
           il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
               "io/shiftleft/bctrace/runtime/Callback",
               CallbackTransformer.getDynamicListenerMethodName(listener),
-              CallbackTransformer.getDynamicListenerMethodDescriptor(listener),
+              CallbackTransformer.getDynamicListenerVoidMethodDescriptor(listener),
               false));
         }
       }

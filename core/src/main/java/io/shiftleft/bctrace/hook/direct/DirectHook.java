@@ -45,16 +45,23 @@ public abstract class DirectHook<F extends Filter, L extends DirectListener> imp
 
     if (!checkFixedArgs(type.getFixedArgs(), listenerMethod.getParameterTypes())) {
       throw new Error(
-          "Invalid required arguments of @ListenerMethod `" + listenerMethod.getDeclaringClass()
+          "Invalid required arguments of @ListenerMethod '" + listenerMethod.getDeclaringClass()
               .getName()
-              + "." + listenerMethod.getName() + "`");
+              + "." + listenerMethod.getName() + "'");
     }
     if (!checkDynamicArgs(argumentTypes, returnType, listenerMethod.getParameterTypes(), type)) {
       throw new Error(
-          "Arguments of @ListenerMethod `" + listenerMethod.getDeclaringClass()
+          "Arguments of @ListenerMethod '" + listenerMethod.getDeclaringClass()
               .getName()
               + "." + listenerMethod.getName()
-              + "` don't correspond to the required arguments plus the arguments of the target method to be instrumented");
+              + "' don't correspond to the required arguments plus the arguments of the target method to be instrumented");
+    }
+    if (!checkReturnType(returnType, Type.getReturnType(listenerMethod), type)) {
+      throw new Error(
+          "Return type of @ListenerMethod '" + listenerMethod.getDeclaringClass()
+              .getName()
+              + "." + listenerMethod.getName()
+              + "' has to be of type " + returnType.getClassName());
     }
   }
 
@@ -70,35 +77,64 @@ public abstract class DirectHook<F extends Filter, L extends DirectListener> imp
     return true;
   }
 
+  private static boolean checkReturnType(Type returnType,
+      Type listenerReturnType, ListenerType type) {
+    if (type.getDynamicArgsType() == DynamicArgsType.ARGUMENTS) {
+      return listenerReturnType.getInternalName().equals("V");
+    } else if (type.getDynamicArgsType() == DynamicArgsType.ARGUMENTS_RETURN) {
+      return returnType.equals(listenerReturnType);
+    } else if (type.getDynamicArgsType() == DynamicArgsType.ARGUMENTS_THROWABLE) {
+      return listenerReturnType.getInternalName().equals("java/lang/Throwable");
+    } else {
+      throw new AssertionError();
+    }
+  }
+
   private static boolean checkDynamicArgs(Type[] argumentTypes, Type returnType,
-      Class[] listenerMethodArgs,
-      ListenerType type) {
-    int start = type.getFixedArgs().length;
-    if (type.getDynamicArgsType() == DynamicArgsType.ARGUMENTS || returnType.getDescriptor()
-        .equals("V")) {
-      if (start + argumentTypes.length != listenerMethodArgs.length) {
+      Class[] listenerMethodArgs, ListenerType type) {
+    int fixedArgsCount = type.getFixedArgs().length;
+    if (type.getDynamicArgsType() == DynamicArgsType.ARGUMENTS) {
+      if (fixedArgsCount + argumentTypes.length != listenerMethodArgs.length) {
         return false;
       }
       for (int i = 0; i < argumentTypes.length; i++) {
-        if (!argumentTypes[i].equals(Type.getType(listenerMethodArgs[i + start]))) {
+        if (!argumentTypes[i].equals(Type.getType(listenerMethodArgs[i + fixedArgsCount]))) {
+          return false;
+        }
+      }
+      return true;
+    } else if (type.getDynamicArgsType() == DynamicArgsType.ARGUMENTS_RETURN) {
+      int offset;
+      if (returnType.getDescriptor().equals("V")) {
+        offset = 0;
+      } else {
+        if (!returnType
+            .equals(Type.getType(listenerMethodArgs[argumentTypes.length + fixedArgsCount]))) {
+          return false;
+        }
+        offset = 1;
+      }
+      if (fixedArgsCount + argumentTypes.length + offset != listenerMethodArgs.length) {
+        return false;
+      }
+      for (int i = 0; i < argumentTypes.length; i++) {
+        if (!argumentTypes[i].equals(Type.getType(listenerMethodArgs[i + fixedArgsCount]))) {
+          return false;
+        }
+      }
+      return true;
+    } else if (type.getDynamicArgsType() == DynamicArgsType.ARGUMENTS_THROWABLE) {
+      if (fixedArgsCount + argumentTypes.length + 1 != listenerMethodArgs.length) {
+        return false;
+      }
+      for (int i = 0; i < argumentTypes.length; i++) {
+        if (!argumentTypes[i].equals(Type.getType(listenerMethodArgs[i + fixedArgsCount]))) {
           return false;
         }
       }
       return true;
     } else {
-      if (start + argumentTypes.length + 1 != listenerMethodArgs.length) {
-        return false;
-      }
-      for (int i = 0; i < argumentTypes.length; i++) {
-        if (!argumentTypes[i].equals(Type.getType(listenerMethodArgs[i + start]))) {
-          return false;
-        }
-      }
-      if (!returnType.equals(Type.getType(listenerMethodArgs[argumentTypes.length + start]))) {
-        return false;
-      }
-      return true;
+      throw new AssertionError();
     }
   }
-
 }

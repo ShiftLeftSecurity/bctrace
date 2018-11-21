@@ -68,7 +68,7 @@ public class DirectStartHelper extends Helper {
       il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
           "io/shiftleft/bctrace/runtime/Callback",
           CallbackTransformer.getDynamicListenerMethodName(listener),
-          CallbackTransformer.getDynamicListenerMethodDescriptor(listener),
+          CallbackTransformer.getDynamicListenerVoidMethodDescriptor(listener),
           false));
     }
     mn.instructions.insert(il);

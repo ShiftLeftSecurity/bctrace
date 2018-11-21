@@ -48,6 +48,7 @@ import io.shiftleft.bctrace.runtime.listener.direct.DirectListener;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.util.Arrays;
 import org.junit.Test;
 import org.objectweb.asm.tree.MethodNode;
 
@@ -428,7 +429,8 @@ public class FeatureTest extends BcTraceTest {
 
   public static interface DirectListener3Interface {
 
-    public void onFinish(Class clazz, Object instance, String[] array1, String[] array2,
+    public String[] onFinish(Class clazz, Object instance, String[] array1,
+        String[] array2,
         String[] ret);
   }
 
@@ -441,7 +443,8 @@ public class FeatureTest extends BcTraceTest {
     }
 
     @ListenerMethod(type = ListenerType.onFinish)
-    public void onFinish(Class clazz, Object instance, String[] array1, String[] array2,
+    public String[] onFinish(Class clazz, Object instance, String[] array1,
+        String[] array2,
         String[] ret) {
       sb.append("1");
       assertEquals(clazz.getName(), TestClass.class.getName());
@@ -449,12 +452,15 @@ public class FeatureTest extends BcTraceTest {
       assertNotNull(array1);
       assertNotNull(array2);
       assertTrue(array1.length + array2.length == ret.length);
+
+      return ret;
     }
   }
 
   public static interface DirectListener4Interface {
 
-    public void onFinish(Class clazz, Object instance, String[] array1, String[] array2,
+    public String[] onFinish(Class clazz, Object instance, String[] array1,
+        String[] array2,
         String[] ret);
   }
 
@@ -467,7 +473,8 @@ public class FeatureTest extends BcTraceTest {
     }
 
     @ListenerMethod(type = ListenerType.onFinish)
-    public void onFinish(Class clazz, Object instance, String[] array1, String[] array2,
+    public String[] onFinish(Class clazz, Object instance, String[] array1,
+        String[] array2,
         String[] ret) {
       sb.append("2");
       assertEquals(clazz.getName(), TestClass.class.getName());
@@ -475,6 +482,7 @@ public class FeatureTest extends BcTraceTest {
       assertNotNull(array1);
       assertNotNull(array2);
       assertTrue(array1.length + array2.length == ret.length);
+      return new String[]{"1", "2", "3", "4"};
     }
   }
 
@@ -492,7 +500,9 @@ public class FeatureTest extends BcTraceTest {
 
     String[] s1 = {"a", "b"};
     String[] s2 = {"c", "d"};
-    clazz.getMethod("concatenateStringArrays", String[].class, String[].class).invoke(null, s1, s2);
+    String[] ret = (String[]) clazz
+        .getMethod("concatenateStringArrays", String[].class, String[].class).invoke(null, s1, s2);
+    assertEquals(Arrays.toString(ret), Arrays.toString(new String[]{"1", "2", "3", "4"}));
     assertEquals("21", sb.toString());
   }
 
@@ -532,7 +542,7 @@ public class FeatureTest extends BcTraceTest {
 
   public static interface AfterCallSiteListenerInterface {
 
-    public void onBeforeCall(Class clazz, Object instance,
+    public void onAfterCall(Class clazz, Object instance,
         Object callSiteInstance, Object src, int srcPos,
         Object dest, int destPos,
         int length);
@@ -565,7 +575,7 @@ public class FeatureTest extends BcTraceTest {
     }
 
     @ListenerMethod(type = ListenerType.onAfterCall)
-    public void onBeforeCall(Class clazz, Object instance,
+    public void onAfterCall(Class clazz, Object instance,
         Object callSiteInstance, Object src, int srcPos,
         Object dest, int destPos,
         int length) {

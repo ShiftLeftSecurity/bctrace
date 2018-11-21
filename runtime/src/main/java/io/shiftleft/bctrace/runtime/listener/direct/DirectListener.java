@@ -113,7 +113,8 @@ public abstract class DirectListener {
   }
 
   public static enum DynamicArgsType {
-    ARGUMENTS_AND_RETURN_TYPE,
+    ARGUMENTS_RETURN,
+    ARGUMENTS_THROWABLE,
     ARGUMENTS
   }
 
@@ -125,11 +126,17 @@ public abstract class DirectListener {
     // Instrumented class, instrumented instance
     onStart(DynamicArgsType.ARGUMENTS, Class.class, Object.class),
     // Instrumented class, instrumented instance
-    onFinish(DynamicArgsType.ARGUMENTS_AND_RETURN_TYPE, Class.class, Object.class),
+    onFinish(DynamicArgsType.ARGUMENTS_RETURN, Class.class, Object.class),
+    // Instrumented class, instrumented instance, throwable raised
+    onFinishThrowable(DynamicArgsType.ARGUMENTS_THROWABLE, Class.class, Object.class,
+        Throwable.class),
     // Instrumented (caller) class, instrumented instance, callee instance
     onBeforeCall(DynamicArgsType.ARGUMENTS, Class.class, Object.class, Object.class),
     // Instrumented (caller) class, instrumented instance, callee instance
-    onAfterCall(DynamicArgsType.ARGUMENTS_AND_RETURN_TYPE, Class.class, Object.class, Object.class);
+    onAfterCall(DynamicArgsType.ARGUMENTS_RETURN, Class.class, Object.class, Object.class),
+    // Instrumented (caller) class, instrumented instance, callee instance,  throwable raised
+    onAfterCallThrowable(DynamicArgsType.ARGUMENTS_THROWABLE, Class.class, Object.class, Object.class,
+        Throwable.class);
 
 
     private Class[] fixedArgs;

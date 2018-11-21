@@ -99,28 +99,6 @@ public final class Callback {
     }
   }
 
-  /**
-   * This is a template method that is used for generating other methods at CallbackTransformer.
-   */
-  @SuppressWarnings("BoxedValueEquality")
-  private static void dynamicTemplate(int i) {
-    if (!CallbackEnabler.isThreadNotificationEnabled()) {
-      return;
-    }
-    if (Boolean.TRUE == NOTIFYING_FLAG.get()) {
-      return;
-    }
-    try {
-      NOTIFYING_FLAG.set(Boolean.TRUE);
-      // notify() method will be changed by CallbackTransformer
-      listeners[i].notify();
-    } catch (Throwable th) {
-      handleThrowable(th);
-    } finally {
-      NOTIFYING_FLAG.set(Boolean.FALSE);
-    }
-  }
-
   private static void handleThrowable(Throwable th) {
     if (th instanceof BctraceRuntimeException) {
       throw ((BctraceRuntimeException) th).getWrappedException();
