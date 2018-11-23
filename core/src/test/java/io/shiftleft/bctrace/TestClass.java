@@ -62,6 +62,14 @@ public class TestClass extends TestSuperClass {
     t.arrayCopyWrapper();
   }
 
+  public static int foo(String s) {
+    return bar(s) * 3;
+  }
+
+  public static int bar(String s) {
+    return s.length();
+  }
+
   public static long fact(long n) {
     if (n == 1) {
       return 1;

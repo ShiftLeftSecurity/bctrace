@@ -102,14 +102,26 @@ public class CallSiteHelper extends Helper {
               il.insertBefore(callSite, before);
               ret = true;
             }
-            InsnList after = getAfterCallSiteInstructions(
-                cn,
-                mn,
-                callSite,
-                localVariablesArgumentMap,
-                returnVariablesMap,
-                callSiteInstanceVarIndex,
-                hooksToUse);
+            InsnList after;
+            if (Type.getReturnType(callSite.desc).getInternalName().equals("V")) {
+              after = getAfterCallSiteVoidInstructions(
+                  cn,
+                  mn,
+                  callSite,
+                  localVariablesArgumentMap,
+                  callSiteInstanceVarIndex,
+                  hooksToUse);
+            } else {
+              after = getAfterCallSiteReturnMutatorInstructions(
+                  cn,
+                  mn,
+                  callSite,
+                  localVariablesArgumentMap,
+                  returnVariablesMap,
+                  callSiteInstanceVarIndex,
+                  hooksToUse);
+            }
+
             if (after != null) {
               il.insert(callSite, after);
               ret = true;
@@ -176,14 +188,12 @@ public class CallSiteHelper extends Helper {
     return il;
   }
 
-  private InsnList getAfterCallSiteInstructions(ClassNode cn, MethodNode mn,
-      MethodInsnNode callSite, int[][] localVariablesArgumentMap, int[] returnVariablesMap,
-      int callSiteInstanceVarIndex,
+  private InsnList getAfterCallSiteVoidInstructions(ClassNode cn, MethodNode mn,
+      MethodInsnNode callSite, int[][] localVariablesArgumentMap, int callSiteInstanceVarIndex,
       ArrayList<Integer> hooksToUse) {
 
     Type[] argTypes = Type.getArgumentTypes(callSite.desc);
     Type returnType = Type.getReturnType(callSite.desc);
-    boolean staticCall = callSite.getOpcode() == Opcodes.INVOKESTATIC;
     InsnList il = null;
     for (int h = hooksToUse.size() - 1; h >= 0; h--) {
       Integer i = hooksToUse.get(h);
@@ -200,14 +210,66 @@ public class CallSiteHelper extends Helper {
           if (il == null) {
             il = new InsnList();
           }
-          if (!returnType.getDescriptor().equals("V")) {
-            il.add(ASMUtils.getStoreInst(returnType, returnVariablesMap[i]));
-          }
 
           // caller class, caller instance, callee instance
           // onAfterCall(Class.class, Object.class, Object.class);
 
           il.add(ASMUtils.getPushInstruction(i)); // hook id
+          il.add(
+              getClassConstantReference(Type.getObjectType(cn.name), cn.version)); // caller class
+          pushInstance(il, mn); // current instance
+          if (callSite.getOpcode() == Opcodes.INVOKESTATIC) { // callee instance
+            il.add(new InsnNode(Opcodes.ACONST_NULL));
+          } else {
+            il.add(new VarInsnNode(Opcodes.ALOAD, callSiteInstanceVarIndex));
+          }
+          // Move local variables to stack
+          for (int j = 0; j < argTypes.length; j++) {
+            Type argType = argTypes[j];
+            il.add(ASMUtils.getLoadInst(argType, localVariablesArgumentMap[i][j]));
+          }
+          // Invoke dynamically generated callback method. See CallbackTransformer
+          il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
+              "io/shiftleft/bctrace/runtime/Callback",
+              CallbackTransformer.getDynamicListenerMethodName(listener),
+              CallbackTransformer.getDynamicListenerVoidMethodDescriptor(listener),
+              false));
+        }
+      }
+    }
+    return il;
+  }
+
+  private InsnList getAfterCallSiteReturnMutatorInstructions(ClassNode cn, MethodNode mn,
+      MethodInsnNode callSite, int[][] localVariablesArgumentMap, int[] returnVariablesMap,
+      int callSiteInstanceVarIndex,
+      ArrayList<Integer> hooksToUse) {
+
+    Type[] argTypes = Type.getArgumentTypes(callSite.desc);
+    Type returnType = Type.getReturnType(callSite.desc);
+    InsnList il = null;
+    for (int h = hooksToUse.size() - 1; h >= 0; h--) {
+      Integer i = hooksToUse.get(h);
+      int[] listenerArgs = localVariablesArgumentMap[i];
+      if (listenerArgs != null) {
+        CallSiteListener listener = (CallSiteListener) bctrace.getHooks()[i].getListener();
+        if (listener.getType() != ListenerType.onAfterCall) {
+          continue;
+        }
+        if (listener.getCallSiteClassName().equals(callSite.owner) &&
+            listener.getCallSiteMethodName().equals(callSite.name) &&
+            listener.getCallSiteMethodDescriptor().equals(callSite.desc)) {
+
+          if (il == null) {
+            il = new InsnList();
+          }
+          il.add(ASMUtils.getStoreInst(returnType, returnVariablesMap[i]));
+
+          // caller class, caller instance, callee instance
+          // onAfterCall(Class.class, Object.class, Object.class);
+
+          il.add(ASMUtils.getPushInstruction(i)); // hook id
+          il.add(ASMUtils.getLoadInst(returnType, returnVariablesMap[i]));  // original value consumed from the stack
           il.add(
               getClassConstantReference(Type.getObjectType(cn.name), cn.version)); // caller class
           pushInstance(il, mn); // current instance
@@ -229,9 +291,15 @@ public class CallSiteHelper extends Helper {
           il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
               "io/shiftleft/bctrace/runtime/Callback",
               CallbackTransformer.getDynamicListenerMethodName(listener),
-              CallbackTransformer.getDynamicListenerVoidMethodDescriptor(listener),
+              CallbackTransformer.getDynamicListenerMutatorMethodDescriptor(listener),
               false));
+          // Update return value local variable, so each listener receives the modified value from the ones before
+          // instead of getting all of them the original value
+          il.add(ASMUtils.getStoreInst(returnType, returnVariablesMap[i]));
         }
+      }
+      if (il != null) {
+        il.add(ASMUtils.getLoadInst(returnType, returnVariablesMap[i]));
       }
     }
     return il;

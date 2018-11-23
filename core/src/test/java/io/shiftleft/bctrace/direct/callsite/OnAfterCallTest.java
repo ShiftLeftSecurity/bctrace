@@ -34,6 +34,7 @@ import io.shiftleft.bctrace.filter.AllFilter;
 import io.shiftleft.bctrace.hook.Hook;
 import io.shiftleft.bctrace.hook.direct.CallSiteHook;
 import io.shiftleft.bctrace.runtime.listener.direct.CallSiteListener;
+import jdk.nashorn.internal.codegen.types.Type;
 import org.junit.Test;
 
 /**
@@ -42,7 +43,7 @@ import org.junit.Test;
 public class OnAfterCallTest extends BcTraceTest {
 
   @Test
-  public void testAfterCallSite() throws Exception {
+  public void testAfterVoidCallSite() throws Exception {
     StringBuilder sb = new StringBuilder();
     AfterCallSiteListener l1 = new AfterCallSiteListener("1", sb);
     AfterCallSiteListener l2 = new AfterCallSiteListener("2", sb);
@@ -107,4 +108,50 @@ public class OnAfterCallTest extends BcTraceTest {
     }
   }
 
+
+  @Test
+  public void testReturnVoidCallSite() throws Exception {
+    AfterCallSiteMutableListener listener = new AfterCallSiteMutableListener();
+    Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
+        new CallSiteHook(new AllFilter(), listener)
+    }, false);
+
+    int ret = (Integer) clazz.getMethod("foo", String.class).invoke(null, "123");
+    assertEquals(15, ret);
+  }
+
+  /**
+   * This accessory interface is needed for testing purposes only. The agent will generate it on
+   * CallbackTransformer.class at runtime
+   */
+  public static interface AfterCallSiteMutableListenerInterface {
+
+    public int onAfterCall(Class clazz, Object instance,
+        Object callSiteInstance, String s, int ret);
+  }
+
+  public static class AfterCallSiteMutableListener extends CallSiteListener implements
+      AfterCallSiteMutableListenerInterface {
+
+    @Override
+    public String getCallSiteClassName() {
+      return Type.getInternalName(TestClass.class);
+    }
+
+    @Override
+    public String getCallSiteMethodName() {
+      return "bar";
+    }
+
+    @Override
+    public String getCallSiteMethodDescriptor() {
+      return "(Ljava/lang/String;)I";
+    }
+
+    @ListenerMethod(type = ListenerType.onAfterCall)
+    public int onAfterCall(Class clazz, Object instance,
+        Object callSiteInstance, String s, int ret) {
+      return 5;
+    }
+  }
 }

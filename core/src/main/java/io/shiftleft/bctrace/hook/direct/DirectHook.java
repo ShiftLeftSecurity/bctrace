@@ -111,10 +111,6 @@ public abstract class DirectHook<F extends Filter, L extends DirectListener> imp
       if (returnType.getDescriptor().equals("V")) {
         offset = 0;
       } else {
-        if (!returnType
-            .equals(Type.getType(listenerMethodArgs[argumentTypes.length + fixedArgsCount]))) {
-          return false;
-        }
         offset = 1;
       }
       if (fixedArgsCount + argumentTypes.length + offset != listenerMethodArgs.length) {
@@ -124,6 +120,10 @@ public abstract class DirectHook<F extends Filter, L extends DirectListener> imp
         if (!argumentTypes[i].equals(Type.getType(listenerMethodArgs[i + fixedArgsCount]))) {
           return false;
         }
+      }
+      if (offset == 1 && !returnType
+          .equals(Type.getType(listenerMethodArgs[argumentTypes.length + fixedArgsCount]))) {
+        return false;
       }
       return true;
     } else if (type.getDynamicArgsType() == DynamicArgsType.ARGUMENTS_THROWABLE) {

@@ -377,7 +377,7 @@ public class FinishListenerTest extends BcTraceTest {
               public Object onFinish(int methodId, Class clazz, Object instance, Object[] args,
                   Object ret, Throwable th) {
                 sb.append(ret);
-                throw new RuntimeException("Unexpected");
+                throw new RuntimeException("Unexpected!");
               }
             };
           }
@@ -407,10 +407,10 @@ public class FinishListenerTest extends BcTraceTest {
             return new FinishListener() {
               @Override
               public Object onFinish(int methodId, Class clazz, Object instance, Object[] args,
-                  Object ret, @Disabled Throwable th) {
+                  Object ret, Throwable th) {
                 steps.append("1");
-                assertNull(th);
-                return null;
+                assertNotNull(th);
+                return th;
               }
             };
           }
@@ -451,7 +451,7 @@ public class FinishListenerTest extends BcTraceTest {
               public Object onFinish(int methodId, Class clazz, Object instance, Object[] args,
                   Object ret, Throwable th) {
                 steps.append("1");
-                throw new RuntimeException("Unexpected");
+                throw new RuntimeException("Unexpected!");
               }
             };
           }
