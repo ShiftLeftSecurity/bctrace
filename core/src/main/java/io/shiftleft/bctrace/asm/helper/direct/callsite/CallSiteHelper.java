@@ -22,7 +22,7 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.asm.helper.direct;
+package io.shiftleft.bctrace.asm.helper.direct.callsite;
 
 import io.shiftleft.bctrace.asm.CallbackTransformer;
 import io.shiftleft.bctrace.asm.helper.Helper;

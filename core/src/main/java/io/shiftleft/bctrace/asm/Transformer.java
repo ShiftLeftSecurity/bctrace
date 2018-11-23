@@ -29,17 +29,17 @@ import io.shiftleft.bctrace.InstrumentationImpl;
 import io.shiftleft.bctrace.MethodInfo;
 import io.shiftleft.bctrace.MethodRegistry;
 import io.shiftleft.bctrace.SystemProperty;
+import io.shiftleft.bctrace.asm.helper.direct.callsite.CallSiteHelper;
+import io.shiftleft.bctrace.asm.helper.direct.method.DirectReturnHelper;
+import io.shiftleft.bctrace.asm.helper.direct.method.DirectStartHelper;
+import io.shiftleft.bctrace.asm.helper.direct.method.DirectThrowableHelper;
 import io.shiftleft.bctrace.asm.helper.generic.FinishHelper;
 import io.shiftleft.bctrace.asm.helper.generic.StartHelper;
-import io.shiftleft.bctrace.asm.helper.generic.BeforeThrowHelper;
-import io.shiftleft.bctrace.asm.helper.direct.CallSiteHelper;
-import io.shiftleft.bctrace.asm.helper.direct.DirectReturnHelper;
-import io.shiftleft.bctrace.asm.helper.direct.DirectStartHelper;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
 import io.shiftleft.bctrace.debug.DebugInfo;
 import io.shiftleft.bctrace.hierarchy.UnloadedClass;
-import io.shiftleft.bctrace.hook.generic.GenericHook;
 import io.shiftleft.bctrace.hook.Hook;
+import io.shiftleft.bctrace.hook.generic.GenericHook;
 import io.shiftleft.bctrace.logging.Level;
 import io.shiftleft.bctrace.runtime.Callback;
 import io.shiftleft.bctrace.runtime.CallbackEnabler;
@@ -88,10 +88,10 @@ public class Transformer implements ClassFileTransformer {
 
   private final CallbackTransformer cbTransformer;
   private final StartHelper startHelper = new StartHelper();
-  private final BeforeThrowHelper throwHelper = new BeforeThrowHelper();
   private final CallSiteHelper callSiteHelper = new CallSiteHelper();
   private final DirectStartHelper directStartHelper = new DirectStartHelper();
   private final DirectReturnHelper directReturnHelper = new DirectReturnHelper();
+  private final DirectThrowableHelper directThrowableHelper = new DirectThrowableHelper();
   private final FinishHelper finishHelper = new FinishHelper();
   private final InstrumentationImpl instrumentation;
   private final Hook[] hooks;
@@ -106,11 +106,14 @@ public class Transformer implements ClassFileTransformer {
     this.cbTransformer = cbTransformer;
 
     this.startHelper.setBctrace(bctrace);
-    this.throwHelper.setBctrace(bctrace);
-    this.callSiteHelper.setBctrace(bctrace);
+    this.finishHelper.setBctrace(bctrace);
+
     this.directStartHelper.setBctrace(bctrace);
     this.directReturnHelper.setBctrace(bctrace);
-    this.finishHelper.setBctrace(bctrace);
+    this.directThrowableHelper.setBctrace(bctrace);
+
+    this.callSiteHelper.setBctrace(bctrace);
+
   }
 
   @Override
@@ -327,9 +330,6 @@ public class Transformer implements ClassFileTransformer {
       if (startHelper.addByteCodeInstructions(methodId, cn, mn, hooksToUse)) {
         transformed = true;
       }
-      if (throwHelper.addByteCodeInstructions(methodId, cn, mn, hooksToUse)) {
-        transformed = true;
-      }
       if (finishHelper.addByteCodeInstructions(methodId, cn, mn, hooksToUse)) {
         transformed = true;
       }
@@ -341,6 +341,9 @@ public class Transformer implements ClassFileTransformer {
       transformed = true;
     }
     if (directReturnHelper.addByteCodeInstructions(cn, mn, hooksToUse)) {
+      transformed = true;
+    }
+    if (directThrowableHelper.addByteCodeInstructions(cn, mn, hooksToUse)) {
       transformed = true;
     }
     return transformed;

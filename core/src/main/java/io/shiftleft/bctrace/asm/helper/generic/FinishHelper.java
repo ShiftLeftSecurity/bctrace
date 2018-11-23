@@ -63,14 +63,20 @@ import org.objectweb.asm.tree.VarInsnNode;
  * Into that:
  * <br><pre>{@code
  * public Object foo(Object arg){
- *   Object ret = void(arg);
- *   // Notify listeners that apply to this method
- *   Callback.onFinish(ret, clazz, this, 0, arg);
- *   Callback.onFinish(ret, clazz, this, 2, arg);
- *   Callback.onFinish(ret, clazz, this, 10, arg);
- *   // Return the original value
- *   return ret;
- * }
+ *   try{
+ *     Object ret = void(arg);
+ *     // Notify listeners that apply to this method
+ *     ret = Callback.onFinish(ret, ret, null, clazz, this, 0, arg);
+ *     ret = Callback.onFinish(ret, ret, null, clazz, this, 2, arg);
+ *     ret = Callback.onFinish(ret, ret, null, clazz, this, 10, arg);
+ *     // Return the original value
+ *     return ret;
+ *   } catch (Throwable th){
+ *     th = Callback.onFinish(th, null, th, clazz, this, 0, arg);
+ *     th = Callback.onFinish(th, null, th, clazz, this, 2, arg);
+ *     th = Callback.onFinish(th, null, th, clazz, this, 10, arg);
+ *     throw th;
+ *   }
  * }
  * </pre>
  *
@@ -167,8 +173,7 @@ public class FinishHelper extends Helper {
     for (int i = listenersToUse.size() - 1; i >= 0; i--) {
       Integer index = listenersToUse.get(i);
       FinishListener listener = (FinishListener) bctrace.getHooks()[index].getListener();
-
-      if (listener.requiresReturnValue() && !returnType.getDescriptor().equals("V")) {
+      if (!returnType.getDescriptor().equals("V")) {
         il.add(ASMUtils
             .getLoadInst(returnType, returnVarIndex)); // Pop original return value to the stack
         MethodInsnNode primitiveToWrapperInst = ASMUtils.getPrimitiveToWrapperInst(returnType);
@@ -178,6 +183,7 @@ public class FinishHelper extends Helper {
       } else {
         il.add(new InsnNode(Opcodes.ACONST_NULL));
       }
+      il.add(new InsnNode(Opcodes.DUP));
       il.add(new InsnNode(Opcodes.ACONST_NULL)); // throwable
       if (listener.requiresMethodId()) {
         il.add(ASMUtils.getPushInstruction(methodId)); // method id
@@ -198,35 +204,31 @@ public class FinishHelper extends Helper {
       pushMethodArgsArray(il, mn);
       il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
           "io/shiftleft/bctrace/runtime/Callback", "onFinish",
-          "(Ljava/lang/Object;Ljava/lang/Throwable;ILjava/lang/Class;Ljava/lang/Object;I[Ljava/lang/Object;)Ljava/lang/Object;",
+          "(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Throwable;ILjava/lang/Class;Ljava/lang/Object;I[Ljava/lang/Object;)Ljava/lang/Object;",
           false));
 
       if (returnType.getDescriptor().equals("V")) {
         il.add(new InsnNode(Opcodes.POP));
       } else {
-        if (listener.requiresReturnValue()) {
-          String castType = returnType.getInternalName();
-          String wrapperType = ASMUtils.getWrapper(returnType);
-          if (wrapperType != null) {
-            castType = wrapperType;
-          }
-          il.add(new TypeInsnNode(Opcodes.CHECKCAST, castType));
-          MethodInsnNode wrapperToPrimitiveInst = ASMUtils.getWrapperToPrimitiveInst(returnType);
-          if (wrapperToPrimitiveInst != null) {
-            il.add(wrapperToPrimitiveInst);
-          }
-          if (returnType.getSize() == 1) {
-            il.add(new InsnNode(Opcodes.DUP));
-          } else {
-            il.add(new InsnNode(Opcodes.DUP2));
-          }
-          // Update return value local variable, so each listener receives the modified value from the ones before
-          // instead of getting all of them the original value
-          il.add(ASMUtils.getStoreInst(returnType, returnVarIndex));
-        } else {
-          il.add(new InsnNode(Opcodes.POP));
-          il.add(ASMUtils.getLoadInst(returnType, returnVarIndex));
+
+        String castType = returnType.getInternalName();
+        String wrapperType = ASMUtils.getWrapper(returnType);
+        if (wrapperType != null) {
+          castType = wrapperType;
         }
+        il.add(new TypeInsnNode(Opcodes.CHECKCAST, castType));
+        MethodInsnNode wrapperToPrimitiveInst = ASMUtils.getWrapperToPrimitiveInst(returnType);
+        if (wrapperToPrimitiveInst != null) {
+          il.add(wrapperToPrimitiveInst);
+        }
+        if (returnType.getSize() == 1) {
+          il.add(new InsnNode(Opcodes.DUP));
+        } else {
+          il.add(new InsnNode(Opcodes.DUP2));
+        }
+        // Update return value local variable, so each listener receives the modified value from the ones before
+        // instead of getting all of them the original value
+        il.add(ASMUtils.getStoreInst(returnType, returnVarIndex));
       }
     }
     return il;
@@ -235,53 +237,12 @@ public class FinishHelper extends Helper {
   private boolean addTryCatchInstructions(int methodId, ClassNode cn, MethodNode mn,
       ArrayList<Integer> listenersToUse) {
 
-    LabelNode startNode = new LabelNode();
-
-    // Look for call to super constructor in the top frame (before any jump)
-    if (mn.name.equals("<init>")) {
-      InsnList il = mn.instructions;
-      AbstractInsnNode superCall = null;
-      AbstractInsnNode node = il.getFirst();
-      int newCalls = 0;
-      while (node != null) {
-        if (node instanceof JumpInsnNode ||
-            node instanceof TableSwitchInsnNode ||
-            node instanceof LookupSwitchInsnNode) {
-          // No branching supported before call to super()
-          break;
-        }
-        if (node.getOpcode() == Opcodes.NEW) {
-          newCalls++;
-        }
-        if (node instanceof MethodInsnNode && node.getOpcode() == Opcodes.INVOKESPECIAL) {
-          MethodInsnNode min = (MethodInsnNode) node;
-          if (min.name.equals("<init>")) {
-            if (newCalls == 0) {
-              superCall = min;
-              break;
-            } else {
-              newCalls--;
-            }
-          }
-        }
-        node = node.getNext();
-      }
-      if (superCall == null) {
-        // Weird constructor, not generated from Java Language
-        Bctrace.getAgentLogger().log(Level.WARNING,
-            "Could not add try/catch handler to constructor " + cn.name + "." + mn.name + mn.desc);
-        return false;
-      } else {
-        // If super() call is found, then add the try/catch after that so the instance is initialized
-        // https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.10.1.9.invokespecial
-        if (superCall.getNext() == null) {
-          mn.instructions.add(startNode);
-        } else {
-          mn.instructions.insertBefore(superCall.getNext(), startNode);
-        }
-      }
-    } else {
-      mn.instructions.insert(startNode);
+    LabelNode startNode = getStartNodeForGlobalTryCatch(mn);
+    if (startNode == null) {
+      // Weird constructor, not generated from Java Language
+      Bctrace.getAgentLogger().log(Level.WARNING,
+          "Could not add try/catch handler to constructor " + cn.name + "." + mn.name + mn.desc);
+      return false;
     }
 
     LabelNode endNode = new LabelNode();
@@ -303,12 +264,9 @@ public class FinishHelper extends Helper {
       Integer index = listenersToUse.get(i);
       FinishListener listener = (FinishListener) bctrace.getHooks()[index]
           .getListener();
+      il.add(new VarInsnNode(Opcodes.ALOAD, thVarIndex));
       il.add(new InsnNode(Opcodes.ACONST_NULL)); // return value
-      if (listener.requiresThrowable()) {
-        il.add(new VarInsnNode(Opcodes.ALOAD, thVarIndex));
-      } else {
-        il.add(new InsnNode(Opcodes.ACONST_NULL));
-      }
+      il.add(new VarInsnNode(Opcodes.ALOAD, thVarIndex));
       if (listener.requiresMethodId()) {
         il.add(ASMUtils.getPushInstruction(methodId)); // method id
       } else {
@@ -332,15 +290,10 @@ public class FinishHelper extends Helper {
       }
       il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
           "io/shiftleft/bctrace/runtime/Callback", "onFinish",
-          "(Ljava/lang/Object;Ljava/lang/Throwable;ILjava/lang/Class;Ljava/lang/Object;I[Ljava/lang/Object;)Ljava/lang/Object;",
+          "(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Throwable;ILjava/lang/Class;Ljava/lang/Object;I[Ljava/lang/Object;)Ljava/lang/Object;",
           false));
 
-      if (!listener.requiresThrowable()) {
-        il.add(new InsnNode(Opcodes.POP));
-        il.add(new VarInsnNode(Opcodes.ALOAD, thVarIndex));
-      } else {
-        il.add(new TypeInsnNode(Opcodes.CHECKCAST, "java/lang/Throwable"));
-      }
+      il.add(new TypeInsnNode(Opcodes.CHECKCAST, "java/lang/Throwable"));
     }
 
     il.add(new InsnNode(Opcodes.ATHROW));

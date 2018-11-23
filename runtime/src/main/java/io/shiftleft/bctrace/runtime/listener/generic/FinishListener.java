@@ -57,12 +57,4 @@ public abstract class FinishListener extends GenericListener {
   public abstract Object onFinish(int methodId, Class clazz, Object instance, Object[] args,
       Object ret, Throwable th);
 
-
-  public final boolean requiresReturnValue() {
-    return !getDisabledArguments()[4];
-  }
-
-  public final boolean requiresThrowable() {
-    return !getDisabledArguments()[5];
-  }
 }

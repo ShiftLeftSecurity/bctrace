@@ -126,9 +126,9 @@ public abstract class DirectListener {
     // Instrumented class, instrumented instance
     onStart(DynamicArgsType.ARGUMENTS, Class.class, Object.class),
     // Instrumented class, instrumented instance
-    onFinish(DynamicArgsType.ARGUMENTS_RETURN, Class.class, Object.class),
+    onReturn(DynamicArgsType.ARGUMENTS_RETURN, Class.class, Object.class),
     // Instrumented class, instrumented instance, throwable raised
-    onFinishThrowable(DynamicArgsType.ARGUMENTS_THROWABLE, Class.class, Object.class,
+    onThrowable(DynamicArgsType.ARGUMENTS_THROWABLE, Class.class, Object.class,
         Throwable.class),
     // Instrumented (caller) class, instrumented instance, callee instance
     onBeforeCall(DynamicArgsType.ARGUMENTS, Class.class, Object.class, Object.class),

@@ -22,55 +22,95 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.asm.helper.direct;
+package io.shiftleft.bctrace.asm.helper.direct.method;
 
+import io.shiftleft.bctrace.Bctrace;
 import io.shiftleft.bctrace.asm.CallbackTransformer;
 import io.shiftleft.bctrace.asm.helper.Helper;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
-import io.shiftleft.bctrace.hook.Hook;
+import io.shiftleft.bctrace.logging.Level;
 import io.shiftleft.bctrace.runtime.listener.direct.DirectListener;
 import io.shiftleft.bctrace.runtime.listener.direct.DirectListener.ListenerType;
 import java.util.ArrayList;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.FrameNode;
 import org.objectweb.asm.tree.InsnList;
+import org.objectweb.asm.tree.InsnNode;
+import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.TryCatchBlockNode;
+import org.objectweb.asm.tree.VarInsnNode;
 
-public class DirectStartHelper extends Helper {
+public class DirectThrowableHelper extends Helper {
 
   public boolean addByteCodeInstructions(ClassNode cn, MethodNode mn,
       ArrayList<Integer> hooksToUse) {
 
-    ArrayList<Integer> listenersToUse = getDirectListenersOfType(hooksToUse, ListenerType.onStart);
+    ArrayList<Integer> listenersToUse = getDirectListenersOfType(hooksToUse,
+        ListenerType.onThrowable);
     if (!isInstrumentationNeeded(listenersToUse)) {
       return false;
     }
-    addTraceStart(cn, mn, listenersToUse);
+    addTryCatchInstructions(cn, mn, listenersToUse);
     return true;
   }
 
-  private void addTraceStart(ClassNode cn, MethodNode mn,
+  private boolean addTryCatchInstructions(ClassNode cn, MethodNode mn,
       ArrayList<Integer> listenersToUse) {
 
+    LabelNode startNode = getStartNodeForGlobalTryCatch(mn);
+    if (startNode == null) {
+      // Weird constructor, not generated from Java Language
+      Bctrace.getAgentLogger().log(Level.WARNING,
+          "Could not add try/catch handler to constructor " + cn.name + "." + mn.name + mn.desc);
+      return false;
+    }
+
+    LabelNode endNode = new LabelNode();
+    mn.instructions.add(endNode);
+
     InsnList il = new InsnList();
-    Hook[] hooks = bctrace.getHooks();
+    Object[] parametersFrameTypes = ASMUtils.getParametersFrameTypes(cn, mn);
+    il.add(new FrameNode(Opcodes.F_FULL, parametersFrameTypes.length, parametersFrameTypes, 1,
+        new Object[]{"java/lang/Throwable"}));
+
+    LabelNode handlerNode = new LabelNode();
+    il.add(handlerNode);
+
+    int thVarIndex = mn.maxLocals;
+    mn.maxLocals = mn.maxLocals + 1;
+    il.add(new VarInsnNode(Opcodes.ASTORE, thVarIndex));
+
     for (int i = 0; i < listenersToUse.size(); i++) {
       Integer index = listenersToUse.get(i);
-      DirectListener listener = (DirectListener) hooks[index].getListener();
+      DirectListener listener = (DirectListener) bctrace.getHooks()[index]
+          .getListener();
       il.add(ASMUtils.getPushInstruction(index)); // hook id
+      il.add(new VarInsnNode(Opcodes.ALOAD, thVarIndex));// original value consumed from the stack
       il.add(getClassConstantReference(Type.getObjectType(cn.name), cn.version)); // caller class
       pushInstance(il, mn); // current instance
+      il.add(new VarInsnNode(Opcodes.ALOAD, thVarIndex));
       pushMethodArgs(il, mn); // method args
-
       // Invoke dynamically generated callback method. See CallbackTransformer
       il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
           "io/shiftleft/bctrace/runtime/Callback",
           CallbackTransformer.getDynamicListenerMethodName(listener),
-          CallbackTransformer.getDynamicListenerVoidMethodDescriptor(listener),
+          CallbackTransformer.getDynamicListenerMutatorMethodDescriptor(listener),
           false));
+      // Update return value local variable, so each listener receives the modified value from the ones before
+      // instead of getting all of them the original value
+      il.add(new VarInsnNode(Opcodes.ASTORE, thVarIndex));
     }
-    mn.instructions.insert(il);
+    il.add(new VarInsnNode(Opcodes.ALOAD, thVarIndex));
+    il.add(new InsnNode(Opcodes.ATHROW));
+
+    TryCatchBlockNode blockNode = new TryCatchBlockNode(startNode, endNode, handlerNode, null);
+
+    mn.tryCatchBlocks.add(blockNode);
+    mn.instructions.add(il);
+    return true;
   }
 }

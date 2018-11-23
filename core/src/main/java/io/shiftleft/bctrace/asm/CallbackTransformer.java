@@ -429,7 +429,7 @@ public class CallbackTransformer implements ClassFileTransformer {
       }
     }
     descriptor.append(")");
-    descriptor.append(Type.getReturnType(listenerMethod).getInternalName());
+    descriptor.append(Type.getReturnType(listenerMethod).getDescriptor());
     String desc = descriptor.toString();
     if (mn != null) {
       mn.desc = desc;

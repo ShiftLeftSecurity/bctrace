@@ -29,11 +29,11 @@ import java.lang.reflect.Method;
 /**
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public abstract class BeforeThrownListener extends GenericListener {
+public abstract class BeforeThrowListener extends GenericListener {
 
   @Override
   protected final Method getListenerSuperMethod() {
-    return getMethodByName(BeforeThrownListener.class, "onBeforeThrow");
+    return getMethodByName(BeforeThrowListener.class, "onBeforeThrow");
   }
 
   public final boolean requiresThrowable() {

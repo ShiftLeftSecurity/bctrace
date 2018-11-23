@@ -56,13 +56,7 @@ public abstract class DirectHook<F extends Filter, L extends DirectListener> imp
               + "." + listenerMethod.getName()
               + "' don't correspond to the required arguments plus the arguments of the target method to be instrumented");
     }
-    if (!checkReturnType(returnType, Type.getReturnType(listenerMethod), type)) {
-      throw new Error(
-          "Return type of @ListenerMethod '" + listenerMethod.getDeclaringClass()
-              .getName()
-              + "." + listenerMethod.getName()
-              + "' has to be of type " + returnType.getClassName());
-    }
+    checkReturnType(returnType, listenerMethod, type);
   }
 
   private static boolean checkFixedArgs(Class[] fixedArgs, Class[] listenerMethodArgs) {
@@ -77,16 +71,25 @@ public abstract class DirectHook<F extends Filter, L extends DirectListener> imp
     return true;
   }
 
-  private static boolean checkReturnType(Type returnType,
-      Type listenerReturnType, ListenerType type) {
+  private static void checkReturnType(Type returnType, Method listenerMethod, ListenerType type) {
+    boolean error = false;
+    String requiredType = null;
+    Type listenerReturnType = Type.getReturnType(listenerMethod);
     if (type.getDynamicArgsType() == DynamicArgsType.ARGUMENTS) {
-      return listenerReturnType.getInternalName().equals("V");
+      error = !listenerReturnType.getInternalName().equals("V");
+      requiredType = "void";
     } else if (type.getDynamicArgsType() == DynamicArgsType.ARGUMENTS_RETURN) {
-      return returnType.equals(listenerReturnType);
+      error = !returnType.equals(listenerReturnType);
+      requiredType = returnType.getClassName();
     } else if (type.getDynamicArgsType() == DynamicArgsType.ARGUMENTS_THROWABLE) {
-      return listenerReturnType.getInternalName().equals("java/lang/Throwable");
+      error = !listenerReturnType.getInternalName().equals("java/lang/Throwable");
+      requiredType = "java.lang.Throwable";
     } else {
       throw new AssertionError();
+    }
+    if (error) {
+      throw new Error("Return type of @ListenerMethod '" + listenerMethod.getDeclaringClass()
+          .getName() + "." + listenerMethod.getName() + "' has to be of type " + requiredType);
     }
   }
 
@@ -124,7 +127,7 @@ public abstract class DirectHook<F extends Filter, L extends DirectListener> imp
       }
       return true;
     } else if (type.getDynamicArgsType() == DynamicArgsType.ARGUMENTS_THROWABLE) {
-      if (fixedArgsCount + argumentTypes.length + 1 != listenerMethodArgs.length) {
+      if (fixedArgsCount + argumentTypes.length != listenerMethodArgs.length) {
         return false;
       }
       for (int i = 0; i < argumentTypes.length; i++) {

@@ -27,6 +27,7 @@ package io.shiftleft.bctrace.asm.helper;
 import io.shiftleft.bctrace.Bctrace;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
 import io.shiftleft.bctrace.hook.Hook;
+import io.shiftleft.bctrace.logging.Level;
 import io.shiftleft.bctrace.runtime.listener.direct.DirectListener;
 import io.shiftleft.bctrace.runtime.listener.direct.DirectListener.ListenerType;
 import io.shiftleft.bctrace.runtime.listener.generic.Disabled;
@@ -36,11 +37,16 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
+import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
+import org.objectweb.asm.tree.JumpInsnNode;
+import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.LdcInsnNode;
+import org.objectweb.asm.tree.LookupSwitchInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.TableSwitchInsnNode;
 import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
@@ -197,5 +203,54 @@ public abstract class Helper {
     } else {
       il.add(new VarInsnNode(Opcodes.ALOAD, 0));
     }
+  }
+
+  protected LabelNode getStartNodeForGlobalTryCatch(MethodNode mn){
+    LabelNode startNode = new LabelNode();
+    // Look for call to super constructor in the top frame (before any jump)
+    if (mn.name.equals("<init>")) {
+      InsnList il = mn.instructions;
+      AbstractInsnNode superCall = null;
+      AbstractInsnNode node = il.getFirst();
+      int newCalls = 0;
+      while (node != null) {
+        if (node instanceof JumpInsnNode ||
+            node instanceof TableSwitchInsnNode ||
+            node instanceof LookupSwitchInsnNode) {
+          // No branching supported before call to super()
+          break;
+        }
+        if (node.getOpcode() == Opcodes.NEW) {
+          newCalls++;
+        }
+        if (node instanceof MethodInsnNode && node.getOpcode() == Opcodes.INVOKESPECIAL) {
+          MethodInsnNode min = (MethodInsnNode) node;
+          if (min.name.equals("<init>")) {
+            if (newCalls == 0) {
+              superCall = min;
+              break;
+            } else {
+              newCalls--;
+            }
+          }
+        }
+        node = node.getNext();
+      }
+      if (superCall == null) {
+        // Weird constructor, not generated from Java Language
+        return null;
+      } else {
+        // If super() call is found, then add the try/catch after it, so the instance is initialized
+        // https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.10.1.9.invokespecial
+        if (superCall.getNext() == null) {
+          mn.instructions.add(startNode);
+        } else {
+          mn.instructions.insertBefore(superCall.getNext(), startNode);
+        }
+      }
+    } else {
+      mn.instructions.insert(startNode);
+    }
+    return startNode;
   }
 }
