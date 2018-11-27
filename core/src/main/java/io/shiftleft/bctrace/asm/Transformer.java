@@ -160,12 +160,13 @@ public class Transformer implements ClassFileTransformer {
       ClassNode cn = new ClassNode();
       cr.accept(cn, 0);
 
-      UnloadedClass ci = new UnloadedClass(className.replace('/', '.'), loader, cn, instrumentation);
+      UnloadedClass ci = new UnloadedClass(className.replace('/', '.'), loader, cn,
+          instrumentation);
 
       classMatchingHooks = getMatchingHooksByClassInfo(classMatchingHooks, ci, protectionDomain,
           loader);
 
-      transformed = transformMethods(ci, classMatchingHooks);
+      transformed = transformMethods(loader, ci, classMatchingHooks);
       if (!transformed) {
         return null;
       } else {
@@ -259,7 +260,8 @@ public class Transformer implements ClassFileTransformer {
     return ret;
   }
 
-  private boolean transformMethods(UnloadedClass ci, ArrayList<Integer> classMatchingHooks) {
+  private boolean transformMethods(ClassLoader cl, UnloadedClass ci,
+      ArrayList<Integer> classMatchingHooks) {
     ClassNode cn = ci.getClassNode();
     List<MethodNode> methods = cn.methods;
     boolean classTransformed = false;
@@ -278,18 +280,20 @@ public class Transformer implements ClassFileTransformer {
         continue;
       }
       if (!hooksToUse.isEmpty()) {
-        methodTransformed = modifyMethod(cn, mn, hooksToUse);
+        methodTransformed = modifyMethod(cl, cn, mn, hooksToUse);
       }
       if (methodTransformed) {
-        modifyMethod(cn, mn, getAdditionalHooks(classMatchingHooks));
+        modifyMethod(cl, cn, mn, getAdditionalHooks(classMatchingHooks));
         classTransformed = true;
         if (DebugInfo.getInstance() != null) {
-          Integer methodId = MethodRegistry.getInstance().getMethodId(MethodInfo.from(cn.name, mn));
+          Integer methodId = MethodRegistry.getInstance()
+              .getMethodId(MethodInfo.from(cn.name, mn), cl);
           DebugInfo.getInstance().setInstrumented(methodId, true);
         }
       } else {
         if (DebugInfo.getInstance() != null) {
-          Integer methodId = MethodRegistry.getInstance().getMethodId(MethodInfo.from(cn.name, mn));
+          Integer methodId = MethodRegistry.getInstance()
+              .getMethodId(MethodInfo.from(cn.name, mn), cl);
           DebugInfo.getInstance().setInstrumented(methodId, false);
         }
       }
@@ -309,7 +313,8 @@ public class Transformer implements ClassFileTransformer {
     return additionalHooks;
   }
 
-  private boolean modifyMethod(ClassNode cn, MethodNode mn, ArrayList<Integer> hooksToUse) {
+  private boolean modifyMethod(ClassLoader cl, ClassNode cn, MethodNode mn,
+      ArrayList<Integer> hooksToUse) {
     boolean transformed = false;
     boolean hasGenericHooks = false;
     for (int h = 0; h < hooksToUse.size(); h++) {
@@ -322,7 +327,7 @@ public class Transformer implements ClassFileTransformer {
     }
     if (hasGenericHooks) {
       Integer methodId = MethodRegistry.getInstance()
-          .registerMethodId(MethodInfo.from(cn.name, mn));
+          .registerMethodId(MethodInfo.from(cn.name, mn), cl);
 
       if (DebugInfo.getInstance() != null) {
         DebugInfo.getInstance().setInstrumented(methodId, true);
