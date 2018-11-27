@@ -30,6 +30,7 @@ import io.shiftleft.bctrace.asm.util.ASMUtils;
 import io.shiftleft.bctrace.asm.util.Unsafe;
 import io.shiftleft.bctrace.hierarchy.UnloadedClass;
 import io.shiftleft.bctrace.logging.Level;
+import io.shiftleft.bctrace.runtime.CallbackEnabler;
 import io.shiftleft.bctrace.runtime.listener.direct.DirectListener;
 import io.shiftleft.bctrace.runtime.listener.direct.DirectListener.ListenerMethod;
 import java.io.File;
@@ -80,6 +81,7 @@ public class DirectListenerTransformer implements ClassFileTransformer {
       throws IllegalClassFormatException {
 
     try {
+      CallbackEnabler.disableThreadNotification();
       if (className == null) {
         return null;
       }
@@ -105,6 +107,8 @@ public class DirectListenerTransformer implements ClassFileTransformer {
       Bctrace.getAgentLogger()
           .log(Level.ERROR, "Error found instrumenting class " + className, th);
       return null;
+    } finally {
+      CallbackEnabler.enableThreadNotification();
     }
   }
 
