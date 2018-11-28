@@ -70,19 +70,14 @@ public abstract class AgentLoggerFactory {
     private static Logger createLogger() {
       Logger logger = new Logger() {
         @Override
-        protected void doLog(Level level, String message) {
-          synchronized (System.err) {
-            System.err.println(message);
-          }
-        }
-
-        @Override
         protected void doLog(Level level, String message, Throwable th) {
           StringBuilder sb = new StringBuilder(message);
-          sb.append("\n");
-          StringWriter stack = new StringWriter();
-          th.printStackTrace(new PrintWriter(stack));
-          sb.append(stack.toString());
+          if (th != null) {
+            sb.append("\n");
+            StringWriter stack = new StringWriter();
+            th.printStackTrace(new PrintWriter(stack));
+            sb.append(stack.toString());
+          }
           synchronized (System.err) {
             System.err.println(sb.toString());
           }

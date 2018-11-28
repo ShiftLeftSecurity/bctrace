@@ -31,12 +31,11 @@ public abstract class Logger {
   }
 
   public final void log(Level level, String message) {
-    if (isLoggable(level)) {
-      doLog(level, message);
-      for (Logger delegator : delegators) {
-        delegator.log(level, message);
-      }
-    }
+    log(level, message, null);
+  }
+
+  public final void log(LogRecord lr) {
+    log(lr.getLevel(), lr.getMessage(), lr.getThrowable());
   }
 
   public final void log(Level level, String message, Throwable th) {
@@ -48,8 +47,5 @@ public abstract class Logger {
     }
   }
 
-  protected abstract void doLog(Level level, String message);
-
   protected abstract void doLog(Level level, String message, Throwable th);
-
 }
