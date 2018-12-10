@@ -129,21 +129,9 @@ public class FinishHelper extends Helper {
       FinishListener listener = (FinishListener) bctrace.getHooks()[index].getListener();
       il.add(new InsnNode(Opcodes.ACONST_NULL)); // return value
       il.add(new InsnNode(Opcodes.ACONST_NULL)); // throwable value
-      if (listener.requiresMethodId()) {
-        il.add(ASMUtils.getPushInstruction(methodId)); // method id
-      } else {
-        il.add(ASMUtils.getPushInstruction(0));
-      }
-      if (listener.requiresClass()) {
-        il.add(getClassConstantReference(Type.getObjectType(cn.name), cn.version)); // class
-      } else {
-        il.add(new InsnNode(Opcodes.ACONST_NULL));
-      }
-      if (listener.requiresInstance()) {
-        pushInstance(il, mn, true); // current instance
-      } else {
-        il.add(new InsnNode(Opcodes.ACONST_NULL));
-      }
+      il.add(ASMUtils.getPushInstruction(methodId)); // method id
+      il.add(getClassConstantReference(Type.getObjectType(cn.name), cn.version)); // class
+      pushInstance(il, mn, true); // current instance
       il.add(ASMUtils.getPushInstruction(index)); // hook id
       if (listener.requiresArguments()) {
         pushMethodArgsArray(il, mn);
@@ -185,21 +173,9 @@ public class FinishHelper extends Helper {
       }
       il.add(new InsnNode(Opcodes.DUP));
       il.add(new InsnNode(Opcodes.ACONST_NULL)); // throwable
-      if (listener.requiresMethodId()) {
-        il.add(ASMUtils.getPushInstruction(methodId)); // method id
-      } else {
-        il.add(ASMUtils.getPushInstruction(0));
-      }
-      if (listener.requiresClass()) {
-        il.add(getClassConstantReference(Type.getObjectType(cn.name), cn.version)); // class
-      } else {
-        il.add(new InsnNode(Opcodes.ACONST_NULL));
-      }
-      if (listener.requiresInstance()) {
-        pushInstance(il, mn, true); // current instance
-      } else {
-        il.add(new InsnNode(Opcodes.ACONST_NULL));
-      }
+      il.add(ASMUtils.getPushInstruction(methodId)); // method id
+      il.add(getClassConstantReference(Type.getObjectType(cn.name), cn.version)); // class
+      pushInstance(il, mn, true); // current instance
       il.add(ASMUtils.getPushInstruction(index)); // hook id
       pushMethodArgsArray(il, mn);
       il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
@@ -267,21 +243,9 @@ public class FinishHelper extends Helper {
       il.add(new VarInsnNode(Opcodes.ALOAD, thVarIndex));
       il.add(new InsnNode(Opcodes.ACONST_NULL)); // return value
       il.add(new VarInsnNode(Opcodes.ALOAD, thVarIndex));
-      if (listener.requiresMethodId()) {
-        il.add(ASMUtils.getPushInstruction(methodId)); // method id
-      } else {
-        il.add(ASMUtils.getPushInstruction(0));
-      }
-      if (listener.requiresClass()) {
-        il.add(getClassConstantReference(Type.getObjectType(cn.name), cn.version));
-      } else {
-        il.add(new InsnNode(Opcodes.ACONST_NULL));
-      }
-      if (listener.requiresInstance()) {
-        pushInstance(il, mn); // current instance
-      } else {
-        il.add(new InsnNode(Opcodes.ACONST_NULL));
-      }
+      il.add(ASMUtils.getPushInstruction(methodId)); // method id
+      il.add(getClassConstantReference(Type.getObjectType(cn.name), cn.version));
+      pushInstance(il, mn); // current instance
       il.add(ASMUtils.getPushInstruction(index)); // hook id
       if (listener.requiresArguments()) {
         pushMethodArgsArray(il, mn);

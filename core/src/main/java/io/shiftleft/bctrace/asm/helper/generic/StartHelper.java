@@ -102,21 +102,9 @@ public class StartHelper extends Helper {
       if (i < listenersToUse.size() - 1) {
         il.add(new InsnNode(Opcodes.DUP));
       }
-      if (listener.requiresMethodId()) {
-        il.add(ASMUtils.getPushInstruction(methodId));
-      } else {
-        il.add(ASMUtils.getPushInstruction(0));
-      }
-      if (listener.requiresClass()) {
-        il.add(getClassConstantReference(Type.getObjectType(cn.name), cn.version)); // class
-      } else {
-        il.add(new InsnNode(Opcodes.ACONST_NULL));
-      }
-      if (listener.requiresInstance()) {
-        pushInstance(il, mn); // current instance
-      } else {
-        il.add(new InsnNode(Opcodes.ACONST_NULL));
-      }
+      il.add(ASMUtils.getPushInstruction(methodId));
+      il.add(getClassConstantReference(Type.getObjectType(cn.name), cn.version)); // class
+      pushInstance(il, mn); // current instance
       il.add(ASMUtils.getPushInstruction(index));
       il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
           "io/shiftleft/bctrace/runtime/Callback", "onStart",

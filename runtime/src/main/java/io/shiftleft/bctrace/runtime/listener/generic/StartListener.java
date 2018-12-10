@@ -31,11 +31,6 @@ import java.lang.reflect.Method;
  */
 public abstract class StartListener extends GenericListener {
 
-  @Override
-  protected final Method getListenerSuperMethod() {
-    return getMethodByName(StartListener.class, "onStart");
-  }
-
   /**
    * Invoked by instrumented methods before any of its original instructions (if multiple plugins
    * are registered, listener notification is performed according to their respective plugin

@@ -30,7 +30,8 @@ package io.shiftleft.bctrace.runtime.listener.direct;
 public abstract class CallSiteListener extends DirectListener {
 
   public CallSiteListener() {
-    if (getType() != ListenerType.onBeforeCall && getType() != ListenerType.onAfterCall) {
+    if (getType() != ListenerType.onBeforeCall && getType() != ListenerType.onAfterCall
+        && getType() != ListenerType.onAfterCallThrowable) {
       throw new Error("Invalid @ListenerType type for listener method in " + getClass());
     }
   }

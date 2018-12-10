@@ -32,7 +32,6 @@ import io.shiftleft.bctrace.filter.AllFilter;
 import io.shiftleft.bctrace.filter.Filter;
 import io.shiftleft.bctrace.hook.Hook;
 import io.shiftleft.bctrace.hook.generic.GenericHook;
-import io.shiftleft.bctrace.runtime.listener.generic.Disabled;
 import io.shiftleft.bctrace.runtime.listener.generic.GenericListener;
 import io.shiftleft.bctrace.runtime.listener.generic.StartListener;
 import org.junit.Test;
@@ -101,9 +100,13 @@ public class StartListenerTest extends BcTraceTest {
           public GenericListener getListener() {
             return new StartListener() {
               @Override
-              public void onStart(@Disabled int methodId, @Disabled Class clazz,
-                  @Disabled Object instance, @Disabled Object[] args) {
-                if (clazz == null && args == null) {
+              public boolean requiresArguments() {
+                return false;
+              }
+              @Override
+              public void onStart(int methodId, Class clazz,
+                  Object instance, Object[] args) {
+                if (args == null) {
                   steps.append("1");
                 }
               }

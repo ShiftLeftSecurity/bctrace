@@ -37,7 +37,6 @@ import io.shiftleft.bctrace.filter.Filter;
 import io.shiftleft.bctrace.hierarchy.BctraceClass;
 import io.shiftleft.bctrace.hook.Hook;
 import io.shiftleft.bctrace.hook.generic.GenericHook;
-import io.shiftleft.bctrace.runtime.listener.generic.Disabled;
 import io.shiftleft.bctrace.runtime.listener.generic.FinishListener;
 import io.shiftleft.bctrace.runtime.listener.generic.GenericListener;
 import java.io.IOException;
@@ -65,10 +64,15 @@ public class FinishListenerTest extends BcTraceTest {
           public GenericListener getListener() {
             return new FinishListener() {
               @Override
-              public Object onFinish(@Disabled int methodId, @Disabled Class clazz,
-                  @Disabled Object instance, @Disabled Object[] args,
+              public boolean requiresReturnedValue() {
+                return false;
+              }
+
+              @Override
+              public Object onFinish(int methodId, Class clazz,
+                  Object instance, Object[] args,
                   Object ret, Throwable th) {
-                if (clazz == null && args == null) {
+                if (args == null) {
                   steps.append("1");
                 }
                 return ret;
@@ -80,7 +84,6 @@ public class FinishListenerTest extends BcTraceTest {
     clazz.getMethod("execVoid").invoke(null);
     assertEquals("1", steps.toString());
   }
-
 
 
   @Test
@@ -383,7 +386,7 @@ public class FinishListenerTest extends BcTraceTest {
           }
         }
     });
-    Long ret = (Long)clazz.getMethod("getLong").invoke(null);
+    Long ret = (Long) clazz.getMethod("getLong").invoke(null);
     assertEquals(ret.toString(), sb.toString());
   }
 

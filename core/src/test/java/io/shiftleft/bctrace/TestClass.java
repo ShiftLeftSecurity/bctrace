@@ -32,6 +32,8 @@ import java.io.InputStream;
  */
 public class TestClass extends TestSuperClass {
 
+  public static final String RTE_MESSAGE = "A testing runtime exception";
+
   public TestClass() {
     super(1);
   }
@@ -87,7 +89,7 @@ public class TestClass extends TestSuperClass {
   }
 
   public static void throwRuntimeException() {
-    throw new TestRuntimeException("A testing runtime exception");
+    throw new TestRuntimeException(RTE_MESSAGE);
   }
 
   public static long getLongWithConditionalException(boolean throwException) {

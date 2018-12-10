@@ -27,14 +27,9 @@ package io.shiftleft.bctrace.asm.helper;
 import io.shiftleft.bctrace.Bctrace;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
 import io.shiftleft.bctrace.hook.Hook;
-import io.shiftleft.bctrace.logging.Level;
 import io.shiftleft.bctrace.runtime.listener.direct.DirectListener;
 import io.shiftleft.bctrace.runtime.listener.direct.DirectListener.ListenerType;
-import io.shiftleft.bctrace.runtime.listener.generic.Disabled;
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Arrays;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
@@ -185,7 +180,7 @@ public abstract class Helper {
   }
 
   /**
-   * Appends to the list bytecodes to push the instance on top of the operand stack, or null if the
+   * Appends to the list byte codes to push the instance on top of the operand stack, or null if the
    * method is static
    */
   protected void pushInstance(InsnList il, MethodNode mn) {
@@ -205,7 +200,7 @@ public abstract class Helper {
     }
   }
 
-  protected LabelNode getStartNodeForGlobalTryCatch(MethodNode mn){
+  protected LabelNode getStartNodeForGlobalTryCatch(MethodNode mn) {
     LabelNode startNode = new LabelNode();
     // Look for call to super constructor in the top frame (before any jump)
     if (mn.name.equals("<init>")) {
@@ -252,5 +247,55 @@ public abstract class Helper {
       mn.instructions.insert(startNode);
     }
     return startNode;
+  }
+
+  /**
+   * Adds label node before the specified instruction and returns it.
+   *
+   * @param mn All method instructions
+   * @param instruction The instruction to add into the try-catch
+   * @return null if it can not be added (nodes in constructor before call to super constructor)
+   */
+  protected LabelNode getStartNodeForTryCatch(MethodNode mn, AbstractInsnNode instruction) {
+    boolean inited;
+    if (mn.name.equals("<init>")) {
+      inited = false;
+      InsnList il = mn.instructions;
+      AbstractInsnNode superCall = null;
+      AbstractInsnNode node = il.getFirst();
+      int newCalls = 0;
+      while (node != null) {
+        if (node instanceof JumpInsnNode ||
+            node instanceof TableSwitchInsnNode ||
+            node instanceof LookupSwitchInsnNode) {
+          // No branching supported before call to super()
+          break;
+        }
+        if (node.getOpcode() == Opcodes.NEW) {
+          newCalls++;
+        }
+        if (node instanceof MethodInsnNode && node.getOpcode() == Opcodes.INVOKESPECIAL) {
+          MethodInsnNode min = (MethodInsnNode) node;
+          if (min.name.equals("<init>")) {
+            if (newCalls == 0) {
+              inited = true;
+              break;
+            } else {
+              newCalls--;
+            }
+          }
+        }
+        node = node.getNext();
+      }
+    } else {
+      inited = true;
+    }
+    if (inited) {
+      LabelNode startNode = new LabelNode();
+      mn.instructions.insertBefore(instruction, startNode);
+      return startNode;
+    } else {
+      return null;
+    }
   }
 }

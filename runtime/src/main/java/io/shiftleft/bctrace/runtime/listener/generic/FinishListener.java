@@ -31,11 +31,6 @@ import java.lang.reflect.Method;
  */
 public abstract class FinishListener extends GenericListener {
 
-  @Override
-  protected final Method getListenerSuperMethod() {
-    return getMethodByName(FinishListener.class, "onFinish");
-  }
-
   /**
    * Invoked by instrumented methods just before returning or raising a throwable (if multiple
    * plugins are registered, listener notification is performed according to their respective
@@ -56,5 +51,15 @@ public abstract class FinishListener extends GenericListener {
    */
   public abstract Object onFinish(int methodId, Class clazz, Object instance, Object[] args,
       Object ret, Throwable th);
+
+  /**
+   * Declares if returned value must to be passed or not in onFinish() notifications. Default
+   * implementation returns <code>true</code>.
+   *
+   * Override and return <code>false</code> to save unnecessary return value boxing
+   */
+  public boolean requiresReturnedValue() {
+    return true;
+  }
 
 }

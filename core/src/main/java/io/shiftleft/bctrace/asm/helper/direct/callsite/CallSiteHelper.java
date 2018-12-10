@@ -36,10 +36,13 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.FrameNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
+import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.TryCatchBlockNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
 /**
@@ -72,10 +75,12 @@ public class CallSiteHelper extends Helper {
   public boolean addByteCodeInstructions(ClassNode cn, MethodNode mn,
       ArrayList<Integer> hooksToUse) {
 
-    // Auxiliar local variables
+    // Helper local variables
     int callSiteInstanceVarIndex = mn.maxLocals;
     mn.maxLocals = mn.maxLocals + 1;
-
+    int throwableVarIndex = mn.maxLocals;
+    mn.maxLocals = mn.maxLocals + 1;
+    // Could optimized to reuse based on return type (different called methods with same return type)
     int[] returnVariablesMap = getReturnVariablesArgumentMap(mn, hooksToUse);
     int[][] localVariablesArgumentMap = getLocalVariablesArgumentMap(mn, hooksToUse);
 
@@ -91,41 +96,48 @@ public class CallSiteHelper extends Helper {
           case Opcodes.INVOKESPECIAL:
           case Opcodes.INVOKEVIRTUAL:
           case Opcodes.INVOKESTATIC:
-            InsnList before = getBeforeCallSiteInstructions(
+            if (getAfterCallSiteThrowableMutatorInstructions(
+                cn,
+                mn,
+                callSite,
+                localVariablesArgumentMap,
+                throwableVarIndex,
+                callSiteInstanceVarIndex,
+                hooksToUse)) {
+              ret = true;
+            }
+            if (getBeforeCallSiteInstructions(
                 cn,
                 mn,
                 callSite,
                 localVariablesArgumentMap,
                 callSiteInstanceVarIndex,
-                hooksToUse);
-            if (before != null) {
-              il.insertBefore(callSite, before);
+                hooksToUse)) {
               ret = true;
             }
-            InsnList after;
             if (Type.getReturnType(callSite.desc).getInternalName().equals("V")) {
-              after = getAfterCallSiteVoidInstructions(
+              if (getAfterCallSiteVoidInstructions(
                   cn,
                   mn,
                   callSite,
                   localVariablesArgumentMap,
                   callSiteInstanceVarIndex,
-                  hooksToUse);
+                  hooksToUse)) {
+                ret = true;
+              }
             } else {
-              after = getAfterCallSiteReturnMutatorInstructions(
+              if (getAfterCallSiteReturnMutatorInstructions(
                   cn,
                   mn,
                   callSite,
                   localVariablesArgumentMap,
                   returnVariablesMap,
                   callSiteInstanceVarIndex,
-                  hooksToUse);
+                  hooksToUse)) {
+                ret = true;
+              }
             }
-
-            if (after != null) {
-              il.insert(callSite, after);
-              ret = true;
-            }
+            // switch break
             break;
         }
       }
@@ -133,7 +145,7 @@ public class CallSiteHelper extends Helper {
     return ret;
   }
 
-  private InsnList getBeforeCallSiteInstructions(ClassNode cn, MethodNode mn,
+  private boolean getBeforeCallSiteInstructions(ClassNode cn, MethodNode mn,
       MethodInsnNode callSite, int[][] localVariablesArgumentMap, int callSiteInstanceVarIndex,
       ArrayList<Integer> hooksToUse) {
 
@@ -185,10 +197,14 @@ public class CallSiteHelper extends Helper {
         }
       }
     }
-    return il;
+    if (il != null) {
+      mn.instructions.insertBefore(callSite, il);
+      return true;
+    }
+    return false;
   }
 
-  private InsnList getAfterCallSiteVoidInstructions(ClassNode cn, MethodNode mn,
+  private boolean getAfterCallSiteVoidInstructions(ClassNode cn, MethodNode mn,
       MethodInsnNode callSite, int[][] localVariablesArgumentMap, int callSiteInstanceVarIndex,
       ArrayList<Integer> hooksToUse) {
 
@@ -237,10 +253,14 @@ public class CallSiteHelper extends Helper {
         }
       }
     }
-    return il;
+    if (il != null) {
+      mn.instructions.insert(callSite, il);
+      return true;
+    }
+    return false;
   }
 
-  private InsnList getAfterCallSiteReturnMutatorInstructions(ClassNode cn, MethodNode mn,
+  private boolean getAfterCallSiteReturnMutatorInstructions(ClassNode cn, MethodNode mn,
       MethodInsnNode callSite, int[][] localVariablesArgumentMap, int[] returnVariablesMap,
       int callSiteInstanceVarIndex,
       ArrayList<Integer> hooksToUse) {
@@ -269,7 +289,8 @@ public class CallSiteHelper extends Helper {
           // onAfterCall(Class.class, Object.class, Object.class);
 
           il.add(ASMUtils.getPushInstruction(i)); // hook id
-          il.add(ASMUtils.getLoadInst(returnType, returnVariablesMap[i]));  // original value consumed from the stack
+          il.add(ASMUtils.getLoadInst(returnType,
+              returnVariablesMap[i]));  // original value consumed from the stack
           il.add(
               getClassConstantReference(Type.getObjectType(cn.name), cn.version)); // caller class
           pushInstance(il, mn); // current instance
@@ -302,7 +323,90 @@ public class CallSiteHelper extends Helper {
         il.add(ASMUtils.getLoadInst(returnType, returnVariablesMap[i]));
       }
     }
-    return il;
+    if (il != null) {
+      mn.instructions.insert(callSite, il);
+      return true;
+    }
+    return false;
+  }
+
+
+  private boolean getAfterCallSiteThrowableMutatorInstructions(ClassNode cn, MethodNode mn,
+      MethodInsnNode callSite, int[][] localVariablesArgumentMap, int throwableVarIndex,
+      int callSiteInstanceVarIndex, ArrayList<Integer> hooksToUse) {
+
+    Type[] argTypes = Type.getArgumentTypes(callSite.desc);
+    LabelNode handlerNode = null;
+    InsnList il = null;
+    for (int h = hooksToUse.size() - 1; h >= 0; h--) {
+      Integer i = hooksToUse.get(h);
+      int[] listenerArgs = localVariablesArgumentMap[i];
+      if (listenerArgs != null) {
+        CallSiteListener listener = (CallSiteListener) bctrace.getHooks()[i].getListener();
+        if (listener.getType() != ListenerType.onAfterCallThrowable) {
+          continue;
+        }
+        if (listener.getCallSiteClassName().equals(callSite.owner) &&
+            listener.getCallSiteMethodName().equals(callSite.name) &&
+            listener.getCallSiteMethodDescriptor().equals(callSite.desc)) {
+
+          if (il == null) {
+            il = new InsnList();
+            Object[] parametersFrameTypes = ASMUtils.getParametersFrameTypes(cn, mn);
+            il.add(new FrameNode(Opcodes.F_FULL, parametersFrameTypes.length, parametersFrameTypes, 1,
+                new Object[]{"java/lang/Throwable"}));
+            handlerNode = new LabelNode();
+            il.insert(handlerNode);
+            il.add(new VarInsnNode(Opcodes.ASTORE, throwableVarIndex));
+          }
+
+          // caller class, caller instance, callee instance
+          // onAfterCall(Class.class, Object.class, Object.class);
+
+          il.add(ASMUtils.getPushInstruction(i)); // hook id
+          il.add(new VarInsnNode(Opcodes.ALOAD,
+              throwableVarIndex)); // original value consumed from the stack
+          il.add(
+              getClassConstantReference(Type.getObjectType(cn.name), cn.version)); // caller class
+          pushInstance(il, mn); // current instance
+          if (callSite.getOpcode() == Opcodes.INVOKESTATIC) { // callee instance
+            il.add(new InsnNode(Opcodes.ACONST_NULL));
+          } else {
+            il.add(new VarInsnNode(Opcodes.ALOAD, callSiteInstanceVarIndex));
+          }
+          // Move local variables to stack
+          for (int j = 0; j < argTypes.length; j++) {
+            Type argType = argTypes[j];
+            il.add(ASMUtils.getLoadInst(argType, localVariablesArgumentMap[i][j]));
+          }
+          // Move return value variables to stack
+          il.add(new VarInsnNode(Opcodes.ALOAD, throwableVarIndex));
+          // Invoke dynamically generated callback method. See CallbackTransformer
+          il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
+              "io/shiftleft/bctrace/runtime/Callback",
+              CallbackTransformer.getDynamicListenerMethodName(listener),
+              CallbackTransformer.getDynamicListenerMutatorMethodDescriptor(listener),
+              false));
+          // Update return value local variable, so each listener receives the modified value from the ones before
+          // instead of getting all of them the original value
+          il.add(new VarInsnNode(Opcodes.ASTORE, throwableVarIndex));
+        }
+      }
+    }
+    if (il != null) {
+      LabelNode startNode = getStartNodeForTryCatch(mn, callSite);
+      if (startNode != null) {
+        il.add(new VarInsnNode(Opcodes.ALOAD, throwableVarIndex));
+        il.add(new InsnNode(Opcodes.ATHROW));
+        LabelNode endNode = new LabelNode();
+        mn.instructions.insert(callSite, endNode);
+        mn.instructions.add(il);
+        TryCatchBlockNode blockNode = new TryCatchBlockNode(startNode, endNode, handlerNode, null);
+        mn.tryCatchBlocks.add(blockNode);
+        return true;
+      }
+    }
+    return false;
   }
 
   /**
@@ -350,7 +454,6 @@ public class CallSiteHelper extends Helper {
     }
     return map;
   }
-
 
   /**
    * Returns a int[i][j] holding the indexes for the local variables created for holding the j-th

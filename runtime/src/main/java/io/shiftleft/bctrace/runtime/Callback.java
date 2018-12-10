@@ -24,7 +24,6 @@
  */
 package io.shiftleft.bctrace.runtime;
 
-import io.shiftleft.bctrace.runtime.listener.generic.BeforeThrowListener;
 import io.shiftleft.bctrace.runtime.listener.generic.FinishListener;
 import io.shiftleft.bctrace.runtime.listener.generic.StartListener;
 
