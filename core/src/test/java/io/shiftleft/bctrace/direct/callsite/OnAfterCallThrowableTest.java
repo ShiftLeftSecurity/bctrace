@@ -48,7 +48,7 @@ import org.junit.Test;
 public class OnAfterCallThrowableTest extends BcTraceTest {
 
   @Test
-  public void testCallSite() throws Exception {
+  public void testThrowableReported() throws Exception {
     StringBuilder sb = new StringBuilder();
     CallSiteListener callSiteListener1 = new CallSiteListener1(sb);
     Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
@@ -102,6 +102,124 @@ public class OnAfterCallThrowableTest extends BcTraceTest {
         Object callSiteInstance, Throwable th) {
       sb.append(th.getMessage());
       return th;
+    }
+  }
+
+  @Test
+  public void testThrowableReportedAndChanged() throws Exception {
+    RuntimeException runtimeException = new RuntimeException();
+    CallSiteListener callSiteListener2 = new CallSiteListener2(runtimeException);
+    Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
+        new CallSiteHook(new AllFilter(), callSiteListener2)
+    }, false);
+
+    boolean captured = false;
+    try {
+      clazz.getMethod("getLongWithConditionalException", boolean.class).invoke(null, true);
+    } catch (InvocationTargetException iex) {
+      assertTrue(iex.getTargetException() == runtimeException);
+      captured = true;
+    }
+    assertTrue(captured);
+  }
+
+  /**
+   * This accessory interface is needed for testing purposes only. The agent will generate it on
+   * CallbackTransformer.class at runtime
+   */
+  public static interface CallSiteListener2Interface {
+
+    public Throwable onAfterCall(Class clazz, Object instance,
+        Object callSiteInstance, Throwable th);
+  }
+
+  public static class CallSiteListener2 extends CallSiteListener implements
+      CallSiteListener2Interface {
+
+    private final RuntimeException runtimeException;
+
+    public CallSiteListener2(RuntimeException runtimeException) {
+      this.runtimeException = runtimeException;
+    }
+
+    @Override
+    public String getCallSiteClassName() {
+      return "io/shiftleft/bctrace/TestClass";
+    }
+
+    @Override
+    public String getCallSiteMethodName() {
+      return "throwRuntimeException";
+    }
+
+    @Override
+    public String getCallSiteMethodDescriptor() {
+      return "()V";
+    }
+
+    @ListenerMethod(type = ListenerType.onAfterCallThrowable)
+    public Throwable onAfterCall(Class clazz, Object instance,
+        Object callSiteInstance, Throwable th) {
+      return runtimeException;
+    }
+  }
+
+  @Test
+  public void testUnexpectedThrowableInListener() throws Exception {
+    RuntimeException runtimeException = new RuntimeException();
+    CallSiteListener callSiteListener3 = new CallSiteListener3(runtimeException);
+    Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
+        new CallSiteHook(new AllFilter(), callSiteListener3)
+    }, false);
+
+    boolean captured = false;
+    try {
+      clazz.getMethod("getLongWithConditionalException", boolean.class).invoke(null, true);
+    } catch (InvocationTargetException iex) {
+      assertEquals(TestClass.RTE_MESSAGE, iex.getTargetException().getMessage());
+      captured = true;
+    }
+    assertTrue(captured);
+  }
+
+  /**
+   * This accessory interface is needed for testing purposes only. The agent will generate it on
+   * CallbackTransformer.class at runtime
+   */
+  public static interface CallSiteListener3Interface {
+
+    public Throwable onAfterCall(Class clazz, Object instance,
+        Object callSiteInstance, Throwable th);
+  }
+
+  public static class CallSiteListener3 extends CallSiteListener implements
+      CallSiteListener3Interface {
+
+    private final RuntimeException runtimeException;
+
+    public CallSiteListener3(RuntimeException runtimeException) {
+      this.runtimeException = runtimeException;
+    }
+
+    @Override
+    public String getCallSiteClassName() {
+      return "io/shiftleft/bctrace/TestClass";
+    }
+
+    @Override
+    public String getCallSiteMethodName() {
+      return "throwRuntimeException";
+    }
+
+    @Override
+    public String getCallSiteMethodDescriptor() {
+      return "()V";
+    }
+
+    @ListenerMethod(type = ListenerType.onAfterCallThrowable)
+    public Throwable onAfterCall(Class clazz, Object instance,
+        Object callSiteInstance, Throwable th) {
+      throw runtimeException;
     }
   }
 }
