@@ -36,10 +36,11 @@ import io.shiftleft.bctrace.asm.helper.direct.method.DirectThrowableHelper;
 import io.shiftleft.bctrace.asm.helper.generic.FinishHelper;
 import io.shiftleft.bctrace.asm.helper.generic.StartHelper;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
-import io.shiftleft.bctrace.debug.DebugInfo;
+import io.shiftleft.bctrace.jmx.ClassMetrics;
 import io.shiftleft.bctrace.hierarchy.UnloadedClass;
 import io.shiftleft.bctrace.hook.Hook;
 import io.shiftleft.bctrace.hook.generic.GenericHook;
+import io.shiftleft.bctrace.jmx.MethodMetrics;
 import io.shiftleft.bctrace.logging.Level;
 import io.shiftleft.bctrace.runtime.Callback;
 import io.shiftleft.bctrace.runtime.CallbackEnabler;
@@ -137,9 +138,7 @@ public class Transformer implements ClassFileTransformer {
       if (this.cbTransformer != null && !this.cbTransformer.isCompleted()) {
         return null;
       }
-      if (DebugInfo.isEnabled()) {
-        DebugInfo.getInstance().addInstrumentable(className, loader);
-      }
+      ClassMetrics.getInstance().addInstrumentableClass(className, loader);
       instrumentation.removeTransformedClass(className.replace('/', '.'), loader);
 
       if (classfileBuffer == null) {
@@ -160,7 +159,8 @@ public class Transformer implements ClassFileTransformer {
       ClassNode cn = new ClassNode();
       cr.accept(cn, 0);
 
-      UnloadedClass ci = new UnloadedClass(className.replace('/', '.'), loader, cn, instrumentation);
+      UnloadedClass ci = new UnloadedClass(className.replace('/', '.'), loader, cn,
+          instrumentation);
 
       classMatchingHooks = getMatchingHooksByClassInfo(classMatchingHooks, ci, protectionDomain,
           loader);
@@ -264,7 +264,6 @@ public class Transformer implements ClassFileTransformer {
     List<MethodNode> methods = cn.methods;
     boolean classTransformed = false;
     for (int m = 0; m < methods.size(); m++) {
-      boolean methodTransformed = false;
       MethodNode mn = methods.get(m);
       ArrayList<Integer> hooksToUse = new ArrayList<Integer>(classMatchingHooks.size());
       for (int h = 0; h < classMatchingHooks.size(); h++) {
@@ -277,21 +276,15 @@ public class Transformer implements ClassFileTransformer {
       if (ASMUtils.isAbstract(mn.access) || ASMUtils.isNative(mn.access)) {
         continue;
       }
+      boolean methodTransformed = false;
       if (!hooksToUse.isEmpty()) {
         methodTransformed = modifyMethod(cn, mn, hooksToUse);
       }
       if (methodTransformed) {
         modifyMethod(cn, mn, getAdditionalHooks(classMatchingHooks));
         classTransformed = true;
-        if (DebugInfo.getInstance() != null) {
-          Integer methodId = MethodRegistry.getInstance().getMethodId(MethodInfo.from(cn.name, mn));
-          DebugInfo.getInstance().setInstrumented(methodId, true);
-        }
-      } else {
-        if (DebugInfo.getInstance() != null) {
-          Integer methodId = MethodRegistry.getInstance().getMethodId(MethodInfo.from(cn.name, mn));
-          DebugInfo.getInstance().setInstrumented(methodId, false);
-        }
+        MethodMetrics.getInstance().reportInstrumented(
+            MethodRegistry.getInstance().registerMethodId(MethodInfo.from(cn.name, mn)));
       }
     }
     return classTransformed;
@@ -321,16 +314,10 @@ public class Transformer implements ClassFileTransformer {
       }
     }
     if (hasGenericHooks) {
-      Integer methodId = MethodRegistry.getInstance()
-          .registerMethodId(MethodInfo.from(cn.name, mn));
-
-      if (DebugInfo.getInstance() != null) {
-        DebugInfo.getInstance().setInstrumented(methodId, true);
-      }
-      if (startHelper.addByteCodeInstructions(methodId, cn, mn, hooksToUse)) {
+      if (startHelper.addByteCodeInstructions(cn, mn, hooksToUse)) {
         transformed = true;
       }
-      if (finishHelper.addByteCodeInstructions(methodId, cn, mn, hooksToUse)) {
+      if (finishHelper.addByteCodeInstructions(cn, mn, hooksToUse)) {
         transformed = true;
       }
     }
