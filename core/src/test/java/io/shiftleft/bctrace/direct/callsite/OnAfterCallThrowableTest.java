@@ -166,7 +166,7 @@ public class OnAfterCallThrowableTest extends BcTraceTest {
 
   @Test
   public void testUnexpectedThrowableInListener() throws Exception {
-    RuntimeException runtimeException = new RuntimeException();
+    RuntimeException runtimeException = new RuntimeException("Unexpected!");
     CallSiteListener callSiteListener3 = new CallSiteListener3(runtimeException);
     Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
         new CallSiteHook(new AllFilter(), callSiteListener3)

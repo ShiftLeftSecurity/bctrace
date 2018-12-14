@@ -29,7 +29,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
 public final class MethodRegistry {

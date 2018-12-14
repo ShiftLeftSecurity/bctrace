@@ -60,7 +60,7 @@ public abstract class BcTraceTest {
         return hooks;
       }
     };
-    Bctrace bctrace = new Bctrace(null, agent);
+    Bctrace bctrace = new Bctrace(null, agent, false);
     bctrace.init();
     Object[] listeners = new Object[hooks.length];
     for (int i = 0; i < listeners.length; i++) {
