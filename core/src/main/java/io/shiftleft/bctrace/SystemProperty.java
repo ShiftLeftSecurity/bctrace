@@ -31,6 +31,7 @@ package io.shiftleft.bctrace;
 public interface SystemProperty {
 
   public static final String DUMP_FOLDER = "bctrace.dump.path";
+  public static final String DEBUG_SERVER = "bctrace.debug.server";
   public static final String LOG_LEVEL = "bctrace.log.level";
   public static final String IGNORE_FILE = "bctrace.ignore";
 }

@@ -26,8 +26,10 @@ package io.shiftleft.bctrace;
 
 import io.shiftleft.bctrace.asm.CallbackTransformer;
 import io.shiftleft.bctrace.asm.Transformer;
-import io.shiftleft.bctrace.jmx.CallCounterHook;
+import io.shiftleft.bctrace.debug.CallCounterHook;
+import io.shiftleft.bctrace.debug.DebugInfo;
 import io.shiftleft.bctrace.hook.Hook;
+import io.shiftleft.bctrace.hook.direct.MainMethodEndHook;
 import io.shiftleft.bctrace.logging.AgentLoggerFactory;
 import io.shiftleft.bctrace.logging.Level;
 import io.shiftleft.bctrace.logging.Logger;
@@ -49,21 +51,25 @@ public final class Bctrace {
   private final Hook[] hooks;
   private final Agent agent;
 
-  public Bctrace(InstrumentationImpl instrumentation, Agent agent, boolean addDefaultHooks) {
+  public Bctrace(InstrumentationImpl instrumentation, Agent agent) {
     this.agent = agent;
     this.instrumentation = instrumentation;
-    if(addDefaultHooks){
-      this.hooks = addDefaultHooks(agent.getHooks());
+    if (DebugInfo.isEnabled()) {
+      this.hooks = new Hook[agent.getHooks().length + 2];
+      System.arraycopy(agent.getHooks(), 0, this.hooks, 0, agent.getHooks().length);
+      this.hooks[this.hooks.length - 1] = new CallCounterHook();
+      this.hooks[this.hooks.length - 2] = new MainMethodEndHook() {
+        @Override
+        protected void onMainReturn(String className) {
+          // Not terminate right away because the app might have started other threads and the user
+          // must be interested in continuing the debuggins session for them
+          LOGGER.log(Level.ERROR,
+              "Main method has finished. Send SIGTERM to finish debugging session");
+        }
+      };
     } else {
       this.hooks = agent.getHooks();
     }
-  }
-
-  private static Hook[] addDefaultHooks(Hook[] hooks) {
-    Hook[] ret = new Hook[hooks.length + 1];
-    System.arraycopy(hooks, 0, ret, 0, hooks.length);
-    ret[ret.length - 1] = new CallCounterHook();
-    return ret;
   }
 
   public void init() {

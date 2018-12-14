@@ -25,13 +25,19 @@
 package io.shiftleft.bctrace;
 
 import io.shiftleft.bctrace.asm.DirectListenerTransformer;
+import io.shiftleft.bctrace.asm.util.Unsafe;
+import io.shiftleft.bctrace.debug.DebugHttpServer;
 import io.shiftleft.bctrace.runtime.CallbackEnabler;
+import io.shiftleft.bctrace.runtime.listener.direct.DirectListener;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.lang.instrument.Instrumentation;
 import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Scanner;
 import java.util.Set;
+import sun.misc.IOUtils;
 
 /**
  * Framework entry point.
@@ -63,8 +69,9 @@ public class Init {
     DirectListenerTransformer directListenerTransformer = new DirectListenerTransformer(instrumentation);
     inst.addTransformer(directListenerTransformer, false);
     AgentFactory agentFactory = (AgentFactory) Class.forName(factoryImpClass).newInstance();
-    Bctrace bctrace = new Bctrace(instrumentation, agentFactory.createAgent(), true);
+    Bctrace bctrace = new Bctrace(instrumentation, agentFactory.createAgent());
     bctrace.init();
+    DebugHttpServer.init();
     CallbackEnabler.enableThreadNotification();
   }
 

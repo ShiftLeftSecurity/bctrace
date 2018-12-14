@@ -24,8 +24,6 @@
  */
 package io.shiftleft.bctrace.asm.helper.generic;
 
-import io.shiftleft.bctrace.MethodInfo;
-import io.shiftleft.bctrace.MethodRegistry;
 import io.shiftleft.bctrace.asm.helper.Helper;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
 import io.shiftleft.bctrace.runtime.listener.generic.StartListener;
@@ -46,10 +44,10 @@ import org.objectweb.asm.tree.MethodNode;
  */
 public class StartHelper extends Helper {
 
-  public boolean addByteCodeInstructions(ClassNode cn, MethodNode mn,
+  public boolean addByteCodeInstructions(int methodId, ClassNode cn, MethodNode mn,
       ArrayList<Integer> hooksToUse) {
 
-    return addTraceStart(cn, mn, hooksToUse);
+    return addTraceStart(methodId, cn, mn, hooksToUse);
   }
 
 
@@ -76,14 +74,13 @@ public class StartHelper extends Helper {
    * }
    * </pre>
    */
-  private boolean addTraceStart(ClassNode cn, MethodNode mn,
+  private boolean addTraceStart(int methodId, ClassNode cn, MethodNode mn,
       ArrayList<Integer> hooksToUse) {
     ArrayList<Integer> listenersToUse = getListenersOfType(hooksToUse,
         StartListener.class);
     if (!isInstrumentationNeeded(listenersToUse)) {
       return false;
     }
-    Integer methodId = MethodRegistry.getInstance().registerMethodId(MethodInfo.from(cn.name, mn));
     InsnList il = new InsnList();
     boolean someRequiresArguments = false;
     for (int i = 0; i < listenersToUse.size(); i++) {

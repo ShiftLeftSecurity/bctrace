@@ -22,94 +22,82 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.jmx;
+package io.shiftleft.bctrace.debug;
 
-import java.lang.management.ManagementFactory;
-import java.util.ArrayList;
+import io.shiftleft.bctrace.SystemProperty;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
-import java.util.List;
+import java.util.Map;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
-import javax.management.MBeanServer;
-import javax.management.ObjectName;
 
 /**
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public class ClassMetrics implements ClassMetricsMXBean {
+public class DebugInfo {
 
-  private static final ClassMetrics INSTANCE = new ClassMetrics();
+  private static final DebugInfo INSTANCE = new DebugInfo();
 
-  static {
-    try {
-      MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
-      ObjectName name = new ObjectName("io.shiftleft.bctrace:type=ClassMetrics");
-      mbs.registerMBean(INSTANCE, name);
-    } catch (Throwable th) {
-      throw new AssertionError();
-    }
-  }
+  // Debug server is of type host:port
+  private static final boolean ENABLED = System.getProperty(SystemProperty.DEBUG_SERVER) != null;
 
-  private final Set<ClassInfo> requestedToTransform = Collections
+  private final Set<ClassInfo> requestedToInstrument = Collections
       .synchronizedSet(new LinkedHashSet<ClassInfo>());
-  private final Set<ClassInfo> queriedClasses = Collections
+  private final Set<ClassInfo> instrumentable = Collections
       .synchronizedSet(new LinkedHashSet<ClassInfo>());
+  private final Map<Integer, AtomicInteger> instrumentedMethods = Collections
+      .synchronizedMap(new HashMap<Integer, AtomicInteger>());
 
-  private ClassMetrics() {
-  }
-
-  public static ClassMetrics getInstance() {
+  public static DebugInfo getInstance() {
     return INSTANCE;
   }
 
   public void addRequestedToInstrument(Class clazz) {
-    this.requestedToTransform.add(new ClassInfo(clazz));
+    this.requestedToInstrument.add(new ClassInfo(clazz));
   }
 
-  public void addInstrumentableClass(String className, ClassLoader cl) {
-    this.queriedClasses.add(new ClassInfo(className, String.valueOf(cl)));
+  public void addInstrumentable(String className, ClassLoader cl) {
+    this.instrumentable.add(new ClassInfo(className, String.valueOf(cl)));
   }
 
-  @Override
-  public ClassInfo[] getQueriedClasses(String classNameToken) {
-    return filter(classNameToken, queriedClasses);
-  }
-
-  @Override
-  public ClassInfo[] getClassesRequestedToTransform(String classNameToken) {
-    return filter(classNameToken, requestedToTransform);
-  }
-
-  public ClassInfo[] filter(String classNameToken, Set<ClassInfo> classInfos) {
-    classNameToken = classNameToken.replace('.', '/');
-    TreeSet<ClassInfo> set = null;
-    synchronized (classInfos) {
-      for (ClassInfo ci : classInfos) {
-        if (classNameToken == null || ci.getClassName().contains(classNameToken)) {
-          if (set == null) {
-            set = new TreeSet<ClassInfo>();
-          }
-          set.add(ci);
-        }
-      }
-    }
-    if (set == null) {
-      return null;
+  public void setInstrumented(Integer methodId, boolean instrumented) {
+    if (instrumented) {
+      instrumentedMethods.put(methodId, new AtomicInteger());
     } else {
-      return set.toArray(new ClassInfo[set.size()]);
+      instrumentedMethods.remove(methodId);
     }
   }
 
-  public static interface ClassInfoMBean {
-
-    public String getClassName();
-
-    public String getClassLoader();
+  public void increaseCallCounter(Integer methodId) {
+    instrumentedMethods.get(methodId).incrementAndGet();
   }
 
-  public static class ClassInfo implements ClassInfoMBean, Comparable<ClassInfo> {
+  public Integer getCallCounter(Integer methodId) {
+    AtomicInteger counter = instrumentedMethods.get(methodId);
+    if (counter == null) {
+      return null;
+    }
+    return counter.get();
+  }
+
+  public static boolean isEnabled() {
+    return ENABLED;
+  }
+
+  public ClassInfo[] getInstrumentable() {
+    synchronized (instrumentable) {
+      return instrumentable.toArray(new ClassInfo[instrumentable.size()]);
+    }
+  }
+
+  public ClassInfo[] getRequestedToInstrumentation() {
+    synchronized (requestedToInstrument) {
+      return requestedToInstrument.toArray(new ClassInfo[requestedToInstrument.size()]);
+    }
+  }
+
+  public static class ClassInfo {
 
     private final String className;
     private final String classLoader;
@@ -119,7 +107,7 @@ public class ClassMetrics implements ClassMetricsMXBean {
     }
 
     public ClassInfo(String className, String classLoader) {
-      this.className = className.replace('.', '/');
+      this.className = className;
       this.classLoader = classLoader;
     }
 
@@ -157,33 +145,6 @@ public class ClassMetrics implements ClassMetricsMXBean {
         return false;
       }
       return true;
-    }
-
-    @Override
-    public int compareTo(ClassInfo o) {
-      int ret;
-      if (className != null) {
-        ret = className.compareTo(o.className);
-      } else {
-        if (o.className == null) {
-          ret = 0;
-        } else {
-          ret = -1;
-        }
-      }
-      if (ret != 0) {
-        return ret;
-      }
-      if (classLoader != null) {
-        ret = classLoader.compareTo(o.classLoader);
-      } else {
-        if (o.classLoader == null) {
-          ret = 0;
-        } else {
-          ret = -1;
-        }
-      }
-      return ret;
     }
   }
 }

@@ -22,7 +22,7 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.jmx;
+package io.shiftleft.bctrace.debug;
 
 import io.shiftleft.bctrace.filter.Filter;
 import io.shiftleft.bctrace.hook.generic.GenericHook;
@@ -35,13 +35,8 @@ public class CallCounterHook extends GenericHook<Filter, StartListener> {
 
   private final StartListener listener = new StartListener() {
     @Override
-    public boolean requiresArguments() {
-      return false;
-    }
-
-    @Override
     public void onStart(int methodId, Class clazz, Object instance, Object[] args) {
-      MethodMetrics.getInstance().incrementCallCounter(methodId);
+      DebugInfo.getInstance().increaseCallCounter(methodId);
     }
   };
 

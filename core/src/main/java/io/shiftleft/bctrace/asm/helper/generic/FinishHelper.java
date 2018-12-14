@@ -25,8 +25,6 @@
 package io.shiftleft.bctrace.asm.helper.generic;
 
 import io.shiftleft.bctrace.Bctrace;
-import io.shiftleft.bctrace.MethodInfo;
-import io.shiftleft.bctrace.MethodRegistry;
 import io.shiftleft.bctrace.asm.helper.Helper;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
 import io.shiftleft.bctrace.logging.Level;
@@ -87,7 +85,7 @@ import org.objectweb.asm.tree.VarInsnNode;
 public class FinishHelper extends Helper {
 
 
-  public boolean addByteCodeInstructions(ClassNode cn, MethodNode mn,
+  public boolean addByteCodeInstructions(int methodId, ClassNode cn, MethodNode mn,
       ArrayList<Integer> hooksToUse) {
 
     ArrayList<Integer> listenersToUse = getListenersOfType(hooksToUse,
@@ -97,12 +95,12 @@ public class FinishHelper extends Helper {
       return false;
     }
 
-    addReturnTrace(cn, mn, listenersToUse);
-    addTryCatchInstructions(cn, mn, listenersToUse);
+    addReturnTrace(methodId, cn, mn, listenersToUse);
+    addTryCatchInstructions(methodId, cn, mn, listenersToUse);
     return true;
   }
 
-  private void addReturnTrace(ClassNode cn, MethodNode mn,
+  private void addReturnTrace(int methodId, ClassNode cn, MethodNode mn,
       ArrayList<Integer> listenersToUse) {
     InsnList il = mn.instructions;
     Iterator<AbstractInsnNode> it = il.iterator();
@@ -118,7 +116,7 @@ public class FinishHelper extends Helper {
         case Opcodes.ARETURN:
         case Opcodes.DRETURN:
           il.insertBefore(abstractInsnNode,
-              getReturnInstructions(cn, mn, listenersToUse));
+              getReturnInstructions(methodId, cn, mn, listenersToUse));
       }
     }
   }
@@ -149,7 +147,7 @@ public class FinishHelper extends Helper {
     return il;
   }
 
-  private InsnList getReturnInstructions(ClassNode cn, MethodNode mn,
+  private InsnList getReturnInstructions(int methodId, ClassNode cn, MethodNode mn,
       ArrayList<Integer> listenersToUse) {
     Type returnType = Type.getReturnType(mn.desc);
     InsnList il = new InsnList();
@@ -160,7 +158,6 @@ public class FinishHelper extends Helper {
       // Store original return value into a local variable
       il.add(ASMUtils.getStoreInst(returnType, returnVarIndex));
     }
-    Integer methodId = MethodRegistry.getInstance().registerMethodId(MethodInfo.from(cn.name, mn));
     for (int i = listenersToUse.size() - 1; i >= 0; i--) {
       Integer index = listenersToUse.get(i);
       FinishListener listener = (FinishListener) bctrace.getHooks()[index].getListener();
@@ -189,6 +186,7 @@ public class FinishHelper extends Helper {
       if (returnType.getDescriptor().equals("V")) {
         il.add(new InsnNode(Opcodes.POP));
       } else {
+
         String castType = returnType.getInternalName();
         String wrapperType = ASMUtils.getWrapper(returnType);
         if (wrapperType != null) {
@@ -212,7 +210,7 @@ public class FinishHelper extends Helper {
     return il;
   }
 
-  private boolean addTryCatchInstructions(ClassNode cn, MethodNode mn,
+  private boolean addTryCatchInstructions(int methodId, ClassNode cn, MethodNode mn,
       ArrayList<Integer> listenersToUse) {
 
     LabelNode startNode = getStartNodeForGlobalTryCatch(mn);
@@ -222,8 +220,6 @@ public class FinishHelper extends Helper {
           "Could not add try/catch handler to constructor " + cn.name + "." + mn.name + mn.desc);
       return false;
     }
-
-    Integer methodId = MethodRegistry.getInstance().registerMethodId(MethodInfo.from(cn.name, mn));
 
     LabelNode endNode = new LabelNode();
     mn.instructions.add(endNode);
