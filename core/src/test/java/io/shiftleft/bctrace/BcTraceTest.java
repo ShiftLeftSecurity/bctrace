@@ -25,6 +25,7 @@
 package io.shiftleft.bctrace;
 
 import io.shiftleft.bctrace.asm.CallbackTransformer;
+import io.shiftleft.bctrace.asm.DirectListenerTransformer;
 import io.shiftleft.bctrace.asm.Transformer;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
 import io.shiftleft.bctrace.hook.Hook;
@@ -95,11 +96,13 @@ public abstract class BcTraceTest {
 
   public static class ByteClassLoader extends ClassLoader {
 
-    private Hook[] hooks;
+    private final CallbackTransformer callbackTransformer;
+    private final Hook[] hooks;
 
     public ByteClassLoader(Hook[] hooks, ClassLoader parentClassLoader) {
       super(parentClassLoader);
       this.hooks = hooks;
+      this.callbackTransformer = new CallbackTransformer(hooks);
     }
 
     public Class<?> loadClass(String name, byte[] byteCode) {
@@ -108,17 +111,16 @@ public abstract class BcTraceTest {
 
     protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
       if (name.equals("io.shiftleft.bctrace.runtime.Callback")) {
-        CallbackTransformer transformer = new CallbackTransformer(hooks);
         try {
           String resourceName = name.replace('.', '/') + ".class";
           InputStream is = CallBackTransformerTest.class.getClassLoader()
               .getResourceAsStream(resourceName);
           byte[] bytes = ASMUtils.toByteArray(is);
-          byte[] newBytes = transformer.transform(null, name.replace('.', '/'), null, null, bytes);
-          if (newBytes == null) {
-            newBytes = bytes;
+          byte[] newBytes = this.callbackTransformer.transform(null, name.replace('.', '/'), null, null, bytes);
+          if (newBytes != null) {
+            bytes = newBytes;
           }
-          return loadClass(name, newBytes);
+          return loadClass(name, bytes);
         } catch (Exception ex) {
           throw new RuntimeException(ex);
         }

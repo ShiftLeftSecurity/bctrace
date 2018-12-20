@@ -24,17 +24,21 @@
  */
 package io.shiftleft.bctrace.asm.util;
 
+import io.shiftleft.bctrace.runtime.listener.direct.DirectListener;
+import io.shiftleft.bctrace.runtime.listener.direct.DirectListener.ListenerMethod;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.List;
 import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
+import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
@@ -50,7 +54,11 @@ import org.objectweb.asm.util.TraceMethodVisitor;
 /**
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public class ASMUtils {
+public final class ASMUtils {
+
+  private ASMUtils() {
+
+  }
 
   public static boolean isInterface(int modifiers) {
     return (modifiers & Opcodes.ACC_INTERFACE) != 0;
@@ -421,6 +429,10 @@ public class ASMUtils {
     }
   }
 
+  public static String getJvmInterfaceNameForDirectListener(String directListenerClassName) {
+    return DirectListener.class.getPackage().getName().replace('.', '/') + "/$"
+        + directListenerClassName.replace('.', '_').replace('/', '_');
+  }
 
   public static void main(String[] args) {
     int mod = Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_PRIVATE;

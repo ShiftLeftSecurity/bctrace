@@ -34,7 +34,9 @@ import io.shiftleft.bctrace.TestClass;
 import io.shiftleft.bctrace.filter.MethodFilter;
 import io.shiftleft.bctrace.hook.Hook;
 import io.shiftleft.bctrace.hook.direct.MethodHook;
-import io.shiftleft.bctrace.runtime.listener.direct.DirectListener;
+import io.shiftleft.bctrace.runtime.listener.direct.$io_shiftleft_bctrace_direct_method_OnReturnTest$DirectListener3;
+import io.shiftleft.bctrace.runtime.listener.direct.$io_shiftleft_bctrace_direct_method_OnReturnTest$DirectListenerVoid;
+import io.shiftleft.bctrace.runtime.listener.direct.*;
 import java.util.Arrays;
 import org.junit.Test;
 
@@ -75,18 +77,8 @@ public class OnReturnTest extends BcTraceTest {
     assertEquals("1", sb.toString());
   }
 
-  /**
-   * This accessory interface is needed for testing purposes only. The agent will generate it on
-   * CallbackTransformer.class at runtime
-   */
-  public static interface DirectListener3Interface {
-
-    public String[] onFinish(Class clazz, Object instance, String[] array1,
-        String[] array2,
-        String[] ret);
-  }
-
-  public static class DirectListener3 extends DirectListener implements DirectListener3Interface {
+  public static class DirectListener3 extends DirectListener implements
+      $io_shiftleft_bctrace_direct_method_OnReturnTest$DirectListener3 {
 
     private final StringBuilder sb;
 
@@ -109,18 +101,8 @@ public class OnReturnTest extends BcTraceTest {
     }
   }
 
-  /**
-   * This accessory interface is needed for testing purposes only. The agent will generate it on
-   * CallbackTransformer.class at runtime
-   */
-  public static interface DirectListener4Interface {
-
-    public String[] onFinish(Class clazz, Object instance, String[] array1,
-        String[] array2,
-        String[] ret);
-  }
-
-  public static class DirectListener4 extends DirectListener implements DirectListener4Interface {
+  public static class DirectListener4 extends DirectListener implements
+      $io_shiftleft_bctrace_direct_method_OnReturnTest$DirectListener4 {
 
     private final StringBuilder sb;
 
@@ -142,17 +124,8 @@ public class OnReturnTest extends BcTraceTest {
     }
   }
 
-  /**
-   * This accessory interface is needed for testing purposes only. The agent will generate it on
-   * CallbackTransformer.class at runtime
-   */
-  public static interface DirectListenerVoidInterface {
-
-    public void onFinish(Class clazz, Object instance);
-  }
-
   public static class DirectListenerVoid extends DirectListener implements
-      DirectListenerVoidInterface {
+      $io_shiftleft_bctrace_direct_method_OnReturnTest$DirectListenerVoid {
 
     private final StringBuilder sb;
 

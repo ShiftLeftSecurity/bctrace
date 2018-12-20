@@ -30,6 +30,8 @@ import io.shiftleft.bctrace.BcTraceTest.ByteClassLoader;
 import io.shiftleft.bctrace.filter.MethodFilter;
 import io.shiftleft.bctrace.hook.Hook;
 import io.shiftleft.bctrace.hook.direct.MethodHook;
+import io.shiftleft.bctrace.runtime.listener.direct.$io_shiftleft_bctrace_CallBackTransformerTest$SampleListener1;
+import io.shiftleft.bctrace.runtime.listener.direct.$io_shiftleft_bctrace_CallBackTransformerTest$SampleListener2;
 import io.shiftleft.bctrace.runtime.listener.direct.DirectListener;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -76,13 +78,8 @@ public class CallBackTransformerTest {
     assertEquals(listener2.toString(), Long.toString(aLong));
   }
 
-
-  public static interface SampleListener1Interface {
-
-    public void onEvent1(Class clazz, Object instance, long n);
-  }
-
-  public static class SampleListener1 extends DirectListener implements SampleListener1Interface {
+  public static class SampleListener1 extends DirectListener implements
+      $io_shiftleft_bctrace_CallBackTransformerTest$SampleListener1 {
 
     final StringBuilder sb = new StringBuilder();
 
@@ -97,12 +94,8 @@ public class CallBackTransformerTest {
     }
   }
 
-  public static interface SampleListener2Interface {
-
-    public void onEvent2(Class clazz, Object instance, Long n);
-  }
-
-  public static class SampleListener2 extends DirectListener implements SampleListener2Interface {
+  public static class SampleListener2 extends DirectListener implements
+      $io_shiftleft_bctrace_CallBackTransformerTest$SampleListener2 {
 
     final StringBuilder sb = new StringBuilder();
 

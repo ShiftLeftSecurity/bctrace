@@ -33,6 +33,8 @@ import io.shiftleft.bctrace.TestClass;
 import io.shiftleft.bctrace.filter.MethodFilter;
 import io.shiftleft.bctrace.hook.Hook;
 import io.shiftleft.bctrace.hook.direct.MethodHook;
+import io.shiftleft.bctrace.runtime.listener.direct.$io_shiftleft_bctrace_direct_method_OnStartTest$DirectListener1;
+import io.shiftleft.bctrace.runtime.listener.direct.$io_shiftleft_bctrace_direct_method_OnStartTest$DirectListener2;
 import io.shiftleft.bctrace.runtime.listener.direct.DirectListener;
 import org.junit.Test;
 
@@ -59,16 +61,9 @@ public class OnStartTest extends BcTraceTest {
     assertEquals("12", sb.toString());
   }
 
-  /**
-   * This accessory interface is needed for testing purposes only. The agent will generate it on
-   * CallbackTransformer.class at runtime
-   */
-  public static interface DirectListener1Interface {
 
-    public void onStart(Class clazz, Object instance, String[] array1, String[] array2);
-  }
-
-  public static class DirectListener1 extends DirectListener implements DirectListener1Interface {
+  public static class DirectListener1 extends DirectListener implements
+      $io_shiftleft_bctrace_direct_method_OnStartTest$DirectListener1 {
 
     private final StringBuilder sb;
 
@@ -86,15 +81,8 @@ public class OnStartTest extends BcTraceTest {
     }
   }
 
-  /**
-   * This accessory interface is needed for testing purposes only. The agent will generate it on
-   * CallbackTransformer.class at runtime
-   */
-  public static interface DirectListener2Interface extends DirectListener1Interface {
-
-  }
-
-  public static class DirectListener2 extends DirectListener implements DirectListener2Interface {
+  public static class DirectListener2 extends DirectListener implements
+      $io_shiftleft_bctrace_direct_method_OnStartTest$DirectListener2 {
 
     private final StringBuilder sb;
 

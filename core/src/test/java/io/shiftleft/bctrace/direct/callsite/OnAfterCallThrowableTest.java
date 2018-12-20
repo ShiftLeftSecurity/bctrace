@@ -25,20 +25,17 @@
 package io.shiftleft.bctrace.direct.callsite;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import io.shiftleft.bctrace.BcTraceTest;
 import io.shiftleft.bctrace.TestClass;
-import io.shiftleft.bctrace.TestClass.TestRuntimeException;
-import io.shiftleft.bctrace.direct.method.OnThrowableTest.DirectListenerThrowableRised;
 import io.shiftleft.bctrace.filter.AllFilter;
-import io.shiftleft.bctrace.filter.MethodFilter;
 import io.shiftleft.bctrace.hook.Hook;
 import io.shiftleft.bctrace.hook.direct.CallSiteHook;
-import io.shiftleft.bctrace.hook.direct.MethodHook;
+import io.shiftleft.bctrace.runtime.listener.direct.$io_shiftleft_bctrace_direct_callsite_OnAfterCallThrowableTest$CallSiteListener1;
+import io.shiftleft.bctrace.runtime.listener.direct.$io_shiftleft_bctrace_direct_callsite_OnAfterCallThrowableTest$CallSiteListener2;
+import io.shiftleft.bctrace.runtime.listener.direct.$io_shiftleft_bctrace_direct_callsite_OnAfterCallThrowableTest$CallSiteListener3;
 import io.shiftleft.bctrace.runtime.listener.direct.CallSiteListener;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import org.junit.Test;
 
@@ -63,18 +60,8 @@ public class OnAfterCallThrowableTest extends BcTraceTest {
     assertEquals(TestClass.RTE_MESSAGE, sb.toString());
   }
 
-  /**
-   * This accessory interface is needed for testing purposes only. The agent will generate it on
-   * CallbackTransformer.class at runtime
-   */
-  public static interface CallSiteListener1Interface {
-
-    public Throwable onAfterCall(Class clazz, Object instance,
-        Object callSiteInstance, Throwable th);
-  }
-
   public static class CallSiteListener1 extends CallSiteListener implements
-      CallSiteListener1Interface {
+      $io_shiftleft_bctrace_direct_callsite_OnAfterCallThrowableTest$CallSiteListener1 {
 
     private final StringBuilder sb;
 
@@ -123,18 +110,8 @@ public class OnAfterCallThrowableTest extends BcTraceTest {
     assertTrue(captured);
   }
 
-  /**
-   * This accessory interface is needed for testing purposes only. The agent will generate it on
-   * CallbackTransformer.class at runtime
-   */
-  public static interface CallSiteListener2Interface {
-
-    public Throwable onAfterCall(Class clazz, Object instance,
-        Object callSiteInstance, Throwable th);
-  }
-
   public static class CallSiteListener2 extends CallSiteListener implements
-      CallSiteListener2Interface {
+      $io_shiftleft_bctrace_direct_callsite_OnAfterCallThrowableTest$CallSiteListener2 {
 
     private final RuntimeException runtimeException;
 
@@ -182,18 +159,8 @@ public class OnAfterCallThrowableTest extends BcTraceTest {
     assertTrue(captured);
   }
 
-  /**
-   * This accessory interface is needed for testing purposes only. The agent will generate it on
-   * CallbackTransformer.class at runtime
-   */
-  public static interface CallSiteListener3Interface {
-
-    public Throwable onAfterCall(Class clazz, Object instance,
-        Object callSiteInstance, Throwable th);
-  }
-
   public static class CallSiteListener3 extends CallSiteListener implements
-      CallSiteListener3Interface {
+      $io_shiftleft_bctrace_direct_callsite_OnAfterCallThrowableTest$CallSiteListener3 {
 
     private final RuntimeException runtimeException;
 

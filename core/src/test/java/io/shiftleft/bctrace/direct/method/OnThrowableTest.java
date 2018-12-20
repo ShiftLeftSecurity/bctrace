@@ -34,7 +34,9 @@ import io.shiftleft.bctrace.TestClass.TestRuntimeException;
 import io.shiftleft.bctrace.filter.MethodFilter;
 import io.shiftleft.bctrace.hook.Hook;
 import io.shiftleft.bctrace.hook.direct.MethodHook;
-import io.shiftleft.bctrace.runtime.listener.direct.DirectListener;
+import io.shiftleft.bctrace.runtime.listener.direct.$io_shiftleft_bctrace_direct_method_OnThrowableTest$DirectListenerModifiedThrowable;
+import io.shiftleft.bctrace.runtime.listener.direct.$io_shiftleft_bctrace_direct_method_OnThrowableTest$DirectListenerThrowable;
+import io.shiftleft.bctrace.runtime.listener.direct.*;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import org.junit.Test;
@@ -108,18 +110,8 @@ public class OnThrowableTest extends BcTraceTest {
     assertTrue("Expected exception", captured);
   }
 
-  /**
-   * This accessory interface is needed for testing purposes only. The agent will generate it on
-   * CallbackTransformer.class at runtime
-   */
-  public static interface DirectListenerThrowableInterface {
-
-    public Throwable onFinish(Class clazz, Object instance, Throwable th, int i);
-  }
-
-
   public static class DirectListenerThrowable extends DirectListener implements
-      DirectListenerThrowableInterface {
+      $io_shiftleft_bctrace_direct_method_OnThrowableTest$DirectListenerThrowable {
 
     private final StringBuilder sb;
 
@@ -136,17 +128,8 @@ public class OnThrowableTest extends BcTraceTest {
     }
   }
 
-  /**
-   * This accessory interface is needed for testing purposes only. The agent will generate it on
-   * CallbackTransformer.class at runtime
-   */
-  public static interface DirectListenerModifiedThrowableInterface {
-
-    public Throwable onFinish(Class clazz, Object instance, Throwable th, int i);
-  }
-
   public static class DirectListenerModifiedThrowable extends DirectListener implements
-      DirectListenerModifiedThrowableInterface {
+      $io_shiftleft_bctrace_direct_method_OnThrowableTest$DirectListenerModifiedThrowable {
 
     @ListenerMethod(type = ListenerType.onThrowable)
     public Throwable onFinish(Class clazz, Object instance, Throwable th, int i) {
@@ -154,21 +137,12 @@ public class OnThrowableTest extends BcTraceTest {
     }
   }
 
-  /**
-   * This accessory interface is needed for testing purposes only. The agent will generate it on
-   * CallbackTransformer.class at runtime
-   */
-  public static interface DirectListenerThrowableRisedInterface {
-
-    public Throwable onFinish(Class clazz, Object instance, Throwable th, int i);
-  }
-
   public static class DirectListenerThrowableRised extends DirectListener implements
-      DirectListenerThrowableRisedInterface {
+      $io_shiftleft_bctrace_direct_method_OnThrowableTest$DirectListenerThrowableRised {
 
     @ListenerMethod(type = ListenerType.onThrowable)
     public Throwable onFinish(Class clazz, Object instance, Throwable th, int i) {
-      throw  new RuntimeException("Unexpected!");
+      throw new RuntimeException("Unexpected!");
     }
   }
 }

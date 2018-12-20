@@ -33,6 +33,8 @@ import io.shiftleft.bctrace.TestClass;
 import io.shiftleft.bctrace.filter.AllFilter;
 import io.shiftleft.bctrace.hook.Hook;
 import io.shiftleft.bctrace.hook.direct.CallSiteHook;
+import io.shiftleft.bctrace.runtime.listener.direct.$io_shiftleft_bctrace_direct_callsite_OnBeforeCallTest$CallSiteListener1;
+import io.shiftleft.bctrace.runtime.listener.direct.$io_shiftleft_bctrace_direct_callsite_OnBeforeCallTest$CallSiteListener2;
 import io.shiftleft.bctrace.runtime.listener.direct.CallSiteListener;
 import org.junit.Test;
 
@@ -55,20 +57,8 @@ public class OnBeforeCallTest extends BcTraceTest {
     assertEquals("12", sb.toString());
   }
 
-  /**
-   * This accessory interface is needed for testing purposes only. The agent will generate it on
-   * CallbackTransformer.class at runtime
-   */
-  public static interface CallSiteListener1Interface {
-
-    public void onBeforeCall(Class clazz, Object instance,
-        Object callSiteInstance, Object src, int srcPos,
-        Object dest, int destPos,
-        int length);
-  }
-
   public static class CallSiteListener1 extends CallSiteListener implements
-      CallSiteListener1Interface {
+      $io_shiftleft_bctrace_direct_callsite_OnBeforeCallTest$CallSiteListener1 {
 
     private final StringBuilder sb;
 
@@ -105,20 +95,8 @@ public class OnBeforeCallTest extends BcTraceTest {
     }
   }
 
-  /**
-   * This accessory interface is needed for testing purposes only. The agent will generate it on
-   * CallbackTransformer.class at runtime
-   */
-  public static interface CallSiteListener2Interface {
-
-    public void onBeforeCall(Class clazz, Object instance,
-        Object callSiteInstance, Object src, int srcPos,
-        Object dest, int destPos,
-        int length);
-  }
-
   public static class CallSiteListener2 extends CallSiteListener implements
-      CallSiteListener2Interface {
+      $io_shiftleft_bctrace_direct_callsite_OnBeforeCallTest$CallSiteListener2 {
 
     private final StringBuilder sb;
 

@@ -207,8 +207,7 @@ public class CallbackTransformer implements ClassFileTransformer {
     insnList.add(new VarInsnNode(Opcodes.ILOAD, 0));
     insnList.add(new InsnNode(Opcodes.AALOAD));
 
-    String interfaceType = Type.getType(listenerMethod.getDeclaringClass())
-        .getInternalName() + "Interface";
+    String interfaceType = ASMUtils.getJvmInterfaceNameForDirectListener(listenerMethod.getDeclaringClass().getName());
     insnList.add(new TypeInsnNode(Opcodes.CHECKCAST, interfaceType));
     Class<?>[] params = listenerMethod.getParameterTypes();
     StringBuilder descriptor = new StringBuilder("(");
@@ -321,8 +320,7 @@ public class CallbackTransformer implements ClassFileTransformer {
     insnList.add(new VarInsnNode(Opcodes.ILOAD, 0));
     insnList.add(new InsnNode(Opcodes.AALOAD));
 
-    String interfaceType = Type.getType(listenerMethod.getDeclaringClass())
-        .getInternalName() + "Interface";
+    String interfaceType =  ASMUtils.getJvmInterfaceNameForDirectListener(listenerMethod.getDeclaringClass().getName());
     insnList.add(new TypeInsnNode(Opcodes.CHECKCAST, interfaceType));
     Class<?>[] params = listenerMethod.getParameterTypes();
     StringBuilder descriptor = new StringBuilder("(");
