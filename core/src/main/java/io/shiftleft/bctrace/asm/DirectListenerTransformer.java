@@ -26,12 +26,12 @@ package io.shiftleft.bctrace.asm;
 
 import io.shiftleft.bctrace.Bctrace;
 import io.shiftleft.bctrace.Instrumentation;
-import io.shiftleft.bctrace.asm.util.Unsafe;
 import io.shiftleft.bctrace.hierarchy.UnloadedClass;
 import io.shiftleft.bctrace.logging.Level;
 import io.shiftleft.bctrace.runtime.CallbackEnabler;
 import io.shiftleft.bctrace.runtime.listener.direct.DirectListener;
 import io.shiftleft.bctrace.runtime.listener.direct.DirectListener.ListenerMethod;
+import io.shiftleft.bctrace.utils.Utils;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.security.ProtectionDomain;
@@ -53,11 +53,13 @@ import org.objectweb.asm.tree.MethodNode;
  */
 public class DirectListenerTransformer implements ClassFileTransformer {
 
+  private static final String LISTENER_METHOD_ANNOTATION_DESC =
+      Type.getDescriptor(ListenerMethod.class);
+
   private static final InsnList EMPTY_INSN_LIST = new InsnList();
   private static final List<String> EMPTY_LIST = new ArrayList<String>();
 
-  private static final String LISTENER_METHOD_ANNOTATION_DESC =
-      Type.getDescriptor(ListenerMethod.class);
+
   private final Instrumentation instrumentation;
 
   public DirectListenerTransformer(Instrumentation instrumentation) {
@@ -83,12 +85,8 @@ public class DirectListenerTransformer implements ClassFileTransformer {
       UnloadedClass ci = new UnloadedClass(className.replace('/', '.'), loader, cn,
           instrumentation);
       if (ci.isInstanceOf(DirectListener.class.getName())) {
-        ClassNode itf = createListenerInterface(cn);
-        ClassWriter icw = new StaticClassWriter(cr, ClassWriter.COMPUTE_MAXS, null);
-        itf.accept(icw);
-        Class itfClass = Unsafe
-            .defineClass(itf.name.replace('/', '.'), icw.toByteArray(), null, null);
-        ClassWriter cw = new StaticClassWriter(cr, ClassWriter.COMPUTE_MAXS, null);
+        makeDirectListenerImplementInterface(cn);
+        ClassWriter cw = new ClassWriter(cr, ClassWriter.COMPUTE_MAXS);
         cn.accept(cw);
         return cw.toByteArray();
 
@@ -104,18 +102,21 @@ public class DirectListenerTransformer implements ClassFileTransformer {
     }
   }
 
-  private static ClassNode createListenerInterface(ClassNode cn) {
+  /**
+   * @return interface class created in bootstrap classloader
+   */
+  private static Class makeDirectListenerImplementInterface(ClassNode directListenerClassNode) {
     ClassNode itf = new ClassNode();
-    itf.name = cn.name + "Interface";
+    itf.name = Utils.getJvmInterfaceNameForDirectListener(directListenerClassNode.name);
     itf.access =
         Opcodes.ACC_PUBLIC | Opcodes.ACC_INTERFACE | Opcodes.ACC_ABSTRACT | Opcodes.ACC_SYNTHETIC;
     itf.version = Opcodes.V1_6;
     itf.superName = "java/lang/Object";
 
     // Make listener implement new interface
-    cn.interfaces.add(itf.name);
-    if (cn.methods != null) {
-      for (MethodNode mn : cn.methods) {
+    directListenerClassNode.interfaces.add(itf.name);
+    if (directListenerClassNode.methods != null) {
+      for (MethodNode mn : directListenerClassNode.methods) {
         if (mn.visibleAnnotations != null) {
           for (AnnotationNode an : mn.visibleAnnotations) {
             if (LISTENER_METHOD_ANNOTATION_DESC.equals(an.desc)) {
@@ -126,7 +127,9 @@ public class DirectListenerTransformer implements ClassFileTransformer {
         }
       }
     }
-    return itf;
+    ClassWriter icw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
+    itf.accept(icw);
+    return Utils.defineClass(itf.name.replace('/', '.'), icw.toByteArray(), DirectListener.class);
   }
 
   private static void copyMethodToInterface(ClassNode itf, MethodNode mn) {

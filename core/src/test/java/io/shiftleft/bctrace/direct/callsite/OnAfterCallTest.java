@@ -27,6 +27,7 @@ package io.shiftleft.bctrace.direct.callsite;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import io.shiftleft.bctrace.runtime.listener.direct.*;
 
 import io.shiftleft.bctrace.BcTraceTest;
 import io.shiftleft.bctrace.TestClass;
@@ -56,20 +57,9 @@ public class OnAfterCallTest extends BcTraceTest {
     assertEquals("21", sb.toString());
   }
 
-  /**
-   * This accessory interface is needed for testing purposes only. The agent will generate it on
-   * CallbackTransformer.class at runtime
-   */
-  public static interface AfterCallSiteListenerInterface {
-
-    public void onAfterCall(Class clazz, Object instance,
-        Object callSiteInstance, Object src, int srcPos,
-        Object dest, int destPos,
-        int length);
-  }
 
   public static class AfterCallSiteListener extends CallSiteListener implements
-      AfterCallSiteListenerInterface {
+    $io_shiftleft_bctrace_direct_callsite_OnAfterCallTest$AfterCallSiteListener {
 
     private final String token;
     private final StringBuilder sb;
@@ -120,18 +110,8 @@ public class OnAfterCallTest extends BcTraceTest {
     assertEquals(15, ret);
   }
 
-  /**
-   * This accessory interface is needed for testing purposes only. The agent will generate it on
-   * CallbackTransformer.class at runtime
-   */
-  public static interface AfterCallSiteMutableListenerInterface {
-
-    public int onAfterCall(Class clazz, Object instance,
-        Object callSiteInstance, String s, int ret);
-  }
-
   public static class AfterCallSiteMutableListener extends CallSiteListener implements
-      AfterCallSiteMutableListenerInterface {
+      $io_shiftleft_bctrace_direct_callsite_OnAfterCallTest$AfterCallSiteMutableListener {
 
     @Override
     public String getCallSiteClassName() {

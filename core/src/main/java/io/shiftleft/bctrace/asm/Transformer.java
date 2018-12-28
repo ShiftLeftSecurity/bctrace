@@ -36,10 +36,10 @@ import io.shiftleft.bctrace.asm.helper.direct.method.DirectThrowableHelper;
 import io.shiftleft.bctrace.asm.helper.generic.FinishHelper;
 import io.shiftleft.bctrace.asm.helper.generic.StartHelper;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
-import io.shiftleft.bctrace.jmx.ClassMetrics;
 import io.shiftleft.bctrace.hierarchy.UnloadedClass;
 import io.shiftleft.bctrace.hook.Hook;
 import io.shiftleft.bctrace.hook.generic.GenericHook;
+import io.shiftleft.bctrace.jmx.ClassMetrics;
 import io.shiftleft.bctrace.jmx.MethodMetrics;
 import io.shiftleft.bctrace.logging.Level;
 import io.shiftleft.bctrace.runtime.Callback;
@@ -169,7 +169,7 @@ public class Transformer implements ClassFileTransformer {
       if (!transformed) {
         return null;
       } else {
-        ClassWriter cw = new StaticClassWriter(cr, ClassWriter.COMPUTE_MAXS, loader);
+        ClassWriter cw = new ClassWriter(cr, ClassWriter.COMPUTE_MAXS);
         cn.accept(cw);
         ret = cw.toByteArray();
         return ret;

@@ -25,6 +25,7 @@
 package io.shiftleft.bctrace;
 
 import io.shiftleft.bctrace.asm.util.ASMUtils;
+import io.shiftleft.bctrace.utils.Utils;
 import java.io.InputStream;
 
 /**
@@ -148,7 +149,7 @@ public class TestClass extends TestSuperClass {
     String className = clazz.getCanonicalName();
     String resourceName = className.replace('.', '/') + ".class";
     InputStream is = clazz.getClassLoader().getResourceAsStream(resourceName);
-    byte[] bytes = ASMUtils.toByteArray(is);
+    byte[] bytes = Utils.toByteArray(is);
     ASMUtils.viewByteCode(bytes);
   }
 

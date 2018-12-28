@@ -24,17 +24,21 @@
  */
 package io.shiftleft.bctrace.asm.util;
 
+import io.shiftleft.bctrace.runtime.listener.direct.DirectListener;
+import io.shiftleft.bctrace.runtime.listener.direct.DirectListener.ListenerMethod;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.List;
 import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
+import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
@@ -50,7 +54,11 @@ import org.objectweb.asm.util.TraceMethodVisitor;
 /**
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public class ASMUtils {
+public final class ASMUtils {
+
+  private ASMUtils() {
+
+  }
 
   public static boolean isInterface(int modifiers) {
     return (modifiers & Opcodes.ACC_INTERFACE) != 0;
@@ -333,36 +341,6 @@ public class ASMUtils {
     return new VarInsnNode(opCode, position);
   }
 
-  public static MethodNode cloneMethod(MethodNode mn) {
-    MethodNode cloned = new MethodNode(Opcodes.ASM5, mn.access, mn.name, mn.desc, mn.signature,
-        mn.exceptions == null ? new String[0]
-            : mn.exceptions.toArray(new String[mn.exceptions.size()]));
-    mn.accept(cloned);
-//    cloned.name = mn.name;
-//    cloned.access = mn.access;
-//    cloned.instructions = mn.instructions;
-//    cloned.desc = mn.desc;
-//    cloned.signature = mn.signature;
-//    cloned.annotationDefault = mn.annotationDefault;
-//    cloned.attrs = mn.attrs;
-//    cloned.exceptions = mn.exceptions;
-//    cloned.invisibleAnnotations = mn.invisibleAnnotations;
-//    cloned.invisibleParameterAnnotations = mn.invisibleParameterAnnotations;
-//    cloned.invisibleLocalVariableAnnotations = mn.invisibleLocalVariableAnnotations;
-//    cloned.invisibleTypeAnnotations = mn.invisibleTypeAnnotations;
-//    cloned.localVariables = mn.localVariables;
-//    cloned.maxLocals = mn.maxLocals;
-//    cloned.maxStack = mn.maxStack;
-//    cloned.parameters = mn.parameters;
-//    cloned.tryCatchBlocks = mn.tryCatchBlocks;
-//    cloned.visibleAnnotations = mn.visibleAnnotations;
-//    cloned.visibleLocalVariableAnnotations = mn.visibleLocalVariableAnnotations;
-//    cloned.visibleParameterAnnotations = mn.visibleParameterAnnotations;
-    //   cloned.visibleTypeAnnotations = mn.visibleTypeAnnotations;
-
-    return cloned;
-  }
-
   public static AbstractInsnNode getPushInstruction(int value) {
 
     if (value == -1) {
@@ -388,19 +366,6 @@ public class ASMUtils {
     }
   }
 
-  public static byte[] toByteArray(InputStream is) throws IOException {
-    ByteArrayOutputStream out = new ByteArrayOutputStream();
-    byte[] buffer = new byte[1024];
-    while (true) {
-      int r = is.read(buffer);
-      if (r == -1) {
-        break;
-      }
-      out.write(buffer, 0, r);
-    }
-    return out.toByteArray();
-  }
-
   public static void viewByteCode(byte[] bytecode) {
     ClassReader cr = new ClassReader(bytecode);
     ClassNode cn = new ClassNode();
@@ -420,7 +385,6 @@ public class ASMUtils {
       }
     }
   }
-
 
   public static void main(String[] args) {
     int mod = Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_PRIVATE;
