@@ -30,6 +30,7 @@ import io.shiftleft.bctrace.hook.Hook;
 import io.shiftleft.bctrace.hook.direct.DirectHook;
 import io.shiftleft.bctrace.logging.Level;
 import io.shiftleft.bctrace.runtime.listener.direct.DirectListener;
+import io.shiftleft.bctrace.utils.Utils;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.lang.reflect.Method;
@@ -207,7 +208,8 @@ public class CallbackTransformer implements ClassFileTransformer {
     insnList.add(new VarInsnNode(Opcodes.ILOAD, 0));
     insnList.add(new InsnNode(Opcodes.AALOAD));
 
-    String interfaceType = ASMUtils.getJvmInterfaceNameForDirectListener(listenerMethod.getDeclaringClass().getName());
+    String interfaceType = Utils
+        .getJvmInterfaceNameForDirectListener(listenerMethod.getDeclaringClass().getName());
     insnList.add(new TypeInsnNode(Opcodes.CHECKCAST, interfaceType));
     Class<?>[] params = listenerMethod.getParameterTypes();
     StringBuilder descriptor = new StringBuilder("(");
@@ -320,7 +322,8 @@ public class CallbackTransformer implements ClassFileTransformer {
     insnList.add(new VarInsnNode(Opcodes.ILOAD, 0));
     insnList.add(new InsnNode(Opcodes.AALOAD));
 
-    String interfaceType =  ASMUtils.getJvmInterfaceNameForDirectListener(listenerMethod.getDeclaringClass().getName());
+    String interfaceType = Utils
+        .getJvmInterfaceNameForDirectListener(listenerMethod.getDeclaringClass().getName());
     insnList.add(new TypeInsnNode(Opcodes.CHECKCAST, interfaceType));
     Class<?>[] params = listenerMethod.getParameterTypes();
     StringBuilder descriptor = new StringBuilder("(");

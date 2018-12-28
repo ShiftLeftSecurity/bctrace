@@ -341,36 +341,6 @@ public final class ASMUtils {
     return new VarInsnNode(opCode, position);
   }
 
-  public static MethodNode cloneMethod(MethodNode mn) {
-    MethodNode cloned = new MethodNode(Opcodes.ASM5, mn.access, mn.name, mn.desc, mn.signature,
-        mn.exceptions == null ? new String[0]
-            : mn.exceptions.toArray(new String[mn.exceptions.size()]));
-    mn.accept(cloned);
-//    cloned.name = mn.name;
-//    cloned.access = mn.access;
-//    cloned.instructions = mn.instructions;
-//    cloned.desc = mn.desc;
-//    cloned.signature = mn.signature;
-//    cloned.annotationDefault = mn.annotationDefault;
-//    cloned.attrs = mn.attrs;
-//    cloned.exceptions = mn.exceptions;
-//    cloned.invisibleAnnotations = mn.invisibleAnnotations;
-//    cloned.invisibleParameterAnnotations = mn.invisibleParameterAnnotations;
-//    cloned.invisibleLocalVariableAnnotations = mn.invisibleLocalVariableAnnotations;
-//    cloned.invisibleTypeAnnotations = mn.invisibleTypeAnnotations;
-//    cloned.localVariables = mn.localVariables;
-//    cloned.maxLocals = mn.maxLocals;
-//    cloned.maxStack = mn.maxStack;
-//    cloned.parameters = mn.parameters;
-//    cloned.tryCatchBlocks = mn.tryCatchBlocks;
-//    cloned.visibleAnnotations = mn.visibleAnnotations;
-//    cloned.visibleLocalVariableAnnotations = mn.visibleLocalVariableAnnotations;
-//    cloned.visibleParameterAnnotations = mn.visibleParameterAnnotations;
-    //   cloned.visibleTypeAnnotations = mn.visibleTypeAnnotations;
-
-    return cloned;
-  }
-
   public static AbstractInsnNode getPushInstruction(int value) {
 
     if (value == -1) {
@@ -396,19 +366,6 @@ public final class ASMUtils {
     }
   }
 
-  public static byte[] toByteArray(InputStream is) throws IOException {
-    ByteArrayOutputStream out = new ByteArrayOutputStream();
-    byte[] buffer = new byte[1024];
-    while (true) {
-      int r = is.read(buffer);
-      if (r == -1) {
-        break;
-      }
-      out.write(buffer, 0, r);
-    }
-    return out.toByteArray();
-  }
-
   public static void viewByteCode(byte[] bytecode) {
     ClassReader cr = new ClassReader(bytecode);
     ClassNode cn = new ClassNode();
@@ -427,11 +384,6 @@ public final class ASMUtils {
         System.out.print(sw.toString());
       }
     }
-  }
-
-  public static String getJvmInterfaceNameForDirectListener(String directListenerClassName) {
-    return DirectListener.class.getPackage().getName().replace('.', '/') + "/$"
-        + directListenerClassName.replace('.', '_').replace('/', '_');
   }
 
   public static void main(String[] args) {

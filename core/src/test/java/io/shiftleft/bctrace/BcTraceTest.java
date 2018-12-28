@@ -25,21 +25,11 @@
 package io.shiftleft.bctrace;
 
 import io.shiftleft.bctrace.asm.CallbackTransformer;
-import io.shiftleft.bctrace.asm.DirectListenerTransformer;
 import io.shiftleft.bctrace.asm.Transformer;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
 import io.shiftleft.bctrace.hook.Hook;
+import io.shiftleft.bctrace.utils.Utils;
 import java.io.InputStream;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.List;
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.InsnList;
-import org.objectweb.asm.tree.MethodNode;
-import org.objectweb.asm.util.Printer;
-import org.objectweb.asm.util.Textifier;
-import org.objectweb.asm.util.TraceMethodVisitor;
 
 /**
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
@@ -86,7 +76,7 @@ public abstract class BcTraceTest {
     String className = clazz.getCanonicalName();
     String resourceName = className.replace('.', '/') + ".class";
     InputStream is = clazz.getClassLoader().getResourceAsStream(resourceName);
-    byte[] bytes = ASMUtils.toByteArray(is);
+    byte[] bytes = Utils.toByteArray(is);
     byte[] newBytes = transformer.transform(null, className.replace('.', '/'), clazz, null, bytes);
     if (trace) {
       ASMUtils.viewByteCode(newBytes);
@@ -115,8 +105,9 @@ public abstract class BcTraceTest {
           String resourceName = name.replace('.', '/') + ".class";
           InputStream is = CallBackTransformerTest.class.getClassLoader()
               .getResourceAsStream(resourceName);
-          byte[] bytes = ASMUtils.toByteArray(is);
-          byte[] newBytes = this.callbackTransformer.transform(null, name.replace('.', '/'), null, null, bytes);
+          byte[] bytes = Utils.toByteArray(is);
+          byte[] newBytes = this.callbackTransformer
+              .transform(null, name.replace('.', '/'), null, null, bytes);
           if (newBytes != null) {
             bytes = newBytes;
           }
