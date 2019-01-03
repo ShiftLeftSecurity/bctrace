@@ -25,6 +25,7 @@
 package io.shiftleft.bctrace.runtime;
 
 import io.shiftleft.bctrace.runtime.listener.generic.FinishListener;
+import io.shiftleft.bctrace.runtime.listener.generic.MutableStartListener;
 import io.shiftleft.bctrace.runtime.listener.generic.StartListener;
 
 /**
@@ -51,15 +52,40 @@ public final class Callback {
       ((StartListener) listeners[i]).onStart(methodId, clazz, instance, args);
     } catch (Throwable th) {
       handleThrowable(th);
+      return;
     } finally {
       NOTIFYING_FLAG.set(Boolean.FALSE);
     }
   }
 
   @SuppressWarnings("BoxedValueEquality")
-  public static Object onFinish(Object original, Object ret, Throwable th, int methodId, Class clazz,
-      Object instance,
-      int i, Object[] args) {
+  public static Object[] onMutableStart(Object[] args, int methodId, Class clazz, Object instance, int i) {
+    if (!CallbackEnabler.isThreadNotificationEnabled()) {
+      return null;
+    }
+    if (Boolean.TRUE == NOTIFYING_FLAG.get()) {
+      return null;
+    }
+    try {
+      NOTIFYING_FLAG.set(Boolean.TRUE);
+      return ((MutableStartListener) listeners[i]).onStart(methodId, clazz, instance, args);
+    } catch (Throwable th) {
+      handleThrowable(th);
+      return null;
+    } finally {
+      NOTIFYING_FLAG.set(Boolean.FALSE);
+    }
+  }
+
+  /**
+   * Callback method for FinishListener instances.
+   *
+   * @param original The original value to be changed by the listener. Might correspond to the
+   * return value of the Throwable raised
+   */
+  @SuppressWarnings("BoxedValueEquality")
+  public static Object onFinish(Object original, Object ret, Throwable th, int methodId,
+      Class clazz, Object instance, int i, Object[] args) {
     if (!CallbackEnabler.isThreadNotificationEnabled()) {
       return original;
     }
@@ -72,6 +98,7 @@ public final class Callback {
           .onFinish(methodId, clazz, instance, args, ret, th);
     } catch (Throwable thr) {
       handleThrowable(thr);
+      // In case of exception raised in the listener, return the original value
       return original;
     } finally {
       NOTIFYING_FLAG.set(Boolean.FALSE);

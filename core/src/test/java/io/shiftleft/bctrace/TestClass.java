@@ -73,6 +73,10 @@ public class TestClass extends TestSuperClass {
     return s.length();
   }
 
+  public static String getString(final String s) {
+    return s;
+  }
+
   public static long fact(long n) {
     if (n == 1) {
       return 1;

@@ -34,6 +34,7 @@ import io.shiftleft.bctrace.asm.helper.direct.method.DirectReturnHelper;
 import io.shiftleft.bctrace.asm.helper.direct.method.DirectStartHelper;
 import io.shiftleft.bctrace.asm.helper.direct.method.DirectThrowableHelper;
 import io.shiftleft.bctrace.asm.helper.generic.FinishHelper;
+import io.shiftleft.bctrace.asm.helper.generic.MutableStartHelper;
 import io.shiftleft.bctrace.asm.helper.generic.StartHelper;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
 import io.shiftleft.bctrace.hierarchy.UnloadedClass;
@@ -44,6 +45,7 @@ import io.shiftleft.bctrace.jmx.MethodMetrics;
 import io.shiftleft.bctrace.logging.Level;
 import io.shiftleft.bctrace.runtime.Callback;
 import io.shiftleft.bctrace.runtime.CallbackEnabler;
+import io.shiftleft.bctrace.runtime.listener.generic.MutableStartListener;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.lang.instrument.ClassFileTransformer;
@@ -89,6 +91,7 @@ public class Transformer implements ClassFileTransformer {
 
   private final CallbackTransformer cbTransformer;
   private final StartHelper startHelper = new StartHelper();
+  private final MutableStartHelper mutableStartHelper = new MutableStartHelper();
   private final CallSiteHelper callSiteHelper = new CallSiteHelper();
   private final DirectStartHelper directStartHelper = new DirectStartHelper();
   private final DirectReturnHelper directReturnHelper = new DirectReturnHelper();
@@ -107,6 +110,7 @@ public class Transformer implements ClassFileTransformer {
     this.cbTransformer = cbTransformer;
 
     this.startHelper.setBctrace(bctrace);
+    this.mutableStartHelper.setBctrace(bctrace);
     this.finishHelper.setBctrace(bctrace);
 
     this.directStartHelper.setBctrace(bctrace);
@@ -315,6 +319,9 @@ public class Transformer implements ClassFileTransformer {
     }
     if (hasGenericHooks) {
       if (startHelper.addByteCodeInstructions(cn, mn, hooksToUse)) {
+        transformed = true;
+      }
+      if (mutableStartHelper.addByteCodeInstructions(cn, mn, hooksToUse)) {
         transformed = true;
       }
       if (finishHelper.addByteCodeInstructions(cn, mn, hooksToUse)) {
