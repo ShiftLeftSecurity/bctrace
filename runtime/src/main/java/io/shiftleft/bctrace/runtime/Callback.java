@@ -61,17 +61,17 @@ public final class Callback {
   @SuppressWarnings("BoxedValueEquality")
   public static Object[] onMutableStart(Object[] args, int methodId, Class clazz, Object instance, int i) {
     if (!CallbackEnabler.isThreadNotificationEnabled()) {
-      return null;
+      return args;
     }
     if (Boolean.TRUE == NOTIFYING_FLAG.get()) {
-      return null;
+      return args;
     }
     try {
       NOTIFYING_FLAG.set(Boolean.TRUE);
       return ((MutableStartListener) listeners[i]).onStart(methodId, clazz, instance, args);
     } catch (Throwable th) {
       handleThrowable(th);
-      return null;
+      return args;
     } finally {
       NOTIFYING_FLAG.set(Boolean.FALSE);
     }
