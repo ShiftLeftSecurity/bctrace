@@ -28,6 +28,8 @@ import io.shiftleft.bctrace.asm.TransformationSupport;
 import io.shiftleft.bctrace.jmx.ClassMetrics;
 import java.lang.instrument.UnmodifiableClassException;
 import java.lang.ref.WeakReference;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -177,12 +179,12 @@ public final class InstrumentationImpl implements Instrumentation {
 
   @Override
   public boolean isLoadedByAnyClassLoader(String name) {
-    List<WeakReference<ClassLoader>> classloaders = this.loadedClassesMap.get(name);
-    if (classloaders == null) {
+    List<WeakReference<ClassLoader>> classLoaders = this.loadedClassesMap.get(name);
+    if (classLoaders == null) {
       return false;
     }
-    for (int i = 0; i < classloaders.size(); i++) {
-      WeakReference<ClassLoader> wk = classloaders.get(i);
+    for (int i = 0; i < classLoaders.size(); i++) {
+      WeakReference<ClassLoader> wk = classLoaders.get(i);
       if (wk == null || wk.get() != null) {
         return true;
       }
@@ -192,13 +194,13 @@ public final class InstrumentationImpl implements Instrumentation {
 
   @Override
   public List<ClassLoader> getClassLoadersLoading(String className) {
-    List<WeakReference<ClassLoader>> classloaders = this.loadedClassesMap.get(className);
-    if (classloaders == null) {
+    List<WeakReference<ClassLoader>> classLoaders = this.loadedClassesMap.get(className);
+    if (classLoaders == null) {
       return null;
     }
     List<ClassLoader> ret = new LinkedList<ClassLoader>();
-    for (int i = 0; i < classloaders.size(); i++) {
-      WeakReference<ClassLoader> wk = classloaders.get(i);
+    for (int i = 0; i < classLoaders.size(); i++) {
+      WeakReference<ClassLoader> wk = classLoaders.get(i);
       if (wk == null) {
         ret.add(null);
       } else {
@@ -212,39 +214,58 @@ public final class InstrumentationImpl implements Instrumentation {
   }
 
   @Override
-  public Class getClassIfLoadedByClassLoader(String name, ClassLoader cl) {
-    List<WeakReference<ClassLoader>> classloaders = this.loadedClassesMap.get(name);
-    if (classloaders == null) {
+  public Class getClassIfLoadedByClassLoader(final String name, final ClassLoader cl) {
+    List<WeakReference<ClassLoader>> classLoaders = this.loadedClassesMap.get(name);
+    if (classLoaders == null) {
       return null;
     }
-    try {
-      for (int i = 0; i < classloaders.size(); i++) {
-        WeakReference<ClassLoader> wk = classloaders.get(i);
-        if (cl == null) {
-          if (wk == null) {
-            return Class.forName(name, false, null);
-          }
-        } else {
-          if (wk != null && wk.get() == cl) {
-            return Class.forName(name, false, cl);
-          }
+
+    for (int i = 0; i < classLoaders.size(); i++) {
+      WeakReference<ClassLoader> wk = classLoaders.get(i);
+      if (cl == null) {
+        if (wk == null) {
+          return (Class) AccessController.doPrivileged(
+              new PrivilegedAction<Class>() {
+                public Class run() {
+                  try {
+                    return Class.forName(name, false, null);
+                  } catch (ClassNotFoundException e) {
+                    // some classes like sun.reflect.GeneratedMethodAccessor cannot be loaded again
+                    return null;
+                  }
+                }
+              }
+          );
+        }
+      } else {
+        if (wk != null && wk.get() == cl) {
+          return (Class) AccessController.doPrivileged(
+              new PrivilegedAction<Class>() {
+                public Class run() {
+                  try {
+                    return Class.forName(name, false, cl);
+                  } catch (ClassNotFoundException e) {
+                    // some classes like sun.reflect.GeneratedMethodAccessor cannot be loaded again
+                    return null;
+                  }
+                }
+              }
+          );
         }
       }
-    } catch (ClassNotFoundException e) {
-      // some classes like sun.reflect.GeneratedMethodAccessor cannot be loaded again
-      return null;
     }
+
     return null;
   }
 
   @Override
   public boolean isLoadedBy(String className, ClassLoader cl) {
-    List<WeakReference<ClassLoader>> classloaders = this.loadedClassesMap.get(className);
-    if (classloaders == null) {
+    List<WeakReference<ClassLoader>> classLoaders = this.loadedClassesMap.get(className);
+    if (classLoaders == null) {
       return false;
     }
-    for (int i = 0; i < classloaders.size(); i++) {
-      WeakReference<ClassLoader> wk = classloaders.get(i);
+    for (int i = 0; i < classLoaders.size(); i++) {
+      WeakReference<ClassLoader> wk = classLoaders.get(i);
       if (cl == null) {
         if (wk == null) {
           return true;
