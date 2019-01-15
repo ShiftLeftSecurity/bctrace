@@ -79,6 +79,9 @@ public class DirectListenerTransformer implements ClassFileTransformer {
       if (className == null) {
         return null;
       }
+      if (loader != Bctrace.class.getClassLoader()) {
+        return null;
+      }
       ClassReader cr = new ClassReader(classfileBuffer);
       ClassNode cn = new ClassNode();
       cr.accept(cn, 0);
