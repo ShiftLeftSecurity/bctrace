@@ -24,10 +24,12 @@
  */
 package io.shiftleft.bctrace.hierarchy;
 
-import io.shiftleft.bctrace.Bctrace;
 import io.shiftleft.bctrace.Instrumentation;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.ClassNode;
 
@@ -38,7 +40,8 @@ public class UnloadedClass extends BctraceClass {
 
   private final ClassNode cn;
 
-  UnloadedClass(String name, ClassLoader cl, Instrumentation instrumentation) throws ClassNotFoundException {
+  UnloadedClass(String name, ClassLoader cl, Instrumentation instrumentation)
+      throws ClassNotFoundException {
     super(name, cl, instrumentation);
     this.cn = createClassNode(getURL());
   }
@@ -48,18 +51,32 @@ public class UnloadedClass extends BctraceClass {
     this.cn = cn;
   }
 
-  private static ClassNode createClassNode(URL url) throws ClassNotFoundException {
+  private static ClassNode createClassNode(final URL url) throws ClassNotFoundException {
     if (url == null) {
       throw new ClassNotFoundException();
     }
+    InputStream is = AccessController.doPrivileged(new PrivilegedAction<InputStream>() {
+      @Override
+      public InputStream run() {
+        try {
+          return url.openStream();
+        } catch (IOException ex) {
+          return null;
+        }
+      }
+    });
+    if (is == null) {
+      return null;
+    }
     try {
-      ClassReader cr = new ClassReader(url.openStream());
+      ClassReader cr = new ClassReader(is);
       ClassNode cn = new ClassNode();
       cr.accept(cn, 0);
       return cn;
     } catch (IOException ex) {
       throw new RuntimeException(ex);
     }
+
   }
 
   public ClassNode getClassNode() {

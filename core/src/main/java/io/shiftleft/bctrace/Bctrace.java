@@ -35,6 +35,8 @@ import io.shiftleft.bctrace.runtime.Callback;
 import io.shiftleft.bctrace.runtime.Callback.ErrorListener;
 import io.shiftleft.bctrace.runtime.CallbackEnabler;
 import java.net.URL;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 
 /**
  * Framework entry point.
@@ -115,13 +117,17 @@ public final class Bctrace {
     }
   }
 
-  public static URL getURL(String className, ClassLoader cl) {
-    String classResource = className.replace('.', '/') + ".class";
-    if (cl == null) {
-      return ClassLoader.getSystemResource(classResource);
-    } else {
-      return cl.getResource(classResource);
-    }
+  public static URL getURL(final String className, final ClassLoader cl) {
+    final String classResource = className.replace('.', '/') + ".class";
+    return AccessController.doPrivileged(new PrivilegedAction<URL>() {
+      public URL run() {
+        if (cl == null) {
+          return ClassLoader.getSystemResource(classResource);
+        } else {
+          return cl.getResource(classResource);
+        }
+      }
+    });
   }
 
   private static Logger createLogger() {
