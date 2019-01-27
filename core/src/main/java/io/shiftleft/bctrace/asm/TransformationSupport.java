@@ -57,7 +57,9 @@ public class TransformationSupport {
         while (scanner.hasNextLine()) {
           String line = scanner.nextLine().trim();
           if (!line.isEmpty()) {
-            if (line.charAt(0) == '+') {
+            if (line.charAt(0) == '#') {
+              continue;
+            } else if (line.charAt(0) == '+') {
               list.addFirst(line);
             } else {
               list.add(line);
@@ -71,7 +73,9 @@ public class TransformationSupport {
         while (scanner.hasNextLine()) {
           String line = scanner.nextLine().trim();
           if (!line.isEmpty()) {
-            if (line.charAt(0) == '+') {
+            if (line.charAt(0) == '#') {
+              continue;
+            } else if (line.charAt(0) == '+') {
               list.addFirst(line);
             } else {
               list.add(line);
@@ -93,15 +97,17 @@ public class TransformationSupport {
     if (jvmClassName.contains("$$Lambda$")) {
       return false;
     }
-    for (int i = 0; i < CLASSNAME_PREFIX_IGNORE_LIST.length; i++) {
-      String prefix = CLASSNAME_PREFIX_IGNORE_LIST[i];
-      if (prefix.charAt(0) == '+') {
-        if (jvmClassName.startsWith(prefix.substring(1))) {
-          break;
-        }
-      } else {
-        if (jvmClassName.startsWith(prefix)) {
-          return false;
+    if (CLASSNAME_PREFIX_IGNORE_LIST != null) {
+      for (int i = 0; i < CLASSNAME_PREFIX_IGNORE_LIST.length; i++) {
+        String prefix = CLASSNAME_PREFIX_IGNORE_LIST[i];
+        if (prefix.charAt(0) == '+') {
+          if (jvmClassName.startsWith(prefix.substring(1))) {
+            break;
+          }
+        } else {
+          if (jvmClassName.startsWith(prefix)) {
+            return false;
+          }
         }
       }
     }

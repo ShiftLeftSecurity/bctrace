@@ -44,28 +44,49 @@ public class Init {
   private static final String OSGI_PACKAGE_DELEGATION_VALUE = "io.shiftleft.*";
   private static final String DESCRIPTOR_NAME = ".bctrace";
 
-  public static void premain(final String arg, Instrumentation inst) throws Exception {
+  public static void premain(String arg, Instrumentation inst) {
     bootstrap(arg, inst);
   }
 
-  public static void agentmain(String arg, Instrumentation inst) throws Exception {
+  public static void agentmain(String arg, Instrumentation inst) {
     bootstrap(arg, inst);
   }
 
-  private static void bootstrap(String agentArgs, Instrumentation inst) throws Exception {
-    CallbackEnabler.disableThreadNotification();
-    wrapSystemProperties();
+  public static void main(String args[]) {
+    try {
+      Agent agent = createAgent();
+      agent.showMenu();
+    } catch (Throwable th) {
+      th.printStackTrace(System.err);
+      System.exit(1);
+    }
+  }
+
+  private static void bootstrap(String agentArgs, Instrumentation inst) {
+    try {
+      CallbackEnabler.disableThreadNotification();
+      wrapSystemProperties();
+      Agent agent = createAgent();
+      InstrumentationImpl instrumentation = new InstrumentationImpl(inst);
+      DirectListenerTransformer directListenerTransformer = new DirectListenerTransformer(
+          instrumentation);
+      inst.addTransformer(directListenerTransformer, false);
+      Bctrace bctrace = new Bctrace(instrumentation, agent, true);
+      bctrace.init();
+      CallbackEnabler.enableThreadNotification();
+    } catch (Throwable th) {
+      th.printStackTrace(System.err);
+      System.exit(1);
+    }
+  }
+
+  public static Agent createAgent() throws Exception {
     String factoryImpClass = readAgentFactoryImpClass();
     if (factoryImpClass == null) {
       throw new Error("No agent factory found in classpath resource " + DESCRIPTOR_NAME);
     }
-    InstrumentationImpl instrumentation = new InstrumentationImpl(inst);
-    DirectListenerTransformer directListenerTransformer = new DirectListenerTransformer(instrumentation);
-    inst.addTransformer(directListenerTransformer, false);
     AgentFactory agentFactory = (AgentFactory) Class.forName(factoryImpClass).newInstance();
-    Bctrace bctrace = new Bctrace(instrumentation, agentFactory.createAgent(), true);
-    bctrace.init();
-    CallbackEnabler.enableThreadNotification();
+    return agentFactory.createAgent();
   }
 
   private static void wrapSystemProperties() {
