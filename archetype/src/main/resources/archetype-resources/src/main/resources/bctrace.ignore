@@ -3,7 +3,6 @@
 
 io/shiftleft/bctrace
 java/lang/Object
-java/lang/String
 java/lang/ThreadLocal
 java/lang/VerifyError
 java/lang/instrument

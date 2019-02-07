@@ -94,7 +94,7 @@
             <configuration>
               <excludeArtifactIds>*</excludeArtifactIds>
               <overWriteIfNewer>false</overWriteIfNewer>
-              <includeArtifactIds>bctrace-bootstrap</includeArtifactIds>
+              <includeArtifactIds>bctrace-bootstrap, bctrace-runtime</includeArtifactIds>
               <outputDirectory>${classes.folder}/</outputDirectory>
             </configuration>
           </execution>
@@ -111,7 +111,7 @@
               <overWriteReleases>false</overWriteReleases>
               <overWriteSnapshots>false</overWriteSnapshots>
               <overWriteIfNewer>true</overWriteIfNewer>
-              <excludeArtifactIds>bctrace-bootstrap</excludeArtifactIds>
+              <excludeArtifactIds>bctrace-bootstrap, bctrace-runtime</excludeArtifactIds>
             </configuration>
           </execution>
           <execution>
@@ -128,7 +128,7 @@
               <overWriteSnapshots>false</overWriteSnapshots>
               <overWriteIfNewer>true</overWriteIfNewer>
               <prefix>lib</prefix>
-              <excludeArtifactIds>bctrace-bootstrap</excludeArtifactIds>
+              <excludeArtifactIds>bctrace-bootstrap, bctrace-runtime</excludeArtifactIds>
             </configuration>
           </execution>
         </executions>

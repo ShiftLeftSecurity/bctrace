@@ -4,6 +4,7 @@ import io.shiftleft.bctrace.Bctrace;
 import io.shiftleft.bctrace.hook.Hook;
 import io.shiftleft.bctrace.logging.Level;
 import io.shiftleft.bctrace.logging.Logger;
+import java.lang.instrument.UnmodifiableClassException;
 import ${package}.${artifactIdUnhyphenated}.hooks.StringCreationHook;
 
 public class Agent implements io.shiftleft.bctrace.Agent {
@@ -27,6 +28,15 @@ public class Agent implements io.shiftleft.bctrace.Agent {
   @Override
   public void afterRegistration() {
     LOGGER.log(Level.INFO, "Starting bctrace agent ...");
+    try {
+      Class[] classesToReinstrument = new Class[]{
+          // TODO loaded classes that need retransformation, if any
+          String.class
+      };
+      bctrace.getInstrumentation().retransformClasses(classesToReinstrument);
+    } catch (UnmodifiableClassException ex) {
+      LOGGER.log(Level.ERROR, ex.getMessage(), ex);
+    }
   }
 
   public static Agent getInstance() {
@@ -44,6 +54,7 @@ public class Agent implements io.shiftleft.bctrace.Agent {
 
   @Override
   public void showMenu() {
-    System.out.println("aaaa");
+    // TODO document agent usage
+    System.out.println(new String("TODO: document agent usage at ${package}.${artifactIdUnhyphenated}.Agent.showMenu()"));
   }
 }
