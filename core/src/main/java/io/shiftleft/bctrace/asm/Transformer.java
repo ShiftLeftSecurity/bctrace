@@ -189,10 +189,10 @@ public class Transformer implements ClassFileTransformer {
           if (DUMP_FOLDER != null) {
             dump(counter, className, classfileBuffer, ret);
           }
-//          instrumentation.addLoadedClass(className.replace('/', '.'), loader);
-//          if (transformed) {
-//            instrumentation.addTransformedClass(className.replace('/', '.'), loader);
-//          }
+          instrumentation.addLoadedClass(className.replace('/', '.'), loader);
+          if (transformed) {
+            instrumentation.addTransformedClass(className.replace('/', '.'), loader);
+          }
         }
         CallbackEnabler.enableThreadNotification();
       } catch (Throwable th) {

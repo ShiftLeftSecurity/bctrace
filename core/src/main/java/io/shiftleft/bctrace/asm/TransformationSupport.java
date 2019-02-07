@@ -90,7 +90,6 @@ public class TransformationSupport {
   }
 
   public static boolean isTransformable(String jvmClassName, ClassLoader loader) {
-
     if (jvmClassName == null) {
       return false;
     }

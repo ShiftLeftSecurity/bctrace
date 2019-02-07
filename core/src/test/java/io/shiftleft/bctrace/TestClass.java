@@ -25,7 +25,7 @@
 package io.shiftleft.bctrace;
 
 import io.shiftleft.bctrace.asm.util.ASMUtils;
-import io.shiftleft.bctrace.utils.Utils;
+import io.shiftleft.bctrace.util.Utils;
 import java.io.InputStream;
 
 /**
