@@ -9,7 +9,11 @@ import io.shiftleft.bctrace.runtime.listener.generic.FinishListener;
 import java.security.ProtectionDomain;
 import org.objectweb.asm.tree.MethodNode;
 
-public class StringCreationHook extends GenericHook {
+/**
+ * A sample hook that logs a message every time a String constructor is invoked
+ */
+public class StringConstructorHook extends GenericHook<Filter, FinishListener> {
+
   @Override
   public Filter getFilter() {
     return new Filter() {
@@ -27,12 +31,11 @@ public class StringCreationHook extends GenericHook {
   }
 
   @Override
-  public Object getListener() {
+  public FinishListener getListener() {
     return new FinishListener() {
       @Override
       public Object onFinish(int methodId, Class clazz, Object instance, Object[] args,
-          Object ret,
-          Throwable throwable) {
+          Object ret, Throwable throwable) {
         Bctrace.getAgentLogger().log(Level.INFO, "Created String instance: \"" + instance + "\"");
         return ret;
       }

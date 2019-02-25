@@ -1,17 +1,18 @@
 package ${package}.${artifactIdUnhyphenated}.log;
 
 import io.shiftleft.bctrace.logging.Level;
+import io.shiftleft.bctrace.logging.Logger;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintWriter;
 
 public class AgentLoggerFactory extends io.shiftleft.bctrace.logging.AgentLoggerFactory {
 
-  private final io.shiftleft.bctrace.logging.Logger logger;
+  private final Logger logger;
 
-  public AgentLoggerFactory(){
-    this.logger = new io.shiftleft.bctrace.logging.Logger() {
+  public AgentLoggerFactory() {
+    this.logger = new Logger() {
       @Override
-      protected void doLog(io.shiftleft.bctrace.logging.Level level, String s,
+      protected void doLog(Level level, String s,
           Throwable throwable) {
         StringBuilder sb = new StringBuilder(level.name());
         sb.append(" ");
@@ -20,7 +21,7 @@ public class AgentLoggerFactory extends io.shiftleft.bctrace.logging.AgentLogger
           sb.append(" ").append(s);
         }
         if (throwable != null) {
-          sb.append(" ").append(getStrackTrace(throwable));
+          sb.append(" ").append(getStackTrace(throwable));
         }
         System.err.println(sb);
       }
@@ -29,11 +30,11 @@ public class AgentLoggerFactory extends io.shiftleft.bctrace.logging.AgentLogger
   }
 
   @Override
-  public io.shiftleft.bctrace.logging.Logger getLogger() {
+  public Logger getLogger() {
     return this.logger;
   }
 
-  private static String getStrackTrace(Throwable th) {
+  private static String getStackTrace(Throwable th) {
     if (th == null) {
       return null;
     }

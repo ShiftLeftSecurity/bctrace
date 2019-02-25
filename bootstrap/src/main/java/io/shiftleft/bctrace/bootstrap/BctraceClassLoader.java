@@ -260,4 +260,17 @@ public class BctraceClassLoader extends ClassLoader {
       return new AgentURLConnection(url);
     }
   }
+
+  private static byte[] toByteArray(InputStream is) throws IOException {
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
+    byte[] buffer = new byte[1024];
+    while (true) {
+      int r = is.read(buffer);
+      if (r == -1) {
+        break;
+      }
+      out.write(buffer, 0, r);
+    }
+    return out.toByteArray();
+  }
 }

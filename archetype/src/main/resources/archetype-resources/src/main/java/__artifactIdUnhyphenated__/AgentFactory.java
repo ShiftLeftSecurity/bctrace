@@ -1,11 +1,14 @@
 package ${package}.${artifactIdUnhyphenated};
 
-import io.shiftleft.bctrace.Agent;
-
 public class AgentFactory implements io.shiftleft.bctrace.AgentFactory {
 
   @Override
-  public Agent createAgent() {
-    return ${package}.${artifactIdUnhyphenated}.Agent.getInstance();
+  public io.shiftleft.bctrace.Agent createAgent() {
+    return Agent.getInstance();
+  }
+
+  @Override
+  public io.shiftleft.bctrace.AgentHelp createHelp() {
+    return new AgentHelp();
   }
 }

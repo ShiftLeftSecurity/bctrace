@@ -47,10 +47,6 @@ public abstract class BcTraceTest {
       }
 
       @Override
-      public void showMenu() {
-      }
-
-      @Override
       public Hook[] getHooks() {
         return hooks;
       }

@@ -5,7 +5,8 @@ import io.shiftleft.bctrace.hook.Hook;
 import io.shiftleft.bctrace.logging.Level;
 import io.shiftleft.bctrace.logging.Logger;
 import java.lang.instrument.UnmodifiableClassException;
-import ${package}.${artifactIdUnhyphenated}.hooks.StringCreationHook;
+import ${package}.${artifactIdUnhyphenated}.hooks.StringBuilderAppendHook;
+import ${package}.${artifactIdUnhyphenated}.hooks.StringConstructorHook;
 
 public class Agent implements io.shiftleft.bctrace.Agent {
 
@@ -15,7 +16,8 @@ public class Agent implements io.shiftleft.bctrace.Agent {
 
   private final Hook[] hooks = new Hook[]{
       // TODO register your hooks here
-      new StringCreationHook()
+      new StringConstructorHook(),
+      new StringBuilderAppendHook()
   };
 
   private Bctrace bctrace;
@@ -31,12 +33,16 @@ public class Agent implements io.shiftleft.bctrace.Agent {
     try {
       Class[] classesToReinstrument = new Class[]{
           // TODO loaded classes that need retransformation, if any
-          String.class
+          String.class,
+          StringBuilder.class
       };
       bctrace.getInstrumentation().retransformClasses(classesToReinstrument);
     } catch (UnmodifiableClassException ex) {
       LOGGER.log(Level.ERROR, ex.getMessage(), ex);
     }
+    java.util.logging.Logger logger = java.util.logging.Logger.getLogger(this.getClass().toString());
+    logger.warning("XXXXXX");
+    System.out.println(logger.getClass());
   }
 
   public static Agent getInstance() {
@@ -50,11 +56,5 @@ public class Agent implements io.shiftleft.bctrace.Agent {
   @Override
   public Hook[] getHooks() {
     return this.hooks;
-  }
-
-  @Override
-  public void showMenu() {
-    // TODO document agent usage
-    System.out.println(new String("TODO: document agent usage at ${package}.${artifactIdUnhyphenated}.Agent.showMenu()"));
   }
 }

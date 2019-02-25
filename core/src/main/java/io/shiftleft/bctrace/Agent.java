@@ -11,6 +11,4 @@ public interface Agent {
 
   public Hook[] getHooks();
 
-  public void showMenu();
-
 }

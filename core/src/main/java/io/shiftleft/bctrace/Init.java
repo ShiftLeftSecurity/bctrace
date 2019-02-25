@@ -54,8 +54,9 @@ public class Init {
 
   public static void main(String args[]) {
     try {
-      Agent agent = createAgent();
-      agent.showMenu();
+      AgentFactory factory = createAgentFactory();
+      String help = factory.createHelp().getHelp();
+      System.err.println(help);
     } catch (Throwable th) {
       th.printStackTrace(System.err);
       System.exit(1);
@@ -66,11 +67,12 @@ public class Init {
     try {
       CallbackEnabler.disableThreadNotification();
       wrapSystemProperties();
-      Agent agent = createAgent();
       InstrumentationImpl instrumentation = new InstrumentationImpl(inst);
       DirectListenerTransformer directListenerTransformer = new DirectListenerTransformer(
           instrumentation);
       inst.addTransformer(directListenerTransformer, false);
+      AgentFactory factory = createAgentFactory();
+      Agent agent = factory.createAgent();
       Bctrace bctrace = new Bctrace(instrumentation, agent, true);
       bctrace.init();
       CallbackEnabler.enableThreadNotification();
@@ -80,13 +82,12 @@ public class Init {
     }
   }
 
-  public static Agent createAgent() throws Exception {
+  public static AgentFactory createAgentFactory() throws Exception {
     String factoryImpClass = readAgentFactoryImpClass();
     if (factoryImpClass == null) {
       throw new Error("No agent factory found in classpath resource " + DESCRIPTOR_NAME);
     }
-    AgentFactory agentFactory = (AgentFactory) Class.forName(factoryImpClass).newInstance();
-    return agentFactory.createAgent();
+    return (AgentFactory) Class.forName(factoryImpClass).newInstance();
   }
 
   private static void wrapSystemProperties() {
