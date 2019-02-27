@@ -40,9 +40,6 @@ public class Agent implements io.shiftleft.bctrace.Agent {
     } catch (UnmodifiableClassException ex) {
       LOGGER.log(Level.ERROR, ex.getMessage(), ex);
     }
-    java.util.logging.Logger logger = java.util.logging.Logger.getLogger(this.getClass().toString());
-    logger.warning("XXXXXX");
-    System.out.println(logger.getClass());
   }
 
   public static Agent getInstance() {
