@@ -31,7 +31,7 @@ import io.shiftleft.bctrace.logging.Level;
 import io.shiftleft.bctrace.runtime.CallbackEnabler;
 import io.shiftleft.bctrace.runtime.listener.direct.DirectListener;
 import io.shiftleft.bctrace.runtime.listener.direct.DirectListener.ListenerMethod;
-import io.shiftleft.bctrace.utils.Utils;
+import io.shiftleft.bctrace.util.Utils;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.security.ProtectionDomain;

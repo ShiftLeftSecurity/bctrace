@@ -30,8 +30,8 @@ import java.lang.instrument.UnmodifiableClassException;
 import java.lang.ref.WeakReference;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -131,7 +131,7 @@ public final class InstrumentationImpl implements Instrumentation {
       Map<String, List<WeakReference<ClassLoader>>> map) {
     List<WeakReference<ClassLoader>> list = map.get(className);
     if (list == null) {
-      list = new LinkedList<WeakReference<ClassLoader>>();
+      list = new ArrayList<WeakReference<ClassLoader>>();
       map.put(className, list);
     } else {
       for (int i = 0; i < list.size(); i++) {
@@ -156,7 +156,7 @@ public final class InstrumentationImpl implements Instrumentation {
 
   private synchronized void removeClass(String className, ClassLoader cl,
       Map<String, List<WeakReference<ClassLoader>>> map) {
-    LinkedList<WeakReference<ClassLoader>> list = (LinkedList<WeakReference<ClassLoader>>) map
+    ArrayList<WeakReference<ClassLoader>> list = (ArrayList<WeakReference<ClassLoader>>) map
         .get(className);
     if (list != null) {
       if (cl == null) { // Bootstrap classloader
@@ -198,7 +198,7 @@ public final class InstrumentationImpl implements Instrumentation {
     if (classLoaders == null) {
       return null;
     }
-    List<ClassLoader> ret = new LinkedList<ClassLoader>();
+    List<ClassLoader> ret = new ArrayList<ClassLoader>();
     for (int i = 0; i < classLoaders.size(); i++) {
       WeakReference<ClassLoader> wk = classLoaders.get(i);
       if (wk == null) {

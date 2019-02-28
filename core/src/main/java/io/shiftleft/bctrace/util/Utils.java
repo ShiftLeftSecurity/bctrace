@@ -1,4 +1,4 @@
-package io.shiftleft.bctrace.utils;
+package io.shiftleft.bctrace.util;
 
 import io.shiftleft.bctrace.runtime.listener.direct.DirectListener;
 import java.io.ByteArrayOutputStream;

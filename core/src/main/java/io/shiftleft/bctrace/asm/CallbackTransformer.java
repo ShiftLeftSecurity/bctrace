@@ -30,7 +30,7 @@ import io.shiftleft.bctrace.hook.Hook;
 import io.shiftleft.bctrace.hook.direct.DirectHook;
 import io.shiftleft.bctrace.logging.Level;
 import io.shiftleft.bctrace.runtime.listener.direct.DirectListener;
-import io.shiftleft.bctrace.utils.Utils;
+import io.shiftleft.bctrace.util.Utils;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.lang.reflect.Method;

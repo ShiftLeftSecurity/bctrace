@@ -1,0 +1,24 @@
+# Prefixes of classes to skip instrumentation
+# Lines starting with + negate exclusion, and take precedence over the others
+
+io/shiftleft/bctrace
+java/lang/Object
+java/lang/ThreadLocal
+java/lang/VerifyError
+java/lang/instrument
+java/lang/invoke
+java/lang/ref
+java/lang/concurrent
+java/lang/Long
+java/lang/Integer
+java/lang/Byte
+java/lang/Short
+java/lang/Char
+java/lang/Boolean
+java/lang/Float
+java/lang/Double
+java/lang/UnsupportedOperationException
+java/lang/IllegalStateException
+java/security/
+java/io/ByteArrayInputStream
+java/io/ByteArrayOutputStream

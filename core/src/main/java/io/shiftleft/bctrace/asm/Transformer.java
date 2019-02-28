@@ -119,6 +119,8 @@ public class Transformer implements ClassFileTransformer {
 
     this.callSiteHelper.setBctrace(bctrace);
 
+    ClassMetrics.getInstance();
+
   }
 
   @Override

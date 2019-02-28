@@ -10,4 +10,5 @@ public interface Agent {
   public void afterRegistration();
 
   public Hook[] getHooks();
+
 }
