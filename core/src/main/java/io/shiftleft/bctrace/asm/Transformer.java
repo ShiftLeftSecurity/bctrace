@@ -320,10 +320,10 @@ public class Transformer implements ClassFileTransformer {
       }
     }
     if (hasGenericHooks) {
-      if (startHelper.addByteCodeInstructions(cn, mn, hooksToUse)) {
+      if (mutableStartHelper.addByteCodeInstructions(cn, mn, hooksToUse)) {
         transformed = true;
       }
-      if (mutableStartHelper.addByteCodeInstructions(cn, mn, hooksToUse)) {
+      if (startHelper.addByteCodeInstructions(cn, mn, hooksToUse)) {
         transformed = true;
       }
       if (finishHelper.addByteCodeInstructions(cn, mn, hooksToUse)) {
