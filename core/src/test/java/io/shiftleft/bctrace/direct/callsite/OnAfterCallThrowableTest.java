@@ -30,8 +30,8 @@ import static org.junit.Assert.assertTrue;
 import io.shiftleft.bctrace.BcTraceTest;
 import io.shiftleft.bctrace.TestClass;
 import io.shiftleft.bctrace.filter.AllFilter;
+import io.shiftleft.bctrace.hook.DirectHook;
 import io.shiftleft.bctrace.hook.Hook;
-import io.shiftleft.bctrace.hook.direct.CallSiteHook;
 import io.shiftleft.bctrace.runtime.listener.direct.$io_shiftleft_bctrace_direct_callsite_OnAfterCallThrowableTest$CallSiteListener1;
 import io.shiftleft.bctrace.runtime.listener.direct.$io_shiftleft_bctrace_direct_callsite_OnAfterCallThrowableTest$CallSiteListener2;
 import io.shiftleft.bctrace.runtime.listener.direct.$io_shiftleft_bctrace_direct_callsite_OnAfterCallThrowableTest$CallSiteListener3;
@@ -49,7 +49,7 @@ public class OnAfterCallThrowableTest extends BcTraceTest {
     StringBuilder sb = new StringBuilder();
     CallSiteListener callSiteListener1 = new CallSiteListener1(sb);
     Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
-        new CallSiteHook(new AllFilter(), callSiteListener1)
+        new DirectHook.CallSiteHook(new AllFilter(), callSiteListener1)
     }, false);
 
     try {
@@ -97,7 +97,7 @@ public class OnAfterCallThrowableTest extends BcTraceTest {
     RuntimeException runtimeException = new RuntimeException();
     CallSiteListener callSiteListener2 = new CallSiteListener2(runtimeException);
     Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
-        new CallSiteHook(new AllFilter(), callSiteListener2)
+        new DirectHook.CallSiteHook(new AllFilter(), callSiteListener2)
     }, false);
 
     boolean captured = false;
@@ -146,7 +146,7 @@ public class OnAfterCallThrowableTest extends BcTraceTest {
     RuntimeException runtimeException = new RuntimeException("Unexpected!");
     CallSiteListener callSiteListener3 = new CallSiteListener3(runtimeException);
     Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
-        new CallSiteHook(new AllFilter(), callSiteListener3)
+        new DirectHook.CallSiteHook(new AllFilter(), callSiteListener3)
     }, false);
 
     boolean captured = false;

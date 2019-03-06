@@ -27,13 +27,14 @@ package io.shiftleft.bctrace.direct.callsite;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+
+import io.shiftleft.bctrace.hook.DirectHook;
 import io.shiftleft.bctrace.runtime.listener.direct.*;
 
 import io.shiftleft.bctrace.BcTraceTest;
 import io.shiftleft.bctrace.TestClass;
 import io.shiftleft.bctrace.filter.AllFilter;
 import io.shiftleft.bctrace.hook.Hook;
-import io.shiftleft.bctrace.hook.direct.CallSiteHook;
 import io.shiftleft.bctrace.runtime.listener.direct.CallSiteListener;
 import jdk.nashorn.internal.codegen.types.Type;
 import org.junit.Test;
@@ -49,8 +50,8 @@ public class OnAfterCallTest extends BcTraceTest {
     AfterCallSiteListener l1 = new AfterCallSiteListener("1", sb);
     AfterCallSiteListener l2 = new AfterCallSiteListener("2", sb);
     Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
-        new CallSiteHook(new AllFilter(), l1),
-        new CallSiteHook(new AllFilter(), l2)
+        new DirectHook.CallSiteHook(new AllFilter(), l1),
+        new DirectHook.CallSiteHook(new AllFilter(), l2)
     }, false);
 
     clazz.getMethod("arrayCopyWrapper2").invoke(null);
@@ -103,7 +104,7 @@ public class OnAfterCallTest extends BcTraceTest {
   public void testReturnVoidCallSite() throws Exception {
     AfterCallSiteMutableListener listener = new AfterCallSiteMutableListener();
     Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
-        new CallSiteHook(new AllFilter(), listener)
+        new DirectHook.CallSiteHook(new AllFilter(), listener)
     }, false);
 
     int ret = (Integer) clazz.getMethod("foo", String.class).invoke(null, "123");

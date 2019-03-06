@@ -31,8 +31,8 @@ import static org.junit.Assert.assertNull;
 import io.shiftleft.bctrace.BcTraceTest;
 import io.shiftleft.bctrace.TestClass;
 import io.shiftleft.bctrace.filter.MethodFilter;
+import io.shiftleft.bctrace.hook.DirectHook;
 import io.shiftleft.bctrace.hook.Hook;
-import io.shiftleft.bctrace.hook.direct.MethodHook;
 import io.shiftleft.bctrace.runtime.listener.direct.$io_shiftleft_bctrace_direct_method_OnStartTest$DirectListener1;
 import io.shiftleft.bctrace.runtime.listener.direct.$io_shiftleft_bctrace_direct_method_OnStartTest$DirectListener2;
 import io.shiftleft.bctrace.runtime.listener.direct.DirectListener;
@@ -49,9 +49,9 @@ public class OnStartTest extends BcTraceTest {
     DirectListener listener1 = new DirectListener1(sb);
     DirectListener listener2 = new DirectListener2(sb);
     Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
-        new MethodHook(new MethodFilter("io/shiftleft/bctrace/TestClass", "concatenateStringArrays",
+        new DirectHook.MethodHook(new MethodFilter("io/shiftleft/bctrace/TestClass", "concatenateStringArrays",
             "([Ljava/lang/String;[Ljava/lang/String;)[Ljava/lang/String;"), listener1),
-        new MethodHook(new MethodFilter("io/shiftleft/bctrace/TestClass", "concatenateStringArrays",
+        new DirectHook.MethodHook(new MethodFilter("io/shiftleft/bctrace/TestClass", "concatenateStringArrays",
             "([Ljava/lang/String;[Ljava/lang/String;)[Ljava/lang/String;"), listener2)
     }, false);
 

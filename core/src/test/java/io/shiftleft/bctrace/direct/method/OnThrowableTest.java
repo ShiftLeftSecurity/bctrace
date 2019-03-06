@@ -32,8 +32,8 @@ import io.shiftleft.bctrace.BcTraceTest;
 import io.shiftleft.bctrace.TestClass;
 import io.shiftleft.bctrace.TestClass.TestRuntimeException;
 import io.shiftleft.bctrace.filter.MethodFilter;
+import io.shiftleft.bctrace.hook.DirectHook;
 import io.shiftleft.bctrace.hook.Hook;
-import io.shiftleft.bctrace.hook.direct.MethodHook;
 import io.shiftleft.bctrace.runtime.listener.direct.$io_shiftleft_bctrace_direct_method_OnThrowableTest$DirectListenerModifiedThrowable;
 import io.shiftleft.bctrace.runtime.listener.direct.$io_shiftleft_bctrace_direct_method_OnThrowableTest$DirectListenerThrowable;
 import io.shiftleft.bctrace.runtime.listener.direct.*;
@@ -51,7 +51,7 @@ public class OnThrowableTest extends BcTraceTest {
     final StringBuilder sb = new StringBuilder();
 
     Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
-        new MethodHook(
+        new DirectHook.MethodHook(
             new MethodFilter("io/shiftleft/bctrace/TestClass", "<init>",
                 "(I)V", false),
             new DirectListenerThrowable(sb))});
@@ -72,7 +72,7 @@ public class OnThrowableTest extends BcTraceTest {
   @Test
   public void testConstructorModifiedThrowable() throws Exception {
     Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
-        new MethodHook(
+        new DirectHook.MethodHook(
             new MethodFilter("io/shiftleft/bctrace/TestClass", "<init>",
                 "(I)V", false),
             new DirectListenerModifiedThrowable())});
@@ -93,7 +93,7 @@ public class OnThrowableTest extends BcTraceTest {
   @Test
   public void testThrowableInListener() throws Exception {
     Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
-        new MethodHook(
+        new DirectHook.MethodHook(
             new MethodFilter("io/shiftleft/bctrace/TestClass", "<init>",
                 "(I)V", false),
             new DirectListenerThrowableRised())});

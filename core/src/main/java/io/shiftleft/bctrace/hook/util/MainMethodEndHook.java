@@ -1,9 +1,9 @@
-package io.shiftleft.bctrace.hook.direct;
+package io.shiftleft.bctrace.hook.util;
 
 import io.shiftleft.bctrace.asm.util.ASMUtils;
 import io.shiftleft.bctrace.filter.Filter;
 import io.shiftleft.bctrace.hierarchy.BctraceClass;
-import io.shiftleft.bctrace.hook.generic.GenericHook;
+import io.shiftleft.bctrace.hook.GenericHook;
 import io.shiftleft.bctrace.runtime.listener.generic.FinishListener;
 import java.security.ProtectionDomain;
 import org.objectweb.asm.tree.MethodNode;
@@ -20,7 +20,7 @@ public abstract class MainMethodEndHook extends GenericHook<Filter, FinishListen
 
     @Override
     public boolean instrumentMethod(BctraceClass clazz, MethodNode mn) {
-      return ASMUtils.isStatic(mn.access) && ASMUtils.isPublic(mn.access) && mn.name.equals("main")
+      return ASMUtils.isStatic(mn.access) && ASMUtils.isPublic(mn.access) && mn.name.equals("util")
           && mn.desc.equals("([Ljava/lang/String;)V");
     }
   };

@@ -22,7 +22,7 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.hook.generic;
+package io.shiftleft.bctrace.hook;
 
 import io.shiftleft.bctrace.filter.Filter;
 import io.shiftleft.bctrace.hook.Hook;
@@ -34,7 +34,6 @@ import io.shiftleft.bctrace.runtime.listener.generic.GenericListener;
  *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public abstract class GenericHook<F extends Filter, L extends GenericListener> implements
-    Hook<F, L> {
+public abstract class GenericHook<F extends Filter, L extends GenericListener> extends Hook<F, L> {
 
 }

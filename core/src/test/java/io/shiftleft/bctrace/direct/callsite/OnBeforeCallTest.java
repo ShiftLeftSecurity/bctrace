@@ -31,8 +31,8 @@ import static org.junit.Assert.assertTrue;
 import io.shiftleft.bctrace.BcTraceTest;
 import io.shiftleft.bctrace.TestClass;
 import io.shiftleft.bctrace.filter.AllFilter;
+import io.shiftleft.bctrace.hook.DirectHook;
 import io.shiftleft.bctrace.hook.Hook;
-import io.shiftleft.bctrace.hook.direct.CallSiteHook;
 import io.shiftleft.bctrace.runtime.listener.direct.$io_shiftleft_bctrace_direct_callsite_OnBeforeCallTest$CallSiteListener1;
 import io.shiftleft.bctrace.runtime.listener.direct.$io_shiftleft_bctrace_direct_callsite_OnBeforeCallTest$CallSiteListener2;
 import io.shiftleft.bctrace.runtime.listener.direct.CallSiteListener;
@@ -49,8 +49,8 @@ public class OnBeforeCallTest extends BcTraceTest {
     CallSiteListener1 callSiteListener1 = new CallSiteListener1(sb);
     CallSiteListener2 callSiteListener2 = new CallSiteListener2(sb);
     Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
-        new CallSiteHook(new AllFilter(), callSiteListener1),
-        new CallSiteHook(new AllFilter(), callSiteListener2)
+        new DirectHook.CallSiteHook(new AllFilter(), callSiteListener1),
+        new DirectHook.CallSiteHook(new AllFilter(), callSiteListener2)
     }, false);
 
     clazz.getMethod("arrayCopyWrapper2").invoke(null);

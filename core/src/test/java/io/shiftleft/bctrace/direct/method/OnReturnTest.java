@@ -32,11 +32,12 @@ import static org.junit.Assert.assertTrue;
 import io.shiftleft.bctrace.BcTraceTest;
 import io.shiftleft.bctrace.TestClass;
 import io.shiftleft.bctrace.filter.MethodFilter;
+import io.shiftleft.bctrace.hook.DirectHook;
 import io.shiftleft.bctrace.hook.Hook;
-import io.shiftleft.bctrace.hook.direct.MethodHook;
 import io.shiftleft.bctrace.runtime.listener.direct.$io_shiftleft_bctrace_direct_method_OnReturnTest$DirectListener3;
+import io.shiftleft.bctrace.runtime.listener.direct.$io_shiftleft_bctrace_direct_method_OnReturnTest$DirectListener4;
 import io.shiftleft.bctrace.runtime.listener.direct.$io_shiftleft_bctrace_direct_method_OnReturnTest$DirectListenerVoid;
-import io.shiftleft.bctrace.runtime.listener.direct.*;
+import io.shiftleft.bctrace.runtime.listener.direct.DirectListener;
 import java.util.Arrays;
 import org.junit.Test;
 
@@ -51,9 +52,9 @@ public class OnReturnTest extends BcTraceTest {
     DirectListener listener3 = new DirectListener3(sb);
     DirectListener listener4 = new DirectListener4(sb);
     Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
-        new MethodHook(new MethodFilter("io/shiftleft/bctrace/TestClass", "concatenateStringArrays",
+        new DirectHook.MethodHook(new MethodFilter("io/shiftleft/bctrace/TestClass", "concatenateStringArrays",
             "([Ljava/lang/String;[Ljava/lang/String;)[Ljava/lang/String;"), listener3),
-        new MethodHook(new MethodFilter("io/shiftleft/bctrace/TestClass", "concatenateStringArrays",
+        new DirectHook.MethodHook(new MethodFilter("io/shiftleft/bctrace/TestClass", "concatenateStringArrays",
             "([Ljava/lang/String;[Ljava/lang/String;)[Ljava/lang/String;"), listener4)
     }, false);
 
@@ -70,7 +71,7 @@ public class OnReturnTest extends BcTraceTest {
     StringBuilder sb = new StringBuilder();
     DirectListener listener = new DirectListenerVoid(sb);
     Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
-        new MethodHook(new MethodFilter("io/shiftleft/bctrace/TestClass", "doFrames",
+        new DirectHook.MethodHook(new MethodFilter("io/shiftleft/bctrace/TestClass", "doFrames",
             "()V"), listener)
     }, false);
     clazz.getMethod("doFrames").invoke(null);

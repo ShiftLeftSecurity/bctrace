@@ -27,7 +27,7 @@ package io.shiftleft.bctrace.asm;
 import io.shiftleft.bctrace.Bctrace;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
 import io.shiftleft.bctrace.hook.Hook;
-import io.shiftleft.bctrace.hook.direct.DirectHook;
+import io.shiftleft.bctrace.hook.DirectHook;
 import io.shiftleft.bctrace.logging.Level;
 import io.shiftleft.bctrace.runtime.listener.direct.DirectListener;
 import io.shiftleft.bctrace.util.Utils;

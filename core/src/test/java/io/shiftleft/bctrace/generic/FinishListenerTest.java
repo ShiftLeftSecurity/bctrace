@@ -36,7 +36,7 @@ import io.shiftleft.bctrace.filter.AllFilter;
 import io.shiftleft.bctrace.filter.Filter;
 import io.shiftleft.bctrace.hierarchy.BctraceClass;
 import io.shiftleft.bctrace.hook.Hook;
-import io.shiftleft.bctrace.hook.generic.GenericHook;
+import io.shiftleft.bctrace.hook.GenericHook;
 import io.shiftleft.bctrace.runtime.listener.generic.FinishListener;
 import io.shiftleft.bctrace.runtime.listener.generic.GenericListener;
 import java.io.IOException;

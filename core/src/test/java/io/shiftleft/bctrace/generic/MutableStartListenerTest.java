@@ -31,10 +31,9 @@ import io.shiftleft.bctrace.TestClass;
 import io.shiftleft.bctrace.filter.AllFilter;
 import io.shiftleft.bctrace.filter.Filter;
 import io.shiftleft.bctrace.hook.Hook;
-import io.shiftleft.bctrace.hook.generic.GenericHook;
+import io.shiftleft.bctrace.hook.GenericHook;
 import io.shiftleft.bctrace.runtime.listener.generic.GenericListener;
 import io.shiftleft.bctrace.runtime.listener.generic.MutableStartListener;
-import io.shiftleft.bctrace.runtime.listener.generic.StartListener;
 import org.junit.Test;
 
 /**

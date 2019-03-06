@@ -1,7 +1,8 @@
-package io.shiftleft.bctrace.hook.direct;
+package io.shiftleft.bctrace.hook;
 
 import io.shiftleft.bctrace.filter.Filter;
-import io.shiftleft.bctrace.hook.Hook;
+import io.shiftleft.bctrace.filter.MethodFilter;
+import io.shiftleft.bctrace.runtime.listener.direct.CallSiteListener;
 import io.shiftleft.bctrace.runtime.listener.direct.DirectListener;
 import io.shiftleft.bctrace.runtime.listener.direct.DirectListener.DynamicArgsType;
 import io.shiftleft.bctrace.runtime.listener.direct.DirectListener.ListenerMethod;
@@ -9,8 +10,7 @@ import io.shiftleft.bctrace.runtime.listener.direct.DirectListener.ListenerType;
 import java.lang.reflect.Method;
 import org.objectweb.asm.Type;
 
-public abstract class DirectHook<F extends Filter, L extends DirectListener> implements
-    Hook<F, L> {
+public abstract class DirectHook<F extends Filter, L extends DirectListener> extends Hook<F, L> {
 
   private final F filter;
   private final L listener;
@@ -138,6 +138,20 @@ public abstract class DirectHook<F extends Filter, L extends DirectListener> imp
       return true;
     } else {
       throw new AssertionError();
+    }
+  }
+
+  public static class CallSiteHook<F extends Filter> extends DirectHook<F, CallSiteListener> {
+
+    public CallSiteHook(F filter, CallSiteListener listener) {
+      super(filter, listener, listener.getCallSiteMethodDescriptor());
+    }
+  }
+
+  public static class MethodHook extends DirectHook<MethodFilter, DirectListener> {
+
+    public MethodHook(MethodFilter filter, DirectListener listener) {
+      super(filter, listener, filter.getMethodDescriptor());
     }
   }
 }

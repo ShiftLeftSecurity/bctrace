@@ -28,8 +28,8 @@ import static org.junit.Assert.assertEquals;
 
 import io.shiftleft.bctrace.BcTraceTest.ByteClassLoader;
 import io.shiftleft.bctrace.filter.MethodFilter;
+import io.shiftleft.bctrace.hook.DirectHook;
 import io.shiftleft.bctrace.hook.Hook;
-import io.shiftleft.bctrace.hook.direct.MethodHook;
 import io.shiftleft.bctrace.runtime.listener.direct.$io_shiftleft_bctrace_CallBackTransformerTest$SampleListener1;
 import io.shiftleft.bctrace.runtime.listener.direct.$io_shiftleft_bctrace_CallBackTransformerTest$SampleListener2;
 import io.shiftleft.bctrace.runtime.listener.direct.DirectListener;
@@ -54,9 +54,10 @@ public class CallBackTransformerTest {
     DirectListener listener1 = new SampleListener1();
     DirectListener listener2 = new SampleListener2();
     Hook[] hooks = new Hook[]{
-        new MethodHook(new MethodFilter("io/shiftleft/bctrace/TestClass", "fact", "(J)J"),
-            listener1),
-        new MethodHook(new MethodFilter("io/shiftleft/bctrace/TestClass", "factWrapper",
+        new DirectHook.MethodHook(new MethodFilter("io/shiftleft/bctrace/TestClass", "fact", "(J)J"),
+            listener1) {
+        },
+        new DirectHook.MethodHook(new MethodFilter("io/shiftleft/bctrace/TestClass", "factWrapper",
             "(Ljava/lang/Long;)J"),
             listener2)};
 
