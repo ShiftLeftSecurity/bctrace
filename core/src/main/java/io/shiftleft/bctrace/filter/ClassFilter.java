@@ -22,30 +22,40 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.jmx;
+package io.shiftleft.bctrace.filter;
 
-import io.shiftleft.bctrace.filter.MethodFilter;
-import io.shiftleft.bctrace.hook.GenericMethodHook;
-import io.shiftleft.bctrace.runtime.listener.generic.GenericMethodStartListener;
+import io.shiftleft.bctrace.hierarchy.BctraceClass;
+import java.security.ProtectionDomain;
+import org.objectweb.asm.tree.MethodNode;
 
 /**
+ * Determines if a class is instrumented.
+ *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public class CallCounterHook extends
-    GenericMethodHook<MethodFilter, GenericMethodStartListener> {
+public abstract class ClassFilter {
 
-  public CallCounterHook() {
-    setListener(
-        new GenericMethodStartListener() {
-          @Override
-          public boolean requiresArguments() {
-            return false;
-          }
+  ClassFilter(){
 
-          @Override
-          public void onStart(int methodId, Class clazz, Object instance, Object[] args) {
-            MethodMetrics.getInstance().incrementCallCounter(methodId);
-          }
-        });
   }
+
+  /**
+   * First filter query performed by the transformer. Whether or not instrument the methods of a
+   * class, based on the class name, protectionDomain and class loader.
+   */
+  public boolean acceptClass(String className, ProtectionDomain protectionDomain,
+      ClassLoader cl) {
+    return true;
+  }
+
+  /**
+   * Second query once the class has been parsed. Whether or not instrument the methods of a class.
+   * The class bytecode has been parsed at this point, and the class hierarchy is accessible through
+   * the BctraceClass API.
+   */
+  public boolean acceptClass(BctraceClass clazz, ProtectionDomain protectionDomain,
+      ClassLoader cl) {
+    return true;
+  }
+
 }

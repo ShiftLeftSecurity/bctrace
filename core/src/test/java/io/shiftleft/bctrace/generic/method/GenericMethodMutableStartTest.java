@@ -22,30 +22,53 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.jmx;
+package io.shiftleft.bctrace.generic.method;
 
-import io.shiftleft.bctrace.filter.MethodFilter;
+import static org.junit.Assert.assertEquals;
+
+import io.shiftleft.bctrace.BcTraceTest;
+import io.shiftleft.bctrace.TestClass;
+import io.shiftleft.bctrace.filter.MethodFilter.AllFilter;
 import io.shiftleft.bctrace.hook.GenericMethodHook;
-import io.shiftleft.bctrace.runtime.listener.generic.GenericMethodStartListener;
+import io.shiftleft.bctrace.hook.Hook;
+import io.shiftleft.bctrace.runtime.listener.generic.GenericMethodMutableStartListener;
+import org.junit.Test;
 
 /**
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public class CallCounterHook extends
-    GenericMethodHook<MethodFilter, GenericMethodStartListener> {
+public class GenericMethodMutableStartTest extends BcTraceTest {
 
-  public CallCounterHook() {
-    setListener(
-        new GenericMethodStartListener() {
-          @Override
-          public boolean requiresArguments() {
-            return false;
-          }
+  @Test
+  public void testStart() throws Exception {
+    final StringBuilder steps = new StringBuilder();
+    Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
+        new GenericMethodHook(
+            new AllFilter(),
+            new GenericMethodMutableStartListener() {
+              @Override
+              public Object[] onStart(int methodId, Class clazz, Object instance, Object[] args) {
+                assertEquals(clazz.getName(), TestClass.class.getName());
+                steps.append("1");
+                return new Object[]{args[0] + "xxx"};
+              }
+            }
+        ),
+        new GenericMethodHook(
+            new AllFilter(),
+            new GenericMethodMutableStartListener() {
 
-          @Override
-          public void onStart(int methodId, Class clazz, Object instance, Object[] args) {
-            MethodMetrics.getInstance().incrementCallCounter(methodId);
-          }
-        });
+              @Override
+              public Object[] onStart(int methodId, Class clazz, Object instance, Object[] args) {
+                assertEquals(clazz.getName(), TestClass.class.getName());
+                steps.append("2");
+                return new Object[]{args[0] + "yyy"};
+              }
+            }
+        )
+    });
+    String ret = (String) clazz.getMethod("getString", String.class).invoke(null, "hello");
+    System.out.println(ret);
+    assertEquals("helloxxxyyy", ret);
   }
 }

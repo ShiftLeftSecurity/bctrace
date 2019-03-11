@@ -28,7 +28,6 @@ import io.shiftleft.bctrace.Bctrace;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
 import io.shiftleft.bctrace.hook.Hook;
 import io.shiftleft.bctrace.runtime.listener.direct.DirectListener;
-import io.shiftleft.bctrace.runtime.listener.direct.DirectListener.ListenerType;
 import java.util.ArrayList;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -75,26 +74,6 @@ public abstract class Helper {
           ret = new ArrayList<Integer>(hooksToUse.size());
         }
         ret.add(i);
-      }
-    }
-    return ret;
-  }
-
-  protected ArrayList<Integer> getDirectListenersOfType(ArrayList<Integer> hooksToUse,
-      ListenerType type) {
-    ArrayList<Integer> ret = null;
-    Hook[] hooks = bctrace.getHooks();
-    for (int h = 0; h < hooksToUse.size(); h++) {
-      Integer i = hooksToUse.get(h);
-      Object listener = hooks[i].getListener();
-      if (listener instanceof DirectListener) {
-        DirectListener directListener = (DirectListener) listener;
-        if (directListener.getType() == type) {
-          if (ret == null) {
-            ret = new ArrayList<Integer>(hooksToUse.size());
-          }
-          ret.add(i);
-        }
       }
     }
     return ret;

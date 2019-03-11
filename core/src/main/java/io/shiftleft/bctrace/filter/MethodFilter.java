@@ -26,70 +26,114 @@ package io.shiftleft.bctrace.filter;
 
 import io.shiftleft.bctrace.hierarchy.BctraceClass;
 import java.security.ProtectionDomain;
+import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 
 /**
- * A filter targeted exclusively to the specified method.
+ * A filter determines which class methods are instrumented. <br><br> If the class is transformable,
+ * the framework performs an initial query to the {@link #acceptClass(String, ProtectionDomain,
+ * ClassLoader) acceptClass} method. If this return <code>true</code> the class bytecode is
+ * parsed and the filter {@link #acceptClass(BctraceClass, ProtectionDomain, ClassLoader)
+ * acceptMethod} is called. It this other returns true the filter {@link
+ * #acceptMethod(ClassNode, MethodNode) acceptMethod} method will be invoked once per non
+ * abstract nor native method in the class. Invocations returning <code>true</code> lead to a hook
+ * insertions into the bytecode of the method.
  *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public class MethodFilter extends Filter {
+public abstract class MethodFilter extends ClassFilter {
 
-  private final String className;
-  private final String methodName;
-  private final String methodDescriptor;
-  private final boolean virtual;
+  /**
+   * Returns a boolean that determines whether to instrument the specified method
+   */
+  public abstract boolean acceptMethod(ClassNode cn, MethodNode mn);
 
-  public MethodFilter(String className, String methodName, String methodDescriptor) {
-    this(className, methodName, methodDescriptor, false);
-  }
+  /**
+   * A filter that accepts all classes and methods.
+   *
+   * @author Ignacio del Valle Alles idelvall@shiftleft.io
+   */
+  public static class AllFilter extends MethodFilter {
 
-  public MethodFilter(String className, String methodName, String methodDescriptor,
-      boolean virtual) {
-    this.className = className;
-    this.methodName = methodName;
-    this.methodDescriptor = methodDescriptor;
-    this.virtual = virtual;
-  }
+    private static final AllFilter INSTANCE = new AllFilter();
 
-  public String getClassName() {
-    return className;
-  }
+    public static AllFilter getInstance() {
+      return INSTANCE;
+    }
 
-  public String getMethodName() {
-    return methodName;
-  }
+    @Override
+    public boolean acceptClass(String className, ProtectionDomain protectionDomain,
+        ClassLoader cl) {
+      return true;
+    }
 
-  public String getMethodDescriptor() {
-    return methodDescriptor;
-  }
-
-  @Override
-  public boolean instrumentClass(String className, ProtectionDomain protectionDomain,
-      ClassLoader cl) {
-    if (!virtual) {
-      // No virtual and different class name => End filtering
-      return this.className.equals(className);
-    } else {
+    @Override
+    public boolean acceptMethod(ClassNode cn, MethodNode mn) {
       return true;
     }
   }
 
-  @Override
-  public boolean instrumentClass(BctraceClass clazz, ProtectionDomain protectionDomain,
-      ClassLoader cl) {
+  /**
+   * Filter that selects a particular class or its child hierarchy
+   */
+  public final static class DirectMethodFilter extends MethodFilter {
 
-    if (!virtual) {
-      // Already filtered by name in previous method.
-      return true;
-    } else {
-      // If virtual, check inheritance
-      return clazz.isInstanceOf(className.replace('/', '.'));
+    private final String className;
+    private final String methodName;
+    private final String methodDescriptor;
+    private final boolean virtual;
+
+    public DirectMethodFilter(String className, String methodName, String methodDescriptor) {
+      this(className, methodName, methodDescriptor, false);
     }
-  }
 
-  @Override
-  public boolean instrumentMethod(BctraceClass bctraceClass, MethodNode mn) {
-    return this.methodName.equals(mn.name) && this.methodDescriptor.equals(mn.desc);
+    public DirectMethodFilter(String className, String methodName, String methodDescriptor,
+        boolean virtual) {
+      this.className = className;
+      this.methodName = methodName;
+      this.methodDescriptor = methodDescriptor;
+      this.virtual = virtual;
+    }
+
+    public String getClassName() {
+      return className;
+    }
+
+    public String getMethodName() {
+      return methodName;
+    }
+
+    public String getMethodDescriptor() {
+      return methodDescriptor;
+    }
+
+    @Override
+    public boolean acceptClass(String className, ProtectionDomain protectionDomain,
+        ClassLoader cl) {
+      if (!virtual) {
+        // No virtual and different class name => End filtering
+        return this.className.equals(className);
+      } else {
+        return true;
+      }
+    }
+
+    @Override
+    public boolean acceptClass(BctraceClass clazz, ProtectionDomain protectionDomain,
+        ClassLoader cl) {
+
+      if (!virtual) {
+        // Already filtered by name in previous method.
+        return true;
+      } else {
+        // If virtual, check inheritance
+        return clazz.isInstanceOf(className.replace('/', '.'));
+      }
+    }
+
+    @Override
+    public boolean acceptMethod(ClassNode cn, MethodNode mn) {
+      return this.methodName.equals(mn.name) && this.methodDescriptor.equals(mn.desc);
+    }
   }
 }

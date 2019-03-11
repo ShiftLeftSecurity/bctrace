@@ -148,6 +148,16 @@ public class TestClass extends TestSuperClass {
   public static void execVoid() {
   }
 
+  public static void greet(){
+    printMessage("Hello");
+    printMessage("World");
+    printMessage("!");
+  }
+
+  public static void printMessage(String message){
+    System.out.println(message);
+  }
+
   public static void main(String[] args) throws Exception {
     Class clazz = TestClass.class;
     String className = clazz.getCanonicalName();

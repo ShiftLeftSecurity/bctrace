@@ -27,9 +27,12 @@ package io.shiftleft.bctrace.asm.helper.direct.callsite;
 import io.shiftleft.bctrace.asm.CallbackTransformer;
 import io.shiftleft.bctrace.asm.helper.Helper;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
+import io.shiftleft.bctrace.filter.CallSiteFilter;
 import io.shiftleft.bctrace.hook.Hook;
-import io.shiftleft.bctrace.runtime.listener.direct.CallSiteListener;
-import io.shiftleft.bctrace.runtime.listener.direct.DirectListener.ListenerType;
+import io.shiftleft.bctrace.runtime.listener.direct.DirectCallSiteReturnListener;
+import io.shiftleft.bctrace.runtime.listener.direct.DirectCallSiteStartListener;
+import io.shiftleft.bctrace.runtime.listener.direct.DirectCallSiteThrowableListener;
+import io.shiftleft.bctrace.runtime.listener.direct.DirectListener;
 import java.util.ArrayList;
 import java.util.Iterator;
 import org.objectweb.asm.Opcodes;
@@ -40,6 +43,7 @@ import org.objectweb.asm.tree.FrameNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.LabelNode;
+import org.objectweb.asm.tree.LineNumberNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
@@ -47,8 +51,8 @@ import org.objectweb.asm.tree.VarInsnNode;
 
 /**
  * Inserts into the method bytecodes, the instructions needed to notify the registered listeners of
- * type CallSiteListener that a call site to the method that each listener is interested in, is
- * about to be executed.
+ * type DirectCallSiteListener that a call site to the method that each listener is interested in,
+ * is about to be executed.
  *
  * Suppose one listener interested in calls to <tt>System.arrayCopy(Object, int, Object, int,
  * int)</tt> Then this helper turns a method with this call:
@@ -81,55 +85,63 @@ public class CallSiteHelper extends Helper {
     int throwableVarIndex = mn.maxLocals;
     mn.maxLocals = mn.maxLocals + 1;
     // Could optimized to reuse based on return type (different called methods with same return type)
-    int[] returnVariablesMap = getReturnVariablesArgumentMap(mn, hooksToUse);
-    int[][] localVariablesArgumentMap = getLocalVariablesArgumentMap(mn, hooksToUse);
+    int[] returnVariablesMap = getReturnVariablesArgumentMap(cn, mn, hooksToUse);
+    int[][] localVariablesArgumentMap = getLocalVariablesArgumentMap(cn, mn, hooksToUse);
 
     InsnList il = mn.instructions;
     Iterator<AbstractInsnNode> it = il.iterator();
     boolean ret = false;
+    int lineNumber = -1;
     while (it.hasNext()) {
       AbstractInsnNode node = it.next();
-      if (node instanceof MethodInsnNode) {
+      if (node instanceof LineNumberNode) {
+        LineNumberNode lineNode = (LineNumberNode) node;
+        lineNumber = lineNode.line;
+      } else if (node instanceof MethodInsnNode) {
         MethodInsnNode callSite = (MethodInsnNode) node;
         switch (node.getOpcode()) {
           case Opcodes.INVOKEINTERFACE:
           case Opcodes.INVOKESPECIAL:
           case Opcodes.INVOKEVIRTUAL:
           case Opcodes.INVOKESTATIC:
-            if (getAfterCallSiteThrowableMutatorInstructions(
+            if (getCallSiteThrowableMutatorInstructions(
                 cn,
                 mn,
                 callSite,
+                lineNumber,
                 localVariablesArgumentMap,
                 throwableVarIndex,
                 callSiteInstanceVarIndex,
                 hooksToUse)) {
               ret = true;
             }
-            if (getBeforeCallSiteInstructions(
+            if (getCallSiteStartInstructions(
                 cn,
                 mn,
                 callSite,
+                lineNumber,
                 localVariablesArgumentMap,
                 callSiteInstanceVarIndex,
                 hooksToUse)) {
               ret = true;
             }
             if (Type.getReturnType(callSite.desc).getInternalName().equals("V")) {
-              if (getAfterCallSiteVoidInstructions(
+              if (getCallSiteReturnVoidInstructions(
                   cn,
                   mn,
                   callSite,
+                  lineNumber,
                   localVariablesArgumentMap,
                   callSiteInstanceVarIndex,
                   hooksToUse)) {
                 ret = true;
               }
             } else {
-              if (getAfterCallSiteReturnMutatorInstructions(
+              if (getCallSiteReturnMutatorInstructions(
                   cn,
                   mn,
                   callSite,
+                  lineNumber,
                   localVariablesArgumentMap,
                   returnVariablesMap,
                   callSiteInstanceVarIndex,
@@ -145,8 +157,8 @@ public class CallSiteHelper extends Helper {
     return ret;
   }
 
-  private boolean getBeforeCallSiteInstructions(ClassNode cn, MethodNode mn,
-      MethodInsnNode callSite, int[][] localVariablesArgumentMap, int callSiteInstanceVarIndex,
+  private boolean getCallSiteStartInstructions(ClassNode cn, MethodNode mn, MethodInsnNode callSite,
+      int lineNumber, int[][] localVariablesArgumentMap, int callSiteInstanceVarIndex,
       ArrayList<Integer> hooksToUse) {
 
     Type[] argTypes = Type.getArgumentTypes(callSite.desc);
@@ -156,21 +168,20 @@ public class CallSiteHelper extends Helper {
       Integer i = hooksToUse.get(h);
       int[] listenerArgs = localVariablesArgumentMap[i];
       if (listenerArgs != null) {
-        CallSiteListener listener = (CallSiteListener) bctrace.getHooks()[i].getListener();
-
-        if (listener.getCallSiteClassName().equals(callSite.owner) &&
-            listener.getCallSiteMethodName().equals(callSite.name) &&
-            listener.getCallSiteMethodDescriptor().equals(callSite.desc)) {
-
+        CallSiteFilter filter = (CallSiteFilter) bctrace.getHooks()[i].getFilter();
+        Object listener = bctrace.getHooks()[i].getListener();
+        if (filter.acceptCallSite(cn, mn, callSite, lineNumber)) {
           if (il == null) {
             il = new InsnList();
           }
-          // store local variables both for before call and for after call
+          // store local variables both for all DirectCallListeners
           il.add(storeCallSiteInstanceAndArgsInVariables(mn, argTypes, staticCall,
               localVariablesArgumentMap[i],
               callSiteInstanceVarIndex));
 
-          if (listener.getType() == ListenerType.onBeforeCall) {
+          if (listener instanceof DirectCallSiteStartListener) {
+            DirectCallSiteStartListener directCallSiteStartListener = (DirectCallSiteStartListener) listener;
+
             // caller class, caller instance, callee instance
             // onBeforeCall(Class.class, Object.class, Object.class);
             il.add(ASMUtils.getPushInstruction(i)); // hook id
@@ -190,8 +201,10 @@ public class CallSiteHelper extends Helper {
             // Invoke dynamically generated callback method. See CallbackTransformer
             il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
                 "io/shiftleft/bctrace/runtime/Callback",
-                CallbackTransformer.getDynamicListenerMethodName(listener),
-                CallbackTransformer.getDynamicListenerVoidMethodDescriptor(listener),
+                CallbackTransformer
+                    .getDynamicListenerMethodName(directCallSiteStartListener),
+                CallbackTransformer
+                    .getDynamicListenerVoidMethodDescriptor(directCallSiteStartListener),
                 false));
           }
         }
@@ -204,8 +217,9 @@ public class CallSiteHelper extends Helper {
     return false;
   }
 
-  private boolean getAfterCallSiteVoidInstructions(ClassNode cn, MethodNode mn,
-      MethodInsnNode callSite, int[][] localVariablesArgumentMap, int callSiteInstanceVarIndex,
+  private boolean getCallSiteReturnVoidInstructions(ClassNode cn, MethodNode mn,
+      MethodInsnNode callSite, int lineNumber, int[][] localVariablesArgumentMap,
+      int callSiteInstanceVarIndex,
       ArrayList<Integer> hooksToUse) {
 
     Type[] argTypes = Type.getArgumentTypes(callSite.desc);
@@ -215,21 +229,17 @@ public class CallSiteHelper extends Helper {
       Integer i = hooksToUse.get(h);
       int[] listenerArgs = localVariablesArgumentMap[i];
       if (listenerArgs != null) {
-        CallSiteListener listener = (CallSiteListener) bctrace.getHooks()[i].getListener();
-        if (listener.getType() != ListenerType.onAfterCall) {
+        Object listener = bctrace.getHooks()[i].getListener();
+        if (!(listener instanceof DirectCallSiteReturnListener)) {
           continue;
         }
-        if (listener.getCallSiteClassName().equals(callSite.owner) &&
-            listener.getCallSiteMethodName().equals(callSite.name) &&
-            listener.getCallSiteMethodDescriptor().equals(callSite.desc)) {
-
+        CallSiteFilter filter = (CallSiteFilter) bctrace.getHooks()[i].getFilter();
+        if (filter.acceptCallSite(cn, mn, callSite, lineNumber)) {
           if (il == null) {
             il = new InsnList();
           }
-
           // caller class, caller instance, callee instance
           // onAfterCall(Class.class, Object.class, Object.class);
-
           il.add(ASMUtils.getPushInstruction(i)); // hook id
           il.add(
               getClassConstantReference(Type.getObjectType(cn.name), cn.version)); // caller class
@@ -247,8 +257,8 @@ public class CallSiteHelper extends Helper {
           // Invoke dynamically generated callback method. See CallbackTransformer
           il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
               "io/shiftleft/bctrace/runtime/Callback",
-              CallbackTransformer.getDynamicListenerMethodName(listener),
-              CallbackTransformer.getDynamicListenerVoidMethodDescriptor(listener),
+              CallbackTransformer.getDynamicListenerMethodName((DirectListener) listener),
+              CallbackTransformer.getDynamicListenerVoidMethodDescriptor((DirectListener) listener),
               false));
         }
       }
@@ -260,8 +270,9 @@ public class CallSiteHelper extends Helper {
     return false;
   }
 
-  private boolean getAfterCallSiteReturnMutatorInstructions(ClassNode cn, MethodNode mn,
-      MethodInsnNode callSite, int[][] localVariablesArgumentMap, int[] returnVariablesMap,
+  private boolean getCallSiteReturnMutatorInstructions(ClassNode cn, MethodNode mn,
+      MethodInsnNode callSite, int lineNumber, int[][] localVariablesArgumentMap,
+      int[] returnVariablesMap,
       int callSiteInstanceVarIndex,
       ArrayList<Integer> hooksToUse) {
 
@@ -272,14 +283,12 @@ public class CallSiteHelper extends Helper {
       Integer i = hooksToUse.get(h);
       int[] listenerArgs = localVariablesArgumentMap[i];
       if (listenerArgs != null) {
-        CallSiteListener listener = (CallSiteListener) bctrace.getHooks()[i].getListener();
-        if (listener.getType() != ListenerType.onAfterCall) {
+        Object listener = bctrace.getHooks()[i].getListener();
+        if (!(listener instanceof DirectCallSiteReturnListener)) {
           continue;
         }
-        if (listener.getCallSiteClassName().equals(callSite.owner) &&
-            listener.getCallSiteMethodName().equals(callSite.name) &&
-            listener.getCallSiteMethodDescriptor().equals(callSite.desc)) {
-
+        CallSiteFilter filter = (CallSiteFilter) bctrace.getHooks()[i].getFilter();
+        if (filter.acceptCallSite(cn, mn, callSite, lineNumber)) {
           if (il == null) {
             il = new InsnList();
           }
@@ -311,8 +320,9 @@ public class CallSiteHelper extends Helper {
           // Invoke dynamically generated callback method. See CallbackTransformer
           il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
               "io/shiftleft/bctrace/runtime/Callback",
-              CallbackTransformer.getDynamicListenerMethodName(listener),
-              CallbackTransformer.getDynamicListenerMutatorMethodDescriptor(listener),
+              CallbackTransformer.getDynamicListenerMethodName((DirectListener) listener),
+              CallbackTransformer
+                  .getDynamicListenerMutatorMethodDescriptor((DirectListener) listener),
               false));
           // Update return value local variable, so each listener receives the modified value from the ones before
           // instead of getting all of them the original value
@@ -331,8 +341,9 @@ public class CallSiteHelper extends Helper {
   }
 
 
-  private boolean getAfterCallSiteThrowableMutatorInstructions(ClassNode cn, MethodNode mn,
-      MethodInsnNode callSite, int[][] localVariablesArgumentMap, int throwableVarIndex,
+  private boolean getCallSiteThrowableMutatorInstructions(ClassNode cn, MethodNode mn,
+      MethodInsnNode callSite, int lineNumber, int[][] localVariablesArgumentMap,
+      int throwableVarIndex,
       int callSiteInstanceVarIndex, ArrayList<Integer> hooksToUse) {
 
     Type[] argTypes = Type.getArgumentTypes(callSite.desc);
@@ -342,19 +353,18 @@ public class CallSiteHelper extends Helper {
       Integer i = hooksToUse.get(h);
       int[] listenerArgs = localVariablesArgumentMap[i];
       if (listenerArgs != null) {
-        CallSiteListener listener = (CallSiteListener) bctrace.getHooks()[i].getListener();
-        if (listener.getType() != ListenerType.onAfterCallThrowable) {
+        Object listener = bctrace.getHooks()[i].getListener();
+        if (!(listener instanceof DirectCallSiteThrowableListener)) {
           continue;
         }
-        if (listener.getCallSiteClassName().equals(callSite.owner) &&
-            listener.getCallSiteMethodName().equals(callSite.name) &&
-            listener.getCallSiteMethodDescriptor().equals(callSite.desc)) {
-
+        CallSiteFilter filter = (CallSiteFilter) bctrace.getHooks()[i].getFilter();
+        if (filter.acceptCallSite(cn, mn, callSite, lineNumber)) {
           if (il == null) {
             il = new InsnList();
             Object[] parametersFrameTypes = ASMUtils.getParametersFrameTypes(cn, mn);
-            il.add(new FrameNode(Opcodes.F_FULL, parametersFrameTypes.length, parametersFrameTypes, 1,
-                new Object[]{"java/lang/Throwable"}));
+            il.add(
+                new FrameNode(Opcodes.F_FULL, parametersFrameTypes.length, parametersFrameTypes, 1,
+                    new Object[]{"java/lang/Throwable"}));
             handlerNode = new LabelNode();
             il.insert(handlerNode);
             il.add(new VarInsnNode(Opcodes.ASTORE, throwableVarIndex));
@@ -384,8 +394,9 @@ public class CallSiteHelper extends Helper {
           // Invoke dynamically generated callback method. See CallbackTransformer
           il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
               "io/shiftleft/bctrace/runtime/Callback",
-              CallbackTransformer.getDynamicListenerMethodName(listener),
-              CallbackTransformer.getDynamicListenerMutatorMethodDescriptor(listener),
+              CallbackTransformer.getDynamicListenerMethodName((DirectListener) listener),
+              CallbackTransformer
+                  .getDynamicListenerMutatorMethodDescriptor((DirectListener) listener),
               false));
           // Update return value local variable, so each listener receives the modified value from the ones before
           // instead of getting all of them the original value
@@ -413,33 +424,36 @@ public class CallSiteHelper extends Helper {
    * Returns a int[i] holding the indexes for the local variables created for holding return value
    * of the i-th listener. Updates maxlocals accordingly.
    */
-  private int[] getReturnVariablesArgumentMap(MethodNode mn, ArrayList<Integer> hooksToUse) {
+  private int[] getReturnVariablesArgumentMap(ClassNode cn, MethodNode mn,
+      ArrayList<Integer> hooksToUse) {
     Hook[] hooks = bctrace.getHooks();
     int[] map = new int[hooks.length];
     for (int h = 0; h < hooksToUse.size(); h++) {
       Integer i = hooksToUse.get(h);
-      if (!(hooks[i].getListener() instanceof CallSiteListener)) {
+      if (!(hooks[i].getFilter() instanceof CallSiteFilter)) {
         continue;
       }
-      CallSiteListener listener = (CallSiteListener) hooks[i].getListener();
-      if (listener.getType() != ListenerType.onAfterCall) {
+      Object listener = bctrace.getHooks()[i].getListener();
+      if (!(listener instanceof DirectCallSiteReturnListener)) {
         continue;
       }
+      CallSiteFilter filter = (CallSiteFilter) hooks[i].getFilter();
       Iterator<AbstractInsnNode> it = mn.instructions.iterator();
       // We only want to reserve local variables for those listeners that apply to this method:
+      int lineNumber = -1;
       while (it.hasNext()) {
         AbstractInsnNode node = it.next();
-        if (node instanceof MethodInsnNode) {
+        if (node instanceof LineNumberNode) {
+          LineNumberNode lineNode = (LineNumberNode) node;
+          lineNumber = lineNode.line;
+        } else if (node instanceof MethodInsnNode) {
           MethodInsnNode callSite = (MethodInsnNode) node;
           switch (node.getOpcode()) {
             case Opcodes.INVOKEINTERFACE:
             case Opcodes.INVOKESPECIAL:
             case Opcodes.INVOKEVIRTUAL:
             case Opcodes.INVOKESTATIC:
-              if (listener.getCallSiteClassName().equals(callSite.owner) &&
-                  listener.getCallSiteMethodName().equals(callSite.name) &&
-                  listener.getCallSiteMethodDescriptor().equals(callSite.desc)) {
-
+              if (filter.acceptCallSite(cn, mn, callSite, lineNumber)) {
                 // If here, then this listener will be applied
                 Type returnType = Type.getReturnType(callSite.desc);
                 if (!returnType.getDescriptor().equals("V")) {
@@ -459,30 +473,32 @@ public class CallSiteHelper extends Helper {
    * Returns a int[i][j] holding the indexes for the local variables created for holding the j-th
    * argument of the i-th listener. Updates maxlocals accordingly.
    */
-  private int[][] getLocalVariablesArgumentMap(MethodNode mn, ArrayList<Integer> hooksToUse) {
+  private int[][] getLocalVariablesArgumentMap(ClassNode cn, MethodNode mn,
+      ArrayList<Integer> hooksToUse) {
     Hook[] hooks = bctrace.getHooks();
     int[][] map = new int[hooks.length][];
     for (int h = 0; h < hooksToUse.size(); h++) {
       Integer i = hooksToUse.get(h);
-      if (!(hooks[i].getListener() instanceof CallSiteListener)) {
+      if (!(hooks[i].getFilter() instanceof CallSiteFilter)) {
         continue;
       }
-      CallSiteListener listener = (CallSiteListener) hooks[i].getListener();
+      CallSiteFilter filter = (CallSiteFilter) hooks[i].getFilter();
       Iterator<AbstractInsnNode> it = mn.instructions.iterator();
-      // We only want to reserve local variables for those listeners that apply to this method:
+      // We only want to reserve local variables for those listeners that apply to this method
+      int lineNumber = -1;
       while (it.hasNext()) {
         AbstractInsnNode node = it.next();
-        if (node instanceof MethodInsnNode) {
+        if (node instanceof LineNumberNode) {
+          LineNumberNode lineNode = (LineNumberNode) node;
+          lineNumber = lineNode.line;
+        } else if (node instanceof MethodInsnNode) {
           MethodInsnNode callSite = (MethodInsnNode) node;
           switch (node.getOpcode()) {
             case Opcodes.INVOKEINTERFACE:
             case Opcodes.INVOKESPECIAL:
             case Opcodes.INVOKEVIRTUAL:
             case Opcodes.INVOKESTATIC:
-              if (listener.getCallSiteClassName().equals(callSite.owner) &&
-                  listener.getCallSiteMethodName().equals(callSite.name) &&
-                  listener.getCallSiteMethodDescriptor().equals(callSite.desc)) {
-
+              if (filter.acceptCallSite(cn, mn, callSite, lineNumber)) {
                 // If here, then this listener will be applied
                 Type[] argumentTypes = Type.getArgumentTypes(callSite.desc);
                 map[i] = new int[argumentTypes.length];
