@@ -34,10 +34,13 @@ import io.shiftleft.bctrace.TestClass;
 import io.shiftleft.bctrace.filter.MethodFilter.DirectMethodFilter;
 import io.shiftleft.bctrace.hook.DirectMethodHook;
 import io.shiftleft.bctrace.hook.Hook;
+import io.shiftleft.bctrace.runtime.BctraceRuntimeException;
 import io.shiftleft.bctrace.runtime.listener.direct.$io_shiftleft_bctrace_direct_method_DirectMethodReturnTest$DirectListener3;
 import io.shiftleft.bctrace.runtime.listener.direct.$io_shiftleft_bctrace_direct_method_DirectMethodReturnTest$DirectListener4;
+import io.shiftleft.bctrace.runtime.listener.direct.$io_shiftleft_bctrace_direct_method_DirectMethodReturnTest$DirectListenerException;
 import io.shiftleft.bctrace.runtime.listener.direct.$io_shiftleft_bctrace_direct_method_DirectMethodReturnTest$DirectListenerVoid;
 import io.shiftleft.bctrace.runtime.listener.direct.DirectMethodReturnListener;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import org.junit.Test;
 
@@ -47,52 +50,97 @@ import org.junit.Test;
 public class DirectMethodReturnTest extends BcTraceTest {
 
   @Test
-  public void testDirectReturn() throws Exception {
-    StringBuilder sb = new StringBuilder();
-    DirectListener3 listener3 = new DirectListener3(sb);
-    DirectListener4 listener4 = new DirectListener4(sb);
+  public void testReturnValuesModification() throws Exception {
+    StringBuilder steps = new StringBuilder();
+    DirectListener3 listener3 = new DirectListener3(steps);
+    DirectListener4 listener4 = new DirectListener4(steps);
     Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
         new DirectMethodHook(
-            new DirectMethodFilter("io/shiftleft/bctrace/TestClass", "concatenateStringArrays",
-                "([Ljava/lang/String;[Ljava/lang/String;)[Ljava/lang/String;"), listener3),
+            new DirectMethodFilter(
+                "io/shiftleft/bctrace/TestClass",
+                "concatenateStringArrays",
+                "([Ljava/lang/String;[Ljava/lang/String;)[Ljava/lang/String;"),
+            listener3),
         new DirectMethodHook(
-            new DirectMethodFilter("io/shiftleft/bctrace/TestClass", "concatenateStringArrays",
-                "([Ljava/lang/String;[Ljava/lang/String;)[Ljava/lang/String;"), listener4)
+            new DirectMethodFilter("io/shiftleft/bctrace/TestClass",
+                "concatenateStringArrays",
+                "([Ljava/lang/String;[Ljava/lang/String;)[Ljava/lang/String;"),
+            listener4)
     }, false);
 
     String[] s1 = {"a", "b"};
     String[] s2 = {"c", "d"};
     String[] ret = (String[]) clazz
         .getMethod("concatenateStringArrays", String[].class, String[].class).invoke(null, s1, s2);
-    assertEquals(Arrays.toString(ret), Arrays.toString(new String[]{"1", "2", "3", "4"}));
-    assertEquals("21", sb.toString());
+    assertEquals(Arrays.toString(new String[]{"1", "2", "3", "4"}), Arrays.toString(ret));
+    assertEquals("21", steps.toString());
   }
 
   @Test
-  public void testDirectReturnVoid() throws Exception {
-    StringBuilder sb = new StringBuilder();
-    DirectListenerVoid listener = new DirectListenerVoid(sb);
+  public void testReturnVoid() throws Exception {
+    StringBuilder steps = new StringBuilder();
+    DirectListenerVoid listener = new DirectListenerVoid(steps);
     Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
-        new DirectMethodHook(new DirectMethodFilter("io/shiftleft/bctrace/TestClass", "doFrames",
-            "()V"), listener)
+        new DirectMethodHook(new DirectMethodFilter(
+            "io/shiftleft/bctrace/TestClass",
+            "doFrames",
+            "()V"),
+            listener)
     }, false);
     clazz.getMethod("doFrames").invoke(null);
-    assertEquals("1", sb.toString());
+    assertEquals("1", steps.toString());
+  }
+
+  @Test
+  public void testListenerUnexpectedException() throws Exception {
+    StringBuilder steps = new StringBuilder();
+    DirectListenerException listener = new DirectListenerException(steps, false);
+    Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
+        new DirectMethodHook(new DirectMethodFilter(
+            "io/shiftleft/bctrace/TestClass",
+            "doFrames",
+            "()V"),
+            listener)
+    }, false);
+    clazz.getMethod("doFrames").invoke(null);
+    assertEquals("1", steps.toString());
+  }
+
+  @Test
+  public void testListenerExpectedException() throws Exception {
+    StringBuilder steps = new StringBuilder();
+    DirectListenerException listener = new DirectListenerException(steps, true);
+    Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
+        new DirectMethodHook(new DirectMethodFilter(
+            "io/shiftleft/bctrace/TestClass",
+            "doFrames",
+            "()V"),
+            listener)
+    }, false);
+    try {
+      clazz.getMethod("doFrames").invoke(null);
+    } catch (InvocationTargetException ite) {
+      if (ite.getTargetException().getClass() == RuntimeException.class &&
+          ite.getTargetException().getMessage().equals("Expected!")) {
+        steps.append("2");
+      }
+    }
+    assertEquals("12", steps.toString());
   }
 
   public static class DirectListener3 extends DirectMethodReturnListener implements
       $io_shiftleft_bctrace_direct_method_DirectMethodReturnTest$DirectListener3 {
 
-    private final StringBuilder sb;
+    private final StringBuilder steps;
 
-    public DirectListener3(StringBuilder sb) {
-      this.sb = sb;
+    public DirectListener3(StringBuilder steps) {
+      this.steps = steps;
     }
 
     @ListenerMethod
     public String[] onFinish(Class clazz, Object instance, String[] array1,
         String[] array2, String[] ret) {
-      sb.append("1");
+      steps.append("1");
       assertEquals(clazz.getName(), TestClass.class.getName());
       assertNull(instance);
       assertNotNull(array1);
@@ -106,17 +154,17 @@ public class DirectMethodReturnTest extends BcTraceTest {
   public static class DirectListener4 extends DirectMethodReturnListener implements
       $io_shiftleft_bctrace_direct_method_DirectMethodReturnTest$DirectListener4 {
 
-    private final StringBuilder sb;
+    private final StringBuilder steps;
 
-    public DirectListener4(StringBuilder sb) {
-      this.sb = sb;
+    public DirectListener4(StringBuilder steps) {
+      this.steps = steps;
     }
 
     @ListenerMethod
     public String[] onFinish(Class clazz, Object instance, String[] array1,
         String[] array2,
         String[] ret) {
-      sb.append("2");
+      steps.append("2");
       assertEquals(clazz.getName(), TestClass.class.getName());
       assertNull(instance);
       assertNotNull(array1);
@@ -129,17 +177,40 @@ public class DirectMethodReturnTest extends BcTraceTest {
   public static class DirectListenerVoid extends DirectMethodReturnListener implements
       $io_shiftleft_bctrace_direct_method_DirectMethodReturnTest$DirectListenerVoid {
 
-    private final StringBuilder sb;
+    private final StringBuilder steps;
 
-    public DirectListenerVoid(StringBuilder sb) {
-      this.sb = sb;
+    public DirectListenerVoid(StringBuilder steps) {
+      this.steps = steps;
     }
 
     @ListenerMethod
     public void onFinish(Class clazz, Object instance) {
-      sb.append("1");
+      steps.append("1");
       assertEquals(clazz.getName(), TestClass.class.getName());
       assertNull(instance);
+    }
+  }
+
+  public static class DirectListenerException extends
+      DirectMethodReturnListener implements
+      $io_shiftleft_bctrace_direct_method_DirectMethodReturnTest$DirectListenerException {
+
+    private final StringBuilder steps;
+    private final boolean expected;
+
+    public DirectListenerException(StringBuilder steps, boolean expected) {
+      this.steps = steps;
+      this.expected = expected;
+    }
+
+    @ListenerMethod
+    public void onFinish(Class clazz, Object instance) {
+      steps.append("1");
+      if (expected) {
+        throw new BctraceRuntimeException(new RuntimeException("Expected!"));
+      } else {
+        throw new RuntimeException("Unexpected!");
+      }
     }
   }
 }

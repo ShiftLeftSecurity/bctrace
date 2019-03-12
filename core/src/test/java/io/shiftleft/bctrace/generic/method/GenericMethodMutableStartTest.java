@@ -119,6 +119,6 @@ public class GenericMethodMutableStartTest extends BcTraceTest {
       steps.append("2");
       assertTrue(ite.getTargetException() == re);
     }
-    assertEquals(steps.toString(), "12");
+    assertEquals("12",steps.toString());
   }
 }

@@ -149,7 +149,7 @@ public class GenericMethodThrowableTest extends BcTraceTest {
     } catch (InvocationTargetException ite) {
       if (ite.getTargetException() instanceof TestRuntimeException) {
         captured = true;
-        assertEquals(steps.toString(), "1");
+        assertEquals("1", steps.toString());
       }
     }
     assertTrue("Expected exception", captured);
@@ -186,7 +186,7 @@ public class GenericMethodThrowableTest extends BcTraceTest {
         steps.append("2");
       }
     }
-    assertEquals(steps.toString(), "12");
+    assertEquals("12", steps.toString());
   }
 
   @Test
@@ -221,6 +221,6 @@ public class GenericMethodThrowableTest extends BcTraceTest {
         steps.append("2");
       }
     }
-    assertEquals(steps.toString(), "12");
+    assertEquals("12", steps.toString());
   }
 }

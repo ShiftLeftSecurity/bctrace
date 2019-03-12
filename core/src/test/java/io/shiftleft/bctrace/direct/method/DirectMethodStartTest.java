@@ -33,9 +33,8 @@ import io.shiftleft.bctrace.TestClass;
 import io.shiftleft.bctrace.filter.MethodFilter.DirectMethodFilter;
 import io.shiftleft.bctrace.hook.DirectMethodHook;
 import io.shiftleft.bctrace.hook.Hook;
-import io.shiftleft.bctrace.runtime.listener.direct.$io_shiftleft_bctrace_direct_method_DirectMethodStartTest$DirectListener1;
-import io.shiftleft.bctrace.runtime.listener.direct.$io_shiftleft_bctrace_direct_method_DirectMethodStartTest$DirectListener2;
-import io.shiftleft.bctrace.runtime.listener.direct.DirectMethodStartListener;
+import io.shiftleft.bctrace.runtime.listener.direct.*;
+import java.util.Arrays;
 import org.junit.Test;
 
 /**
@@ -44,17 +43,23 @@ import org.junit.Test;
 public class DirectMethodStartTest extends BcTraceTest {
 
   @Test
-  public void testDirectStart() throws Exception {
+  public void test() throws Exception {
     StringBuilder sb = new StringBuilder();
     DirectListener1 listener1 = new DirectListener1(sb);
     DirectListener2 listener2 = new DirectListener2(sb);
     Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
         new DirectMethodHook(
-            new DirectMethodFilter("io/shiftleft/bctrace/TestClass", "concatenateStringArrays",
-                "([Ljava/lang/String;[Ljava/lang/String;)[Ljava/lang/String;"), listener1),
+            new DirectMethodFilter(
+                "io/shiftleft/bctrace/TestClass",
+                "concatenateStringArrays",
+                "([Ljava/lang/String;[Ljava/lang/String;)[Ljava/lang/String;"),
+            listener1),
         new DirectMethodHook(
-            new DirectMethodFilter("io/shiftleft/bctrace/TestClass", "concatenateStringArrays",
-                "([Ljava/lang/String;[Ljava/lang/String;)[Ljava/lang/String;"), listener2)
+            new DirectMethodFilter(
+                "io/shiftleft/bctrace/TestClass",
+                "concatenateStringArrays",
+                "([Ljava/lang/String;[Ljava/lang/String;)[Ljava/lang/String;"),
+            listener2)
     }, false);
 
     String[] s1 = {"a", "b"};
@@ -63,6 +68,27 @@ public class DirectMethodStartTest extends BcTraceTest {
     assertEquals("12", sb.toString());
   }
 
+  @Test
+  public void testChangeArgument() throws Exception {
+    StringBuilder sb = new StringBuilder();
+    ChangeArgumentListener listener1 = new ChangeArgumentListener(sb, 0);
+    ChangeArgumentListener listener2 = new ChangeArgumentListener(sb, 1);
+    DirectMethodFilter filter = new DirectMethodFilter(
+        "io/shiftleft/bctrace/TestClass",
+        "concatenateStringArrays",
+        "([Ljava/lang/String;[Ljava/lang/String;)[Ljava/lang/String;");
+    Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
+        new DirectMethodHook(filter,listener1),
+        new DirectMethodHook(filter,listener2)
+    }, false);
+
+    String[] s1 = {"a", "b"};
+    String[] s2 = {"c", "d"};
+    String[] ret = (String[]) clazz
+        .getMethod("concatenateStringArrays", String[].class, String[].class).invoke(null, s1, s2);
+    assertEquals("11", sb.toString());
+    assertEquals(Arrays.toString(new String[]{"a0", "b0", "c1", "d1"}), Arrays.toString(ret));
+  }
 
   public static class DirectListener1 extends DirectMethodStartListener implements
       $io_shiftleft_bctrace_direct_method_DirectMethodStartTest$DirectListener1 {
@@ -99,6 +125,43 @@ public class DirectMethodStartTest extends BcTraceTest {
       assertNull(instance);
       assertNotNull(array1);
       assertNotNull(array2);
+    }
+  }
+
+  public static class ChangeArgumentListener extends DirectMethodStartListener implements
+      $io_shiftleft_bctrace_direct_method_DirectMethodStartTest$ChangeArgumentListener {
+
+    private final StringBuilder sb;
+    private final int argument;
+
+    public ChangeArgumentListener(StringBuilder sb, int argument) {
+      this.sb = sb;
+      this.argument = argument;
+    }
+
+    @Override
+    public int getMutableArgumentIndex() {
+      return argument;
+    }
+
+    @ListenerMethod
+    public String[] onStart(Class clazz, Object instance, String[] array1, String[] array2) {
+      sb.append("1");
+      assertEquals(clazz.getName(), TestClass.class.getName());
+      assertNull(instance);
+      assertNotNull(array1);
+      assertNotNull(array2);
+      String[] mutatedArg;
+      if (argument == 0) {
+        mutatedArg = array1;
+      } else {
+        mutatedArg = array2;
+      }
+      String[] ret = new String[mutatedArg.length];
+      for (int i = 0; i < ret.length; i++) {
+        ret[i] = mutatedArg[i] + argument;
+      }
+      return ret;
     }
   }
 }

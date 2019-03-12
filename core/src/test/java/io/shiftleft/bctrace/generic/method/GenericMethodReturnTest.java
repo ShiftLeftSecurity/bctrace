@@ -114,7 +114,7 @@ public class GenericMethodReturnTest extends BcTraceTest {
                   public Object onReturn(int methodId, Class clazz, Object instance, Object[] args,
                       Object ret) {
                     Long value = (Long) ret;
-                    assertEquals((long) value, 3l);
+                    assertEquals(3l, (long) value);
                     return value + 1;
                   }
                 }),
@@ -125,7 +125,7 @@ public class GenericMethodReturnTest extends BcTraceTest {
                   public Object onReturn(int methodId, Class clazz, Object instance, Object[] args,
                       Object ret) {
                     Long value = (Long) ret;
-                    assertEquals((long) value, 2l);
+                    assertEquals(2l, (long) value);
                     return value + 1;
                   }
                 })
@@ -133,7 +133,7 @@ public class GenericMethodReturnTest extends BcTraceTest {
     );
     Object ret = clazz.getMethod("getLong").invoke(null);
     Long value = (Long) ret;
-    assertEquals((long) value, 4l);
+    assertEquals(4l, (long) value);
   }
 
   @Test
@@ -180,6 +180,6 @@ public class GenericMethodReturnTest extends BcTraceTest {
       assertTrue(ite.getTargetException() == re);
     }
 
-    assertEquals(steps.toString(), "12");
+    assertEquals("12", steps.toString());
   }
 }
