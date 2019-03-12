@@ -32,9 +32,9 @@ import io.shiftleft.bctrace.BcTraceTest;
 import io.shiftleft.bctrace.TestClass;
 import io.shiftleft.bctrace.TestClass.TestRuntimeException;
 import io.shiftleft.bctrace.filter.MethodFilter.AllFilter;
-import io.shiftleft.bctrace.hierarchy.BctraceClass;
 import io.shiftleft.bctrace.hook.GenericMethodHook;
 import io.shiftleft.bctrace.hook.Hook;
+import io.shiftleft.bctrace.runtime.BctraceRuntimeException;
 import io.shiftleft.bctrace.runtime.listener.generic.GenericMethodThrowableListener;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
@@ -49,7 +49,7 @@ import org.objectweb.asm.tree.MethodNode;
 public class GenericMethodThrowableTest extends BcTraceTest {
 
   @Test
-  public void testSimpleUncaughtThrowable() throws Exception {
+  public void test() throws Exception {
     final StringBuilder steps = new StringBuilder();
     Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
         new GenericMethodHook(
@@ -86,7 +86,7 @@ public class GenericMethodThrowableTest extends BcTraceTest {
   }
 
   @Test
-  public void testConstructorUncaughtThrowable() throws Exception {
+  public void testConstructorThrowable() throws Exception {
     final StringBuilder sb = new StringBuilder();
 
     Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
@@ -122,42 +122,7 @@ public class GenericMethodThrowableTest extends BcTraceTest {
   }
 
   @Test
-  public void testFinishException() throws Exception {
-    final StringBuilder steps = new StringBuilder();
-    Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
-        new GenericMethodHook(
-            new AllFilter() {
-              @Override
-              public boolean acceptMethod(ClassNode cn, MethodNode mn) {
-                return mn.name.equals("<init>");
-              }
-            },
-            new GenericMethodThrowableListener() {
-              @Override
-              public Throwable onThrow(int methodId, Class clazz, Object instance, Object[] args,
-                  Throwable th) {
-                steps.append("1");
-                assertNotNull(th);
-                return th;
-              }
-            }
-        )
-    });
-    boolean captured = false;
-    try {
-      Constructor constructor = clazz.getConstructor(int.class);
-      constructor.newInstance(2);
-    } catch (InvocationTargetException ite) {
-      if (ite.getTargetException() instanceof TestRuntimeException) {
-        captured = true;
-        assertEquals(steps.toString(), "1");
-      }
-    }
-    assertTrue("Expected exception", captured);
-  }
-
-  @Test
-  public void testListenerExceptionOnThrowable() throws Exception {
+  public void testListenerUnexpectedException() throws Exception {
     final StringBuilder steps = new StringBuilder();
     Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
         new GenericMethodHook(
@@ -190,9 +155,44 @@ public class GenericMethodThrowableTest extends BcTraceTest {
     assertTrue("Expected exception", captured);
   }
 
+
   @Test
-  public void testFinishExceptionModification() throws Exception {
-    final StringBuilder sb = new StringBuilder();
+  public void testListenerExpectedException() throws Exception {
+    final StringBuilder steps = new StringBuilder();
+    final RuntimeException re = new RuntimeException("Unexpected!");
+    Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
+        new GenericMethodHook(
+            new AllFilter() {
+              @Override
+              public boolean acceptMethod(ClassNode cn, MethodNode mn) {
+                return mn.name.equals("<init>");
+              }
+            },
+            new GenericMethodThrowableListener() {
+              @Override
+              public Throwable onThrow(int methodId, Class clazz, Object instance, Object[] args,
+                  Throwable th) {
+                steps.append("1");
+                throw new BctraceRuntimeException(re);
+              }
+            }
+        )
+    });
+    try {
+      Constructor constructor = clazz.getConstructor(int.class);
+      constructor.newInstance(2);
+    } catch (InvocationTargetException ite) {
+      if (ite.getTargetException() == re) {
+        steps.append("2");
+      }
+    }
+    assertEquals(steps.toString(), "12");
+  }
+
+  @Test
+  public void testThrowableModification() throws Exception {
+    final StringBuilder steps = new StringBuilder();
+    final IOException ie = new IOException("Changed");
     Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
         new GenericMethodHook(
             new AllFilter() {
@@ -206,8 +206,8 @@ public class GenericMethodThrowableTest extends BcTraceTest {
               public Throwable onThrow(int methodId, Class clazz, Object instance, Object[] args,
                   Throwable th) {
                 assertNotNull(th);
-                sb.append(th.getMessage());
-                return new IOException(th.getMessage(), th);
+                steps.append("1");
+                return ie;
               }
             }
         )
@@ -217,12 +217,10 @@ public class GenericMethodThrowableTest extends BcTraceTest {
       Constructor constructor = clazz.getConstructor(int.class);
       constructor.newInstance(2);
     } catch (InvocationTargetException ite) {
-      if (ite.getTargetException() instanceof IOException) {
-        captured = true;
-        assertEquals(sb.toString(), ite.getTargetException().getMessage());
+      if (ite.getTargetException() == ie) {
+        steps.append("2");
       }
     }
-    assertTrue("Expected exception", captured);
+    assertEquals(steps.toString(), "12");
   }
-
 }

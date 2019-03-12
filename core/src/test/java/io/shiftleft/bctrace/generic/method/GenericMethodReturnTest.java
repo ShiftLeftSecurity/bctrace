@@ -26,13 +26,16 @@ package io.shiftleft.bctrace.generic.method;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 import io.shiftleft.bctrace.BcTraceTest;
 import io.shiftleft.bctrace.TestClass;
 import io.shiftleft.bctrace.filter.MethodFilter.AllFilter;
 import io.shiftleft.bctrace.hook.GenericMethodHook;
 import io.shiftleft.bctrace.hook.Hook;
+import io.shiftleft.bctrace.runtime.BctraceRuntimeException;
 import io.shiftleft.bctrace.runtime.listener.generic.GenericMethodReturnListener;
+import java.lang.reflect.InvocationTargetException;
 import org.junit.Test;
 
 /**
@@ -41,7 +44,7 @@ import org.junit.Test;
 public class GenericMethodReturnTest extends BcTraceTest {
 
   @Test
-  public void testReturnDisabled() throws Exception {
+  public void testNoArguments() throws Exception {
     final StringBuilder steps = new StringBuilder();
     Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
         new GenericMethodHook(
@@ -67,76 +70,7 @@ public class GenericMethodReturnTest extends BcTraceTest {
     assertEquals("1", steps.toString());
   }
 
-
   @Test
-  public void testReturnModification() throws Exception {
-    final StringBuilder steps = new StringBuilder();
-    Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
-        new GenericMethodHook(
-            new AllFilter(),
-            new GenericMethodReturnListener() {
-              @Override
-              public Object onReturn(int methodId, Class clazz, Object instance, Object[] args,
-                  Object ret) {
-                Long value = (Long) ret;
-                assertEquals((long) value, 3l);
-                return value + 1;
-              }
-            }
-        ),
-        new GenericMethodHook(
-            new AllFilter(),
-            new GenericMethodReturnListener() {
-              @Override
-              public Object onReturn(int methodId, Class clazz, Object instance, Object[] args,
-                  Object ret) {
-                Long value = (Long) ret;
-                assertEquals((long) value, 2l);
-                return value + 1;
-              }
-            }
-        )
-    });
-    Object ret = clazz.getMethod("getLong").invoke(null);
-    Long value = (Long) ret;
-
-    assertEquals((long) value, 4l);
-  }
-
-  @Test
-  public void testReturn() throws Exception {
-    final StringBuilder steps = new StringBuilder();
-    Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
-        new GenericMethodHook(
-            new AllFilter(),
-            new GenericMethodReturnListener() {
-              @Override
-              public Object onReturn(int methodId, Class clazz, Object instance, Object[] args,
-                  Object ret) {
-                assertEquals(clazz.getName(), TestClass.class.getName());
-                steps.append("1");
-                return ret;
-              }
-            }
-        ),
-        new GenericMethodHook(
-            new AllFilter(),
-            new GenericMethodReturnListener() {
-              @Override
-              public Object onReturn(int methodId, Class clazz, Object instance, Object[] args,
-                  Object ret) {
-                assertEquals(clazz.getName(), TestClass.class.getName());
-                steps.append("2");
-                return ret;
-              }
-            }
-        )
-    });
-    clazz.getMethod("execVoid").invoke(null);
-    System.out.println(clazz.getClassLoader());
-    assertEquals("21", steps.toString());
-  }
-
   public void testVoidReturn() throws Exception {
     final StringBuilder steps = new StringBuilder();
     Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
@@ -170,7 +104,7 @@ public class GenericMethodReturnTest extends BcTraceTest {
   }
 
   @Test
-  public void testFinishReturnModification() throws Exception {
+  public void testReturnValueModification() throws Exception {
     final StringBuilder steps = new StringBuilder();
     Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
             new GenericMethodHook(
@@ -203,7 +137,7 @@ public class GenericMethodReturnTest extends BcTraceTest {
   }
 
   @Test
-  public void testListenerExceptionOnReturn() throws Exception {
+  public void testListeneUnexpectedException() throws Exception {
     final StringBuilder sb = new StringBuilder();
     Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
         new GenericMethodHook(
@@ -220,5 +154,32 @@ public class GenericMethodReturnTest extends BcTraceTest {
     });
     Long ret = (Long) clazz.getMethod("getLong").invoke(null);
     assertEquals(ret.toString(), sb.toString());
+  }
+
+  @Test
+  public void testListeneExpectedException() throws Exception {
+    final StringBuilder steps = new StringBuilder();
+    final RuntimeException re = new RuntimeException("Expected!");
+    Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
+        new GenericMethodHook(
+            new AllFilter(),
+            new GenericMethodReturnListener() {
+              @Override
+              public Object onReturn(int methodId, Class clazz, Object instance, Object[] args,
+                  Object ret) {
+                steps.append("1");
+                throw new BctraceRuntimeException(re);
+              }
+            }
+        )
+    });
+    try {
+      Long ret = (Long) clazz.getMethod("getLong").invoke(null);
+    } catch (InvocationTargetException ite) {
+      steps.append("2");
+      assertTrue(ite.getTargetException() == re);
+    }
+
+    assertEquals(steps.toString(), "12");
   }
 }

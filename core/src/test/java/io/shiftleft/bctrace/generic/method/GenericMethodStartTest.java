@@ -25,13 +25,16 @@
 package io.shiftleft.bctrace.generic.method;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import io.shiftleft.bctrace.BcTraceTest;
 import io.shiftleft.bctrace.TestClass;
 import io.shiftleft.bctrace.filter.MethodFilter.AllFilter;
 import io.shiftleft.bctrace.hook.GenericMethodHook;
 import io.shiftleft.bctrace.hook.Hook;
+import io.shiftleft.bctrace.runtime.BctraceRuntimeException;
 import io.shiftleft.bctrace.runtime.listener.generic.GenericMethodStartListener;
+import java.lang.reflect.InvocationTargetException;
 import org.junit.Test;
 
 /**
@@ -40,7 +43,7 @@ import org.junit.Test;
 public class GenericMethodStartTest extends BcTraceTest {
 
   @Test
-  public void testStart() throws Exception {
+  public void test() throws Exception {
     final StringBuilder steps = new StringBuilder();
     Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
         new GenericMethodHook(
@@ -71,7 +74,7 @@ public class GenericMethodStartTest extends BcTraceTest {
   }
 
   @Test
-  public void testStartDisabled() throws Exception {
+  public void testNoArguments() throws Exception {
     final StringBuilder steps = new StringBuilder();
     Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
         new GenericMethodHook(
@@ -94,5 +97,61 @@ public class GenericMethodStartTest extends BcTraceTest {
     });
     clazz.getMethod("execVoid").invoke(null);
     assertEquals("1", steps.toString());
+  }
+
+  @Test
+  public void testListeneUnexpectedException() throws Exception {
+    final StringBuilder steps = new StringBuilder();
+    Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
+        new GenericMethodHook(
+            new AllFilter(),
+            new GenericMethodStartListener() {
+              @Override
+              public boolean requiresArguments() {
+                return false;
+              }
+
+              @Override
+              public void onStart(int methodId, Class clazz,
+                  Object instance, Object[] args) {
+                steps.append("1");
+                throw new RuntimeException("Unexpected!");
+              }
+            }
+        )
+    });
+    clazz.getMethod("execVoid").invoke(null);
+    assertEquals("1", steps.toString());
+  }
+
+  @Test
+  public void testListeneExpectedException() throws Exception {
+    final StringBuilder steps = new StringBuilder();
+    final RuntimeException re = new RuntimeException("Expected!");
+    Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
+        new GenericMethodHook(
+            new AllFilter(),
+            new GenericMethodStartListener() {
+              @Override
+              public boolean requiresArguments() {
+                return false;
+              }
+
+              @Override
+              public void onStart(int methodId, Class clazz,
+                  Object instance, Object[] args) {
+                steps.append("1");
+                throw new BctraceRuntimeException(re);
+              }
+            }
+        )
+    });
+    try {
+      String ret = (String) clazz.getMethod("getString", String.class).invoke(null, "hello");
+    } catch (InvocationTargetException ite) {
+      steps.append("2");
+      assertTrue(ite.getTargetException() == re);
+    }
+    assertEquals("12", steps.toString());
   }
 }
