@@ -57,20 +57,36 @@ public class DirectMethodStartHelper extends Helper {
 
     InsnList il = new InsnList();
     Hook[] hooks = bctrace.getHooks();
+    int offset = ASMUtils.isStatic(mn.access) ? 0 : 1;
     for (int i = 0; i < listenersToUse.size(); i++) {
       Integer index = listenersToUse.get(i);
-      DirectListener listener = (DirectListener) hooks[index].getListener();
+      DirectMethodStartListener listener = (DirectMethodStartListener) hooks[index].getListener();
       il.add(ASMUtils.getPushInstruction(index)); // hook id
-      il.add(getClassConstantReference(Type.getObjectType(cn.name), cn.version)); // caller class
-      pushInstance(il, mn); // current instance
-      pushMethodArgs(il, mn); // method args
 
       // Invoke dynamically generated callback method. See CallbackTransformer
-      il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
-          "io/shiftleft/bctrace/runtime/Callback",
-          CallbackTransformer.getDynamicListenerMethodName(listener),
-          CallbackTransformer.getDynamicListenerVoidMethodDescriptor(listener),
-          false));
+      if (listener.getMutableArgumentIndex() >= 0) {
+        String desc = CallbackTransformer.getDynamicListenerMutatorMethodDescriptor(listener);
+        Type type = Type.getReturnType(desc);
+        il.add(ASMUtils.getLoadInst(type, offset + listener.getMutableArgumentIndex()));
+        il.add(getClassConstantReference(Type.getObjectType(cn.name), cn.version)); // caller class
+        pushInstance(il, mn); // current instance
+        pushMethodArgs(il, mn); // method args
+        il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
+            "io/shiftleft/bctrace/runtime/Callback",
+            CallbackTransformer.getDynamicListenerMethodName(listener),
+            desc,
+            false));
+        il.add(ASMUtils.getStoreInst(type, offset + listener.getMutableArgumentIndex()));
+      } else {
+        il.add(getClassConstantReference(Type.getObjectType(cn.name), cn.version)); // caller class
+        pushInstance(il, mn); // current instance
+        pushMethodArgs(il, mn); // method args
+        il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
+            "io/shiftleft/bctrace/runtime/Callback",
+            CallbackTransformer.getDynamicListenerMethodName(listener),
+            CallbackTransformer.getDynamicListenerVoidMethodDescriptor(listener),
+            false));
+      }
     }
     mn.instructions.insert(il);
   }
