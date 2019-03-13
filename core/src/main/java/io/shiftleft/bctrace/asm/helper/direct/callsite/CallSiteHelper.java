@@ -182,9 +182,11 @@ public class CallSiteHelper extends Helper {
           if (listener instanceof DirectCallSiteStartListener) {
             DirectCallSiteStartListener directCallSiteStartListener = (DirectCallSiteStartListener) listener;
 
-            // caller class, caller instance, callee instance
-            // onBeforeCall(Class.class, Object.class, Object.class);
             il.add(ASMUtils.getPushInstruction(i)); // hook id
+            int mai = directCallSiteStartListener.getMutableArgumentIndex();
+            if (mai >= 0) {
+              il.add(ASMUtils.getLoadInst(argTypes[mai], localVariablesArgumentMap[i][mai]));
+            }
             il.add(
                 getClassConstantReference(Type.getObjectType(cn.name), cn.version)); // caller class
             pushInstance(il, mn); // current instance
@@ -195,17 +197,41 @@ public class CallSiteHelper extends Helper {
             }
             // Move local variables to stack
             for (int j = 0; j < argTypes.length; j++) {
-              Type argType = argTypes[j];
-              il.add(ASMUtils.getLoadInst(argType, localVariablesArgumentMap[i][j]));
+              il.add(ASMUtils.getLoadInst(argTypes[j], localVariablesArgumentMap[i][j]));
             }
             // Invoke dynamically generated callback method. See CallbackTransformer
-            il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
-                "io/shiftleft/bctrace/runtime/Callback",
-                CallbackTransformer
-                    .getDynamicListenerMethodName(directCallSiteStartListener),
-                CallbackTransformer
-                    .getDynamicListenerVoidMethodDescriptor(directCallSiteStartListener),
-                false));
+            if (mai >= 0) {
+              String desc = CallbackTransformer
+                  .getDynamicListenerMutatorMethodDescriptor(directCallSiteStartListener);
+              il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
+                  "io/shiftleft/bctrace/runtime/Callback",
+                  CallbackTransformer.getDynamicListenerMethodName(directCallSiteStartListener),
+                  desc,
+                  false));
+              // Update local variable for argument mai-th, with modified value
+              il.add(ASMUtils.getStoreInst(argTypes[mai], localVariablesArgumentMap[i][mai]));
+              // Clear stack
+              for (int j = mai; j < argTypes.length; j++) {
+                Type argType = argTypes[j];
+                if (argType.getSize() == 1) {
+                  il.add(new InsnNode(Opcodes.POP));
+                } else {
+                  il.add(new InsnNode(Opcodes.POP2));
+                }
+              }
+              // Reload argument values into stack
+              for (int j = mai; j < argTypes.length; j++) {
+                il.add(ASMUtils.getLoadInst(argTypes[j], localVariablesArgumentMap[i][j]));
+              }
+            } else {
+              il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
+                  "io/shiftleft/bctrace/runtime/Callback",
+                  CallbackTransformer
+                      .getDynamicListenerMethodName(directCallSiteStartListener),
+                  CallbackTransformer
+                      .getDynamicListenerVoidMethodDescriptor(directCallSiteStartListener),
+                  false));
+            }
           }
         }
       }

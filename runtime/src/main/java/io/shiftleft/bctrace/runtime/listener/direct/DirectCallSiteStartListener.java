@@ -19,7 +19,8 @@ package io.shiftleft.bctrace.runtime.listener.direct;
  * will return the original value, so no undesired side-effects are introduced in the target
  * application
  */
-public abstract class DirectCallSiteStartListener extends DirectCallSiteListener {
+public abstract class DirectCallSiteStartListener extends DirectCallSiteListener implements
+    MutableArgumentsListener {
 
   /**
    * Returns the index of the instrumented method argument (0-based) this listener will change its

@@ -33,9 +33,13 @@ import io.shiftleft.bctrace.TestClass;
 import io.shiftleft.bctrace.filter.CallSiteFilter;
 import io.shiftleft.bctrace.hook.DirectCallSiteHook;
 import io.shiftleft.bctrace.hook.Hook;
+import io.shiftleft.bctrace.runtime.BctraceRuntimeException;
 import io.shiftleft.bctrace.runtime.listener.direct.$io_shiftleft_bctrace_direct_callsite_DirectCallSiteStartTest$ArrayCopyListener;
-import io.shiftleft.bctrace.runtime.listener.direct.$io_shiftleft_bctrace_direct_callsite_DirectCallSiteStartTest$PrintListener;
+import io.shiftleft.bctrace.runtime.listener.direct.$io_shiftleft_bctrace_direct_callsite_DirectCallSiteStartTest$ChangeArgumentListener;
+import io.shiftleft.bctrace.runtime.listener.direct.$io_shiftleft_bctrace_direct_callsite_DirectCallSiteStartTest$ExceptionListener;
+import io.shiftleft.bctrace.runtime.listener.direct.$io_shiftleft_bctrace_direct_callsite_DirectCallSiteStartTest$StartListener;
 import io.shiftleft.bctrace.runtime.listener.direct.DirectCallSiteStartListener;
+import java.lang.reflect.InvocationTargetException;
 import org.junit.Test;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
@@ -46,11 +50,13 @@ import org.objectweb.asm.tree.MethodNode;
 public class DirectCallSiteStartTest extends BcTraceTest {
 
   @Test
-  public void testCallSite() throws Exception {
-    StringBuilder sb = new StringBuilder();
-    ArrayCopyListener arrayCopyListener1 = new ArrayCopyListener(sb, "1");
-    ArrayCopyListener arrayCopyListener2 = new ArrayCopyListener(sb, "2");
-    CallSiteFilter arrayCopyFilter = new CallSiteFilter("java/lang/System", "arraycopy",
+  public void test() throws Exception {
+    StringBuilder steps = new StringBuilder();
+    ArrayCopyListener arrayCopyListener1 = new ArrayCopyListener(steps, "1");
+    ArrayCopyListener arrayCopyListener2 = new ArrayCopyListener(steps, "2");
+    CallSiteFilter arrayCopyFilter = new CallSiteFilter(
+        "java/lang/System",
+        "arraycopy",
         "(Ljava/lang/Object;ILjava/lang/Object;II)V") {
       @Override
       public boolean acceptMethod(ClassNode cn, MethodNode mn) {
@@ -63,17 +69,68 @@ public class DirectCallSiteStartTest extends BcTraceTest {
     }, false);
 
     clazz.getMethod("arrayCopyWrapper2").invoke(null);
-    assertEquals("12", sb.toString());
+    assertEquals("12", steps.toString());
+  }
+
+  @Test
+  public void testUnexpectedListenerException() throws Exception {
+    StringBuilder steps = new StringBuilder();
+    ExceptionListener listener = new ExceptionListener(steps, false);
+    CallSiteFilter filter = new CallSiteFilter(
+        "io/shiftleft/bctrace/TestClass",
+        "getUpperCase",
+        "(Ljava/lang/String;)Ljava/lang/String;") {
+      @Override
+      public boolean acceptMethod(ClassNode cn, MethodNode mn) {
+        return true;
+      }
+    };
+    Class clazz = getInstrumentClass(
+        TestClass.class,
+        new Hook[]{new DirectCallSiteHook(filter, listener)},
+        false);
+
+    String greet = (String) clazz.getMethod("greet").invoke(null);
+    assertEquals("HELLO WORLD !", greet.toString());
+    assertEquals("111", steps.toString());
+  }
+
+  @Test
+  public void testExpectedListenerException() throws Exception {
+    StringBuilder steps = new StringBuilder();
+    ExceptionListener listener = new ExceptionListener(steps, true);
+    CallSiteFilter filter = new CallSiteFilter(
+        "io/shiftleft/bctrace/TestClass",
+        "getUpperCase",
+        "(Ljava/lang/String;)Ljava/lang/String;") {
+      @Override
+      public boolean acceptMethod(ClassNode cn, MethodNode mn) {
+        return true;
+      }
+    };
+    Class clazz = getInstrumentClass(
+        TestClass.class,
+        new Hook[]{new DirectCallSiteHook(filter, listener)},
+        false);
+    try {
+      clazz.getMethod("greet").invoke(null);
+    } catch (InvocationTargetException ite) {
+      if (ite.getTargetException().getClass() == RuntimeException.class &&
+          ite.getTargetException().getMessage().equals("Expected!")) {
+        steps.append("2");
+      }
+    }
+    assertEquals("12", steps.toString());
   }
 
   public static class ArrayCopyListener extends DirectCallSiteStartListener implements
       $io_shiftleft_bctrace_direct_callsite_DirectCallSiteStartTest$ArrayCopyListener {
 
-    private final StringBuilder sb;
+    private final StringBuilder steps;
     private final String message;
 
-    public ArrayCopyListener(StringBuilder sb, String message) {
-      this.sb = sb;
+    public ArrayCopyListener(StringBuilder steps, String message) {
+      this.steps = steps;
       this.message = message;
     }
 
@@ -82,7 +139,7 @@ public class DirectCallSiteStartTest extends BcTraceTest {
         Object callSiteInstance, Object src, int srcPos,
         Object dest, int destPos,
         int length) {
-      sb.append(message);
+      steps.append(message);
       assertEquals(clazz.getName(), TestClass.class.getName());
       assertEquals(instance.getClass().getName(), TestClass.class.getName());
       assertTrue(callSiteInstance == null);
@@ -91,46 +148,115 @@ public class DirectCallSiteStartTest extends BcTraceTest {
     }
   }
 
-  /**
-   * Instruments only call sites in lines 152 and 154 (skipping line 153)
-   */
   @Test
-  public void testLineNumber() throws Exception {
-    StringBuilder sb = new StringBuilder();
-    PrintListener printListener = new PrintListener(sb);
-    CallSiteFilter arrayCopyFilter = new CallSiteFilter(
+  public void testChangeArgument() throws Exception {
+    StringBuilder steps = new StringBuilder();
+    ChangeArgumentListener listener = new ChangeArgumentListener(steps, "bctrace");
+    CallSiteFilter filter = new CallSiteFilter(
         "io/shiftleft/bctrace/TestClass",
-        "printMessage",
-        "(Ljava/lang/String;)V",
-        new int[]{152, 154}) {
+        "getUpperCase",
+        "(Ljava/lang/String;)Ljava/lang/String;",
+        new int[]{156}) {
       @Override
       public boolean acceptMethod(ClassNode cn, MethodNode mn) {
         return true;
       }
     };
-    Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
-        new DirectCallSiteHook(arrayCopyFilter, printListener)
-    }, false);
+    Class clazz = getInstrumentClass(
+        TestClass.class,
+        new Hook[]{new DirectCallSiteHook(filter, listener)},
+        false);
 
-    clazz.getMethod("greet").invoke(null);
-    assertEquals("Hello!", sb.toString());
+    String greet = (String) clazz.getMethod("greet").invoke(null);
+    assertEquals("HELLO BCTRACE !", greet.toString());
   }
 
-  public static class PrintListener extends DirectCallSiteStartListener implements
-      $io_shiftleft_bctrace_direct_callsite_DirectCallSiteStartTest$PrintListener {
+  public static class ChangeArgumentListener extends DirectCallSiteStartListener implements
+      $io_shiftleft_bctrace_direct_callsite_DirectCallSiteStartTest$ChangeArgumentListener {
 
-    private final StringBuilder sb;
+    private final StringBuilder steps;
+    private final String newStr;
 
-    public PrintListener(StringBuilder sb) {
-      this.sb = sb;
+    public ChangeArgumentListener(StringBuilder steps, String newStr) {
+      this.steps = steps;
+      this.newStr = newStr;
+    }
+
+    @Override
+    public int getMutableArgumentIndex() {
+      return 0;
+    }
+
+    @ListenerMethod
+    public String onStart(Class clazz, Object instance, Object callSiteInstance, String str) {
+      steps.append("1");
+      return newStr;
+    }
+  }
+
+  /**
+   * Instruments only call sites in lines 152 and 154 (skipping line 153)
+   */
+  @Test
+  public void testLineNumberFiltering() throws Exception {
+    StringBuilder steps = new StringBuilder();
+    StartListener startListener = new StartListener(steps);
+    CallSiteFilter filter = new CallSiteFilter(
+        "io/shiftleft/bctrace/TestClass",
+        "getUpperCase",
+        "(Ljava/lang/String;)Ljava/lang/String;",
+        new int[]{154, 158}) {
+      @Override
+      public boolean acceptMethod(ClassNode cn, MethodNode mn) {
+        return true;
+      }
+    };
+    Class clazz = getInstrumentClass(
+        TestClass.class,
+        new Hook[]{new DirectCallSiteHook(filter, startListener)},
+        false);
+
+    clazz.getMethod("greet").invoke(null);
+    assertEquals("hello!", steps.toString());
+  }
+
+  public static class StartListener extends DirectCallSiteStartListener implements
+      $io_shiftleft_bctrace_direct_callsite_DirectCallSiteStartTest$StartListener {
+
+    private final StringBuilder steps;
+
+    public StartListener(StringBuilder steps) {
+      this.steps = steps;
     }
 
     @ListenerMethod
     public void onStart(Class clazz, Object instance, Object callSiteInstance, String message) {
-      sb.append(message);
+      steps.append(message);
       assertEquals(clazz.getName(), TestClass.class.getName());
       assertTrue(instance == null);
       assertTrue(callSiteInstance == null);
+    }
+  }
+
+  public static class ExceptionListener extends DirectCallSiteStartListener implements
+      $io_shiftleft_bctrace_direct_callsite_DirectCallSiteStartTest$ExceptionListener {
+
+    private final StringBuilder steps;
+    private final boolean expected;
+
+    public ExceptionListener(StringBuilder steps, boolean expected) {
+      this.steps = steps;
+      this.expected = expected;
+    }
+
+    @ListenerMethod
+    public void onStart(Class clazz, Object instance, Object callSiteInstance, String message) {
+      steps.append("1");
+      if (expected) {
+        throw new BctraceRuntimeException(new RuntimeException("Expected!"));
+      } else {
+        throw new RuntimeException("Unexpected!");
+      }
     }
   }
 }

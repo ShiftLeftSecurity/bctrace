@@ -33,7 +33,9 @@ import io.shiftleft.bctrace.TestClass;
 import io.shiftleft.bctrace.filter.MethodFilter.DirectMethodFilter;
 import io.shiftleft.bctrace.hook.DirectMethodHook;
 import io.shiftleft.bctrace.hook.Hook;
+import io.shiftleft.bctrace.runtime.BctraceRuntimeException;
 import io.shiftleft.bctrace.runtime.listener.direct.*;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import org.junit.Test;
 
@@ -44,9 +46,9 @@ public class DirectMethodStartTest extends BcTraceTest {
 
   @Test
   public void test() throws Exception {
-    StringBuilder sb = new StringBuilder();
-    DirectListener1 listener1 = new DirectListener1(sb);
-    DirectListener2 listener2 = new DirectListener2(sb);
+    StringBuilder steps = new StringBuilder();
+    DirectListener1 listener1 = new DirectListener1(steps);
+    DirectListener2 listener2 = new DirectListener2(steps);
     Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
         new DirectMethodHook(
             new DirectMethodFilter(
@@ -65,43 +67,88 @@ public class DirectMethodStartTest extends BcTraceTest {
     String[] s1 = {"a", "b"};
     String[] s2 = {"c", "d"};
     clazz.getMethod("concatenateStringArrays", String[].class, String[].class).invoke(null, s1, s2);
-    assertEquals("12", sb.toString());
+    assertEquals("12", steps.toString());
   }
 
   @Test
   public void testChangeArgument() throws Exception {
-    StringBuilder sb = new StringBuilder();
-    ChangeArgumentListener listener1 = new ChangeArgumentListener(sb, 0);
-    ChangeArgumentListener listener2 = new ChangeArgumentListener(sb, 1);
+    StringBuilder steps = new StringBuilder();
+    ChangeArgumentListener listener1 = new ChangeArgumentListener(steps, 0);
+    ChangeArgumentListener listener2 = new ChangeArgumentListener(steps, 1);
     DirectMethodFilter filter = new DirectMethodFilter(
         "io/shiftleft/bctrace/TestClass",
         "concatenateStringArrays",
         "([Ljava/lang/String;[Ljava/lang/String;)[Ljava/lang/String;");
     Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
-        new DirectMethodHook(filter,listener1),
-        new DirectMethodHook(filter,listener2)
+        new DirectMethodHook(filter, listener1),
+        new DirectMethodHook(filter, listener2)
     }, false);
 
     String[] s1 = {"a", "b"};
     String[] s2 = {"c", "d"};
     String[] ret = (String[]) clazz
         .getMethod("concatenateStringArrays", String[].class, String[].class).invoke(null, s1, s2);
-    assertEquals("11", sb.toString());
+    assertEquals("11", steps.toString());
     assertEquals(Arrays.toString(new String[]{"a0", "b0", "c1", "d1"}), Arrays.toString(ret));
+  }
+
+  @Test
+  public void testListenerUnexpectedException() throws Exception {
+    StringBuilder steps = new StringBuilder();
+    ExceptionListener listener = new ExceptionListener(steps, false);
+    DirectMethodFilter filter = new DirectMethodFilter(
+        "io/shiftleft/bctrace/TestClass",
+        "concatenateStringArrays",
+        "([Ljava/lang/String;[Ljava/lang/String;)[Ljava/lang/String;");
+    Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
+        new DirectMethodHook(filter, listener)
+    }, false);
+    String[] s1 = {"a", "b"};
+    String[] s2 = {"c", "d"};
+    String[] ret = (String[]) clazz
+        .getMethod("concatenateStringArrays", String[].class, String[].class).invoke(null, s1, s2);
+    assertEquals("1", steps.toString());
+    assertEquals(Arrays.toString(new String[]{"a", "b", "c", "d"}), Arrays.toString(ret));
+  }
+
+  @Test
+  public void testListenerExpectedException() throws Exception {
+    StringBuilder steps = new StringBuilder();
+    ExceptionListener listener = new ExceptionListener(steps, true);
+    DirectMethodFilter filter = new DirectMethodFilter(
+        "io/shiftleft/bctrace/TestClass",
+        "concatenateStringArrays",
+        "([Ljava/lang/String;[Ljava/lang/String;)[Ljava/lang/String;");
+    Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
+        new DirectMethodHook(filter, listener)
+    }, false);
+
+    try {
+      String[] s1 = {"a", "b"};
+      String[] s2 = {"c", "d"};
+      String[] ret = (String[]) clazz
+          .getMethod("concatenateStringArrays", String[].class, String[].class).invoke(null, s1, s2);
+    } catch (InvocationTargetException ite) {
+      if (ite.getTargetException().getClass() == RuntimeException.class &&
+          ite.getTargetException().getMessage().equals("Expected!")) {
+        steps.append("2");
+      }
+    }
+    assertEquals("12", steps.toString());
   }
 
   public static class DirectListener1 extends DirectMethodStartListener implements
       $io_shiftleft_bctrace_direct_method_DirectMethodStartTest$DirectListener1 {
 
-    private final StringBuilder sb;
+    private final StringBuilder steps;
 
-    public DirectListener1(StringBuilder sb) {
-      this.sb = sb;
+    public DirectListener1(StringBuilder steps) {
+      this.steps = steps;
     }
 
     @ListenerMethod
     public void onStart(Class clazz, Object instance, String[] array1, String[] array2) {
-      sb.append("1");
+      steps.append("1");
       assertEquals(clazz.getName(), TestClass.class.getName());
       assertNull(instance);
       assertNotNull(array1);
@@ -112,15 +159,15 @@ public class DirectMethodStartTest extends BcTraceTest {
   public static class DirectListener2 extends DirectMethodStartListener implements
       $io_shiftleft_bctrace_direct_method_DirectMethodStartTest$DirectListener2 {
 
-    private final StringBuilder sb;
+    private final StringBuilder steps;
 
-    public DirectListener2(StringBuilder sb) {
-      this.sb = sb;
+    public DirectListener2(StringBuilder steps) {
+      this.steps = steps;
     }
 
     @ListenerMethod
     public void onStart(Class clazz, Object instance, String[] array1, String[] array2) {
-      sb.append("2");
+      steps.append("2");
       assertEquals(clazz.getName(), TestClass.class.getName());
       assertNull(instance);
       assertNotNull(array1);
@@ -131,11 +178,11 @@ public class DirectMethodStartTest extends BcTraceTest {
   public static class ChangeArgumentListener extends DirectMethodStartListener implements
       $io_shiftleft_bctrace_direct_method_DirectMethodStartTest$ChangeArgumentListener {
 
-    private final StringBuilder sb;
+    private final StringBuilder steps;
     private final int argument;
 
-    public ChangeArgumentListener(StringBuilder sb, int argument) {
-      this.sb = sb;
+    public ChangeArgumentListener(StringBuilder steps, int argument) {
+      this.steps = steps;
       this.argument = argument;
     }
 
@@ -146,7 +193,7 @@ public class DirectMethodStartTest extends BcTraceTest {
 
     @ListenerMethod
     public String[] onStart(Class clazz, Object instance, String[] array1, String[] array2) {
-      sb.append("1");
+      steps.append("1");
       assertEquals(clazz.getName(), TestClass.class.getName());
       assertNull(instance);
       assertNotNull(array1);
@@ -162,6 +209,28 @@ public class DirectMethodStartTest extends BcTraceTest {
         ret[i] = mutatedArg[i] + argument;
       }
       return ret;
+    }
+  }
+
+  public static class ExceptionListener extends DirectMethodStartListener implements
+      $io_shiftleft_bctrace_direct_method_DirectCallSiteStartTest$ExceptionListener {
+
+    private final StringBuilder steps;
+    private final boolean expected;
+
+    public ExceptionListener(StringBuilder steps, boolean expected) {
+      this.steps = steps;
+      this.expected = expected;
+    }
+
+    @ListenerMethod
+    public void onStart(Class clazz, Object instance, String[] array1, String[] array2) {
+      steps.append("1");
+      if (expected) {
+        throw new BctraceRuntimeException(new RuntimeException("Expected!"));
+      } else {
+        throw new RuntimeException("Unexpected!");
+      }
     }
   }
 }

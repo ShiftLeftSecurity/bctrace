@@ -34,6 +34,7 @@ import io.shiftleft.bctrace.TestClass.TestRuntimeException;
 import io.shiftleft.bctrace.filter.MethodFilter.DirectMethodFilter;
 import io.shiftleft.bctrace.hook.DirectMethodHook;
 import io.shiftleft.bctrace.hook.Hook;
+import io.shiftleft.bctrace.runtime.BctraceRuntimeException;
 import io.shiftleft.bctrace.runtime.listener.direct.$io_shiftleft_bctrace_direct_method_DirectMethodThrowableTest$DirectListenerModifiedThrowable;
 import io.shiftleft.bctrace.runtime.listener.direct.$io_shiftleft_bctrace_direct_method_DirectMethodThrowableTest$DirectListenerThrowable;
 import io.shiftleft.bctrace.runtime.listener.direct.$io_shiftleft_bctrace_direct_method_DirectMethodThrowableTest$DirectListenerThrowableRised;
@@ -92,23 +93,43 @@ public class DirectMethodThrowableTest extends BcTraceTest {
   }
 
   @Test
-  public void testThrowableInListener() throws Exception {
+  public void testUnexpectedExceptionInListener() throws Exception {
+    final StringBuilder steps = new StringBuilder();
     Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
         new DirectMethodHook(
             new DirectMethodFilter("io/shiftleft/bctrace/TestClass", "<init>",
                 "(I)V", false),
-            new DirectListenerThrowableRised())});
+            new DirectListenerThrowableRised(steps, false))});
 
-    boolean captured = false;
     try {
       Constructor constructor = clazz.getConstructor(int.class);
       constructor.newInstance(2);
     } catch (InvocationTargetException ite) {
       if (ite.getTargetException() instanceof TestRuntimeException) {
-        captured = true;
+        steps.append("2"); // Regular app exception
       }
     }
-    assertTrue("Expected exception", captured);
+    assertEquals("12", steps.toString());
+  }
+
+  @Test
+  public void testExpectedExceptionInListener() throws Exception {
+    final StringBuilder steps = new StringBuilder();
+    Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
+        new DirectMethodHook(
+            new DirectMethodFilter("io/shiftleft/bctrace/TestClass", "<init>",
+                "(I)V", false),
+            new DirectListenerThrowableRised(steps, true))});
+
+    try {
+      Constructor constructor = clazz.getConstructor(int.class);
+      constructor.newInstance(2);
+    } catch (InvocationTargetException ite) {
+      if (ite.getTargetException().getMessage().equals("Expected!")) {
+        steps.append("2"); // Regular app exception
+      }
+    }
+    assertEquals("12", steps.toString());
   }
 
   public static class DirectListenerThrowable extends DirectMethodThrowableListener implements
@@ -142,9 +163,22 @@ public class DirectMethodThrowableTest extends BcTraceTest {
   public static class DirectListenerThrowableRised extends DirectMethodThrowableListener implements
       $io_shiftleft_bctrace_direct_method_DirectMethodThrowableTest$DirectListenerThrowableRised {
 
+    private final StringBuilder steps;
+    private final boolean expected;
+
+    public DirectListenerThrowableRised(StringBuilder steps, boolean expected) {
+      this.steps = steps;
+      this.expected = expected;
+    }
+
     @ListenerMethod
     public Throwable onFinish(Class clazz, Object instance, int i, Throwable th) {
-      throw new RuntimeException("Unexpected!");
+      steps.append("1");
+      if (expected) {
+        throw new BctraceRuntimeException(new RuntimeException("Expected!"));
+      } else {
+        throw new RuntimeException("Unexpected!");
+      }
     }
   }
 }
