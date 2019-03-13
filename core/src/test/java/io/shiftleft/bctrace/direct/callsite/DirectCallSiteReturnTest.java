@@ -31,12 +31,15 @@ import static org.junit.Assert.assertTrue;
 import io.shiftleft.bctrace.BcTraceTest;
 import io.shiftleft.bctrace.TestClass;
 import io.shiftleft.bctrace.filter.CallSiteFilter;
-import io.shiftleft.bctrace.hierarchy.BctraceClass;
 import io.shiftleft.bctrace.hook.DirectCallSiteHook;
 import io.shiftleft.bctrace.hook.Hook;
+import io.shiftleft.bctrace.runtime.BctraceRuntimeException;
 import io.shiftleft.bctrace.runtime.listener.direct.$io_shiftleft_bctrace_direct_callsite_DirectCallSiteReturnTest$ArrayCopyListener;
+import io.shiftleft.bctrace.runtime.listener.direct.$io_shiftleft_bctrace_direct_callsite_DirectCallSiteReturnTest$ExceptionListener;
 import io.shiftleft.bctrace.runtime.listener.direct.$io_shiftleft_bctrace_direct_callsite_DirectCallSiteReturnTest$TestBarCallSiteMutableListener;
 import io.shiftleft.bctrace.runtime.listener.direct.DirectCallSiteReturnListener;
+import io.shiftleft.bctrace.runtime.listener.direct.DirectCallSiteStartListener;
+import java.lang.reflect.InvocationTargetException;
 import jdk.nashorn.internal.codegen.types.Type;
 import org.junit.Test;
 import org.objectweb.asm.tree.ClassNode;
@@ -48,7 +51,7 @@ import org.objectweb.asm.tree.MethodNode;
 public class DirectCallSiteReturnTest extends BcTraceTest {
 
   @Test
-  public void testAfterVoidCallSite() throws Exception {
+  public void testVoidReturn() throws Exception {
     StringBuilder sb = new StringBuilder();
     ArrayCopyListener l1 = new ArrayCopyListener("1", sb);
     ArrayCopyListener l2 = new ArrayCopyListener("2", sb);
@@ -96,31 +99,117 @@ public class DirectCallSiteReturnTest extends BcTraceTest {
 
 
   @Test
-  public void testReturnVoidCallSite() throws Exception {
-    TestBarCallSiteMutableListener listener = new TestBarCallSiteMutableListener();
+  public void testMutableReturn() throws Exception {
+    StringBuilder sb = new StringBuilder();
+    TestBarCallSiteMutableListener listener = new TestBarCallSiteMutableListener(sb);
     Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
-        new DirectCallSiteHook(new CallSiteFilter(Type.getInternalName(TestClass.class), "bar",
-            "(Ljava/lang/String;)I") {
-          @Override
-          public boolean acceptMethod(ClassNode cn, MethodNode mn) {
-            return true;
-          }
-        },
+        new DirectCallSiteHook(
+            new CallSiteFilter(
+                Type.getInternalName(TestClass.class),
+                "bar",
+                "(Ljava/lang/String;)I") {
+              @Override
+              public boolean acceptMethod(ClassNode cn, MethodNode mn) {
+                return true;
+              }
+            },
             listener)
     }, false);
 
-    int ret = (Integer) clazz.getMethod("foo", String.class).invoke(null, "123");
+    int ret = (Integer) clazz.getMethod("foo", String.class).invoke(null, "abc");
     assertEquals(15, ret);
+    assertEquals("abc3", sb.toString());
+  }
+
+  @Test
+  public void testUnexpectedExceptionInListener() throws Exception {
+    StringBuilder steps = new StringBuilder();
+    ExceptionListener listener = new ExceptionListener(steps, false);
+    Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
+        new DirectCallSiteHook(
+            new CallSiteFilter(
+                Type.getInternalName(TestClass.class),
+                "bar",
+                "(Ljava/lang/String;)I") {
+              @Override
+              public boolean acceptMethod(ClassNode cn, MethodNode mn) {
+                return true;
+              }
+            },
+            listener)
+    }, false);
+
+    int ret = (Integer) clazz.getMethod("foo", String.class).invoke(null, "abc");
+    assertEquals(9, ret);
+    assertEquals("1", steps.toString());
+  }
+
+  @Test
+  public void testExceptionInListener() throws Exception {
+    StringBuilder steps = new StringBuilder();
+    ExceptionListener listener = new ExceptionListener(steps, true);
+    Class clazz = getInstrumentClass(TestClass.class, new Hook[]{
+        new DirectCallSiteHook(
+            new CallSiteFilter(
+                Type.getInternalName(TestClass.class),
+                "bar",
+                "(Ljava/lang/String;)I") {
+              @Override
+              public boolean acceptMethod(ClassNode cn, MethodNode mn) {
+                return true;
+              }
+            },
+            listener)
+    }, false);
+
+    try {
+      clazz.getMethod("foo", String.class).invoke(null, "abc");
+    } catch (InvocationTargetException ite) {
+      if (ite.getTargetException().getClass() == RuntimeException.class &&
+          ite.getTargetException().getMessage().equals("Expected!")) {
+        steps.append("2");
+      }
+    }
+    assertEquals("12", steps.toString());
   }
 
   public static class TestBarCallSiteMutableListener extends DirectCallSiteReturnListener implements
       $io_shiftleft_bctrace_direct_callsite_DirectCallSiteReturnTest$TestBarCallSiteMutableListener {
 
+    private final StringBuilder sb;
+
+    public TestBarCallSiteMutableListener(StringBuilder sb) {
+      this.sb = sb;
+    }
 
     @ListenerMethod
-    public int onAfterCall(Class clazz, Object instance,
-        Object callSiteInstance, String s, int ret) {
+    public int onAfterCall(Class clazz, Object instance, Object callSiteInstance, String s,
+        int ret) {
+      sb.append(s).append(ret);
       return 5;
+    }
+  }
+
+  public static class ExceptionListener extends DirectCallSiteReturnListener implements
+      $io_shiftleft_bctrace_direct_callsite_DirectCallSiteReturnTest$ExceptionListener {
+
+    private final StringBuilder steps;
+    private final boolean expected;
+
+    public ExceptionListener(StringBuilder steps, boolean expected) {
+      this.steps = steps;
+      this.expected = expected;
+    }
+
+    @ListenerMethod
+    public int onAfterCall(Class clazz, Object instance, Object callSiteInstance, String s,
+        int ret) {
+      steps.append("1");
+      if (expected) {
+        throw new BctraceRuntimeException(new RuntimeException("Expected!"));
+      } else {
+        throw new RuntimeException("Unexpected!");
+      }
     }
   }
 }
