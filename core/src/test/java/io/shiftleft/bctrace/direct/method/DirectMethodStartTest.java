@@ -213,7 +213,7 @@ public class DirectMethodStartTest extends BcTraceTest {
   }
 
   public static class ExceptionListener extends DirectMethodStartListener implements
-      $io_shiftleft_bctrace_direct_method_DirectCallSiteStartTest$ExceptionListener {
+      $io_shiftleft_bctrace_direct_method_DirectMethodStartTest$ExceptionListener {
 
     private final StringBuilder steps;
     private final boolean expected;
