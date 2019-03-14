@@ -178,11 +178,13 @@ public class Transformer implements ClassFileTransformer {
       } else {
         if (classBeingRedefined != null && (cn.version & 0xFFFF) >= Opcodes.V1_7) {
           /**
-           * Retransformed bytecode do not contain original stack maps frames. So max stack size and
-           * max locals computations might fail to classes of version 1.7 or higher
-           * (see {@link ClassWriter.COMPUTE_MAXS}).
-           * This branch temporary changes the bytecode version to 1.6 so the class writer computes
-           * max without using stack frames.
+           * Retransformed bytecode does not contain the original stack maps frames, so computation
+           * of max stack size and locals cannot be reliably performed for classes of version 1.7 or
+           * higher using ASM {@link ClassWriter.COMPUTE_MAXS}.
+           *
+           * This branch temporary changes the class version to 1.6 so the class writer performs the
+           * computation without using stack frames, and then restores the original class version
+           * back.
            */
           Integer originalClassVersion = cn.version;
           cn.version = 50;
