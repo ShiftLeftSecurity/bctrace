@@ -45,17 +45,18 @@ import io.shiftleft.bctrace.jmx.MethodMetrics;
 import io.shiftleft.bctrace.logging.Level;
 import io.shiftleft.bctrace.runtime.Callback;
 import io.shiftleft.bctrace.runtime.CallbackEnabler;
-import io.shiftleft.bctrace.runtime.listener.generic.MutableStartListener;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
+import java.lang.reflect.Field;
 import java.security.ProtectionDomain;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 
@@ -175,9 +176,27 @@ public class Transformer implements ClassFileTransformer {
       if (!transformed) {
         return null;
       } else {
-        ClassWriter cw = new ClassWriter(cr, ClassWriter.COMPUTE_MAXS);
-        cn.accept(cw);
-        ret = cw.toByteArray();
+        if (classBeingRedefined != null && (cn.version & 0xFFFF) >= Opcodes.V1_7) {
+          /**
+           * Retransformed bytecode do not contain original stack maps frames. So max stack size and
+           * max locals computations might fail to classes of version 1.7 or higher
+           * (see {@link ClassWriter.COMPUTE_MAXS}).
+           * This branch temporary changes the bytecode version to 1.6 so the class writer computes
+           * max without using stack frames.
+           */
+          Integer originalClassVersion = cn.version;
+          cn.version = 50;
+          ClassWriter cw = new ClassWriter(cr, ClassWriter.COMPUTE_MAXS);
+          cn.accept(cw);
+          Field versionField = ClassWriter.class.getDeclaredField("version");
+          versionField.setAccessible(true);
+          versionField.set(cw, originalClassVersion);
+          ret = cw.toByteArray();
+        } else {
+          ClassWriter cw = new ClassWriter(cr, ClassWriter.COMPUTE_MAXS);
+          cn.accept(cw);
+          ret = cw.toByteArray();
+        }
         return ret;
       }
     } catch (Throwable th) {
