@@ -72,6 +72,17 @@ public class Transformer implements ClassFileTransformer {
   static String CALL_BACK_CLASS_NAME = Callback.class.getName()
       .replace('.', '/');
 
+  private static final Field CLASS_WRITER_VERSION_FIELD;
+
+  static {
+    try {
+      CLASS_WRITER_VERSION_FIELD = ClassWriter.class.getDeclaredField("version");
+      CLASS_WRITER_VERSION_FIELD.setAccessible(true);
+    } catch (NoSuchFieldException ex) {
+      throw new AssertionError();
+    }
+  }
+
   private static final File DUMP_FOLDER;
 
   static {
@@ -190,9 +201,7 @@ public class Transformer implements ClassFileTransformer {
           cn.version = 50;
           ClassWriter cw = new ClassWriter(cr, ClassWriter.COMPUTE_MAXS);
           cn.accept(cw);
-          Field versionField = ClassWriter.class.getDeclaredField("version");
-          versionField.setAccessible(true);
-          versionField.set(cw, originalClassVersion);
+          CLASS_WRITER_VERSION_FIELD.set(cw, originalClassVersion);
           ret = cw.toByteArray();
         } else {
           ClassWriter cw = new ClassWriter(cr, ClassWriter.COMPUTE_MAXS);
