@@ -51,12 +51,14 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
+import java.lang.reflect.Field;
 import java.security.ProtectionDomain;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 
@@ -71,6 +73,17 @@ public class Transformer implements ClassFileTransformer {
       .replace('.', '/');
   static String CALL_BACK_CLASS_NAME = Callback.class.getName()
       .replace('.', '/');
+
+  private static final Field CLASS_WRITER_VERSION_FIELD;
+
+  static {
+    try {
+      CLASS_WRITER_VERSION_FIELD = ClassWriter.class.getDeclaredField("version");
+      CLASS_WRITER_VERSION_FIELD.setAccessible(true);
+    } catch (NoSuchFieldException ex) {
+      throw new AssertionError();
+    }
+  }
 
   private static final File DUMP_FOLDER;
 
@@ -180,9 +193,27 @@ public class Transformer implements ClassFileTransformer {
       if (!transformed) {
         return null;
       } else {
-        ClassWriter cw = new ClassWriter(cr, ClassWriter.COMPUTE_MAXS);
-        cn.accept(cw);
-        ret = cw.toByteArray();
+        if (classBeingRedefined != null && (cn.version & 0xFFFF) >= Opcodes.V1_7) {
+          /**
+           * Retransformed bytecode does not contain the original stack maps frames, so computation
+           * of max stack size and locals cannot be reliably performed for classes of version 1.7 or
+           * higher using ASM {@link ClassWriter.COMPUTE_MAXS}.
+           *
+           * This branch temporary changes the class version to 1.6 so the class writer performs the
+           * computation without using stack frames, and then restores the original class version
+           * back.
+           */
+          Integer originalClassVersion = cn.version;
+          cn.version = 50;
+          ClassWriter cw = new ClassWriter(cr, ClassWriter.COMPUTE_MAXS);
+          cn.accept(cw);
+          CLASS_WRITER_VERSION_FIELD.set(cw, originalClassVersion);
+          ret = cw.toByteArray();
+        } else {
+          ClassWriter cw = new ClassWriter(cr, ClassWriter.COMPUTE_MAXS);
+          cn.accept(cw);
+          ret = cw.toByteArray();
+        }
         return ret;
       }
     } catch (Throwable th) {
