@@ -24,7 +24,7 @@
  */
 package io.shiftleft.bctrace.hook;
 
-import io.shiftleft.bctrace.filter.MethodFilter;
+import io.shiftleft.bctrace.filter.Filter;
 
 /**
  * An <b>instrumentation hook</b> determines what methods to instrument and what actions to perform
@@ -32,32 +32,15 @@ import io.shiftleft.bctrace.filter.MethodFilter;
  *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public abstract class Hook<F extends MethodFilter, L> {
+public interface Hook<F extends Filter, L> {
 
-  private F filter;
-  private L listener;
+  /**
+   * Returns the filter, deciding what methods to instrument.
+   */
+  public F getFilter();
 
-  Hook() {
-  }
-
-  Hook(F filter, L listener) {
-    this.filter = filter;
-    this.listener = listener;
-  }
-
-  public final F getFilter() {
-    return filter;
-  }
-
-  public final L getListener() {
-    return listener;
-  }
-
-  protected void setFilter(F filter) {
-    this.filter = filter;
-  }
-
-  protected void setListener(L listener) {
-    this.listener = listener;
-  }
+  /**
+   * Returns the listener invoked by the instrumented method hooks.
+   */
+  public L getListener();
 }

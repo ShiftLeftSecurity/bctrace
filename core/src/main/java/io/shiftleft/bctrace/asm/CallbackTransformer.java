@@ -27,6 +27,7 @@ package io.shiftleft.bctrace.asm;
 import io.shiftleft.bctrace.Bctrace;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
 import io.shiftleft.bctrace.hook.Hook;
+import io.shiftleft.bctrace.hook.direct.DirectHook;
 import io.shiftleft.bctrace.logging.Level;
 import io.shiftleft.bctrace.runtime.listener.direct.DirectListener;
 import io.shiftleft.bctrace.util.Utils;
@@ -82,13 +83,14 @@ public class CallbackTransformer implements ClassFileTransformer {
     }
 
     try {
-      Set<DirectListener> directListeners = new HashSet<DirectListener>();
+      Set<DirectListener> dynamicListeners = new HashSet<DirectListener>();
       for (int i = 0; i < this.hooks.length; i++) {
-        if (this.hooks[i].getListener() instanceof DirectListener) {
-          directListeners.add((DirectListener) this.hooks[i].getListener());
+        if (this.hooks[i] instanceof DirectHook) {
+          DirectHook dynamicHook = (DirectHook) this.hooks[i];
+          dynamicListeners.add(dynamicHook.getListener());
         }
       }
-      if (directListeners.size() == 0) {
+      if (dynamicListeners.size() == 0) {
         this.completed = true;
         return null;
       }
@@ -98,7 +100,7 @@ public class CallbackTransformer implements ClassFileTransformer {
       cn.version = Opcodes.V1_6;
       cr.accept(cn, 0);
       HashSet<String> methodsAdded = new HashSet<String>();
-      for (DirectListener dynamicListener : directListeners) {
+      for (DirectListener dynamicListener : dynamicListeners) {
         String key = getDynamicListenerMethodName(dynamicListener);
         if (methodsAdded.contains(key)) {
           continue;

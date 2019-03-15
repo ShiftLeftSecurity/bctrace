@@ -2,11 +2,11 @@ package ${package}.${artifactIdUnhyphenated}.hooks;
 
 import io.shiftleft.bctrace.Bctrace;
 import io.shiftleft.bctrace.filter.MethodFilter;
-import io.shiftleft.bctrace.hook.DirectHook;
+import io.shiftleft.bctrace.hook.direct.MethodHook;
 import io.shiftleft.bctrace.logging.Level;
 import io.shiftleft.bctrace.runtime.listener.direct.DirectListener;
 
-public class StringBuilderAppendHook extends DirectHook.MethodHook {
+public class StringBuilderAppendHook extends MethodHook {
 
   public StringBuilderAppendHook() {
     super(new MethodFilter(

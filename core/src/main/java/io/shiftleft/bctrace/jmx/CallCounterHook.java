@@ -24,28 +24,35 @@
  */
 package io.shiftleft.bctrace.jmx;
 
-import io.shiftleft.bctrace.filter.MethodFilter;
-import io.shiftleft.bctrace.hook.GenericMethodHook;
-import io.shiftleft.bctrace.runtime.listener.generic.GenericMethodStartListener;
+import io.shiftleft.bctrace.filter.Filter;
+import io.shiftleft.bctrace.hook.generic.GenericHook;
+import io.shiftleft.bctrace.runtime.listener.generic.StartListener;
 
 /**
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public class CallCounterHook extends
-    GenericMethodHook<MethodFilter, GenericMethodStartListener> {
+public class CallCounterHook extends GenericHook<Filter, StartListener> {
 
-  public CallCounterHook() {
-    setListener(
-        new GenericMethodStartListener() {
-          @Override
-          public boolean requiresArguments() {
-            return false;
-          }
+  private final StartListener listener = new StartListener() {
+    @Override
+    public boolean requiresArguments() {
+      return false;
+    }
 
-          @Override
-          public void onStart(int methodId, Class clazz, Object instance, Object[] args) {
-            MethodMetrics.getInstance().incrementCallCounter(methodId);
-          }
-        });
+    @Override
+    public void onStart(int methodId, Class clazz, Object instance, Object[] args) {
+      MethodMetrics.getInstance().incrementCallCounter(methodId);
+    }
+  };
+
+  @Override
+  public Filter getFilter() {
+    // This is an additional hook, that attaches its listener to the methods instrumented by other hooks
+    return null;
+  }
+
+  @Override
+  public StartListener getListener() {
+    return listener;
   }
 }

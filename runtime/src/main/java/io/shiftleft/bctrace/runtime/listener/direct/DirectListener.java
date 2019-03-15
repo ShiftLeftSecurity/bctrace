@@ -29,15 +29,16 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.Arrays;
 
 /**
  * DirectListener instances are notified directly from the instrumented method without wrapping or
  * boxing arguments. They are used for high performance notification.
  *
- * DirectListeners do not implement a fixed interface. They are used in DirectHooks, and they must
- * define a single @ListenerMethod method  whose signature matches the signature of the MethodFilter
- * of the hook in the following way:
+ * DirectListeners do not define a fixed interface. They are used in TargetedHooks, and they must
+ * define a single method (with name defined in the ListenerType enum) whose signature matches the
+ * signature of the TargetedFilter of the hook in the following way:
  *
  * Suppose the instrumented method defined by the filter being foo(Integer arg1, String arg2), then
  * a valid direct listener method for receiving start events would be:
@@ -48,13 +49,11 @@ import java.util.Arrays;
 public abstract class DirectListener {
 
   private final Method listenerMethod;
+  private final ListenerType type;
 
-  DirectListener() {
+  public DirectListener() {
     this.listenerMethod = searchListenerMethod();
-  }
-
-  public final Method getListenerMethod() {
-    return listenerMethod;
+    this.type = this.listenerMethod.getAnnotation(ListenerMethod.class).type();
   }
 
   private Method searchListenerMethod() {
@@ -79,14 +78,14 @@ public abstract class DirectListener {
     if (ret == null) {
       throw new Error("Listener does not define any @ListenerMethod method " + getClass());
     }
-    validateAccessibleAtBootstrap(ret);
+    checkMethodSingature(ret);
     return ret;
   }
 
   /**
    * Checks that all parameters and return type are loaded by the bootstrap classloader
    */
-  private static void validateAccessibleAtBootstrap(Method m) {
+  private static void checkMethodSingature(Method m) {
     Class<?>[] parameterTypes = m.getParameterTypes();
     for (Class paramClass : parameterTypes) {
       if (!isLoadedByBootstrapClassLoader(paramClass)) {
@@ -105,56 +104,62 @@ public abstract class DirectListener {
   }
 
 
+  public final Method getListenerMethod() {
+    return listenerMethod;
+  }
+
+  public final ListenerType getType() {
+    return type;
+  }
+
+  public static enum DynamicArgsType {
+    ARGUMENTS_RETURN,
+    ARGUMENTS_THROWABLE,
+    ARGUMENTS
+  }
+
+  /**
+   * Defines the valid names for the listener method, and its fixed first arguments
+   */
+  public static enum ListenerType {
+
+    // Instrumented class, instrumented instance
+    onStart(DynamicArgsType.ARGUMENTS, Class.class, Object.class),
+    // Instrumented class, instrumented instance
+    onReturn(DynamicArgsType.ARGUMENTS_RETURN, Class.class, Object.class),
+    // Instrumented class, instrumented instance, throwable raised
+    onThrowable(DynamicArgsType.ARGUMENTS_THROWABLE, Class.class, Object.class,
+        Throwable.class),
+    // Instrumented (caller) class, instrumented instance, callee instance
+    onBeforeCall(DynamicArgsType.ARGUMENTS, Class.class, Object.class, Object.class),
+    // Instrumented (caller) class, instrumented instance, callee instance
+    onAfterCall(DynamicArgsType.ARGUMENTS_RETURN, Class.class, Object.class, Object.class),
+    // Instrumented (caller) class, instrumented instance, callee instance,  throwable raised
+    onAfterCallThrowable(DynamicArgsType.ARGUMENTS_THROWABLE, Class.class, Object.class, Object.class,
+        Throwable.class);
 
 
-//  public static enum DynamicArgsType {
-//    ARGUMENTS_RETURN,
-//    ARGUMENTS_THROWABLE,
-//    ARGUMENTS
-//  }
+    private Class[] fixedArgs;
+    private DynamicArgsType dynamicArgsType;
 
-//  /**
-//   * Defines the valid names for the listener method, and its fixed first arguments
-//   */
-//  public static enum ListenerType {
-//
-//    // Instrumented class, instrumented instance
-//    onStart(DynamicArgsType.ARGUMENTS, Class.class, Object.class),
-//    // Instrumented class, instrumented instance
-//    onReturn(DynamicArgsType.ARGUMENTS_RETURN, Class.class, Object.class),
-//    // Instrumented class, instrumented instance, throwable raised
-//    onThrowable(DynamicArgsType.ARGUMENTS_THROWABLE, Class.class, Object.class,
-//        Throwable.class),
-//    // Instrumented (caller) class, instrumented instance, callee instance
-//    onBeforeCall(DynamicArgsType.ARGUMENTS, Class.class, Object.class, Object.class),
-//    // Instrumented (caller) class, instrumented instance, callee instance
-//    onAfterCall(DynamicArgsType.ARGUMENTS_RETURN, Class.class, Object.class, Object.class),
-//    // Instrumented (caller) class, instrumented instance, callee instance,  throwable raised
-//    onAfterCallThrowable(DynamicArgsType.ARGUMENTS_THROWABLE, Class.class, Object.class,
-//        Object.class,
-//        Throwable.class);
-//
-//
-//    private Class[] fixedArgs;
-//    private DynamicArgsType dynamicArgsType;
-//
-//    ListenerType(DynamicArgsType dynamicArgsType, Class... fixedArgs) {
-//      this.fixedArgs = fixedArgs;
-//      this.dynamicArgsType = dynamicArgsType;
-//    }
-//
-//    public Class[] getFixedArgs() {
-//      return fixedArgs;
-//    }
-//
-//    public DynamicArgsType getDynamicArgsType() {
-//      return dynamicArgsType;
-//    }
-//  }
+    ListenerType(DynamicArgsType dynamicArgsType, Class... fixedArgs) {
+      this.fixedArgs = fixedArgs;
+      this.dynamicArgsType = dynamicArgsType;
+    }
+
+    public Class[] getFixedArgs() {
+      return fixedArgs;
+    }
+
+    public DynamicArgsType getDynamicArgsType() {
+      return dynamicArgsType;
+    }
+  }
 
   @Retention(RetentionPolicy.RUNTIME)
   @Target(ElementType.METHOD)
   public static @interface ListenerMethod {
 
+    public ListenerType type();
   }
 }

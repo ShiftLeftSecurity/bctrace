@@ -36,7 +36,7 @@ import java.io.InputStream;
  */
 public abstract class BcTraceTest {
 
-  private static Bctrace init(ByteClassLoader cl, final Hook[] hooks) throws Exception {
+  public static Bctrace init(ByteClassLoader cl, final Hook[] hooks) throws Exception {
     Agent agent = new Agent() {
       @Override
       public void init(Bctrace bctrace) {
@@ -78,16 +78,10 @@ public abstract class BcTraceTest {
     InputStream is = clazz.getClassLoader().getResourceAsStream(resourceName);
     byte[] bytes = Utils.toByteArray(is);
     byte[] newBytes = transformer.transform(null, className.replace('.', '/'), clazz, null, bytes);
-    if (newBytes != null) {
-      bytes = newBytes;
-    } else {
-      throw new Error(
-          Transformer.class + " has returned a null byte array (no-op) for class " + clazz);
-    }
     if (trace) {
-      ASMUtils.viewByteCode(bytes);
+      ASMUtils.viewByteCode(newBytes);
     }
-    return cl.loadClass(className, bytes);
+    return cl.loadClass(className, newBytes);
   }
 
   public static class ByteClassLoader extends ClassLoader {
