@@ -24,9 +24,11 @@
  */
 package io.shiftleft.bctrace.runtime;
 
-import io.shiftleft.bctrace.runtime.listener.generic.FinishListener;
-import io.shiftleft.bctrace.runtime.listener.generic.MutableStartListener;
-import io.shiftleft.bctrace.runtime.listener.generic.StartListener;
+
+import io.shiftleft.bctrace.runtime.listener.generic.GenericMethodMutableStartListener;
+import io.shiftleft.bctrace.runtime.listener.generic.GenericMethodReturnListener;
+import io.shiftleft.bctrace.runtime.listener.generic.GenericMethodStartListener;
+import io.shiftleft.bctrace.runtime.listener.generic.GenericMethodThrowableListener;
 
 /**
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
@@ -49,7 +51,7 @@ public final class Callback {
     }
     try {
       NOTIFYING_FLAG.set(Boolean.TRUE);
-      ((StartListener) listeners[i]).onStart(methodId, clazz, instance, args);
+      ((GenericMethodStartListener) listeners[i]).onStart(methodId, clazz, instance, args);
     } catch (Throwable th) {
       handleThrowable(th);
       return;
@@ -59,7 +61,8 @@ public final class Callback {
   }
 
   @SuppressWarnings("BoxedValueEquality")
-  public static Object[] onMutableStart(Object[] args, int methodId, Class clazz, Object instance, int i) {
+  public static Object[] onMutableStart(Object[] args, int methodId, Class clazz, Object instance,
+      int i) {
     if (!CallbackEnabler.isThreadNotificationEnabled()) {
       return args;
     }
@@ -68,7 +71,8 @@ public final class Callback {
     }
     try {
       NOTIFYING_FLAG.set(Boolean.TRUE);
-      return ((MutableStartListener) listeners[i]).onStart(methodId, clazz, instance, args);
+      return ((GenericMethodMutableStartListener) listeners[i])
+          .onStart(methodId, clazz, instance, args);
     } catch (Throwable th) {
       handleThrowable(th);
       return args;
@@ -80,26 +84,52 @@ public final class Callback {
   /**
    * Callback method for FinishListener instances.
    *
-   * @param original The original value to be changed by the listener. Might correspond to the
-   * return value of the Throwable raised
+   * @param ret The original value to be changed by the listener.
    */
   @SuppressWarnings("BoxedValueEquality")
-  public static Object onFinish(Object original, Object ret, Throwable th, int methodId,
+  public static Object onReturn(Object ret, int methodId,
       Class clazz, Object instance, int i, Object[] args) {
     if (!CallbackEnabler.isThreadNotificationEnabled()) {
-      return original;
+      return ret;
     }
     if (Boolean.TRUE == NOTIFYING_FLAG.get()) {
-      return original;
+      return ret;
     }
     try {
       NOTIFYING_FLAG.set(Boolean.TRUE);
-      return ((FinishListener) listeners[i])
-          .onFinish(methodId, clazz, instance, args, ret, th);
+      return ((GenericMethodReturnListener) listeners[i])
+          .onReturn(methodId, clazz, instance, args, ret);
     } catch (Throwable thr) {
       handleThrowable(thr);
       // In case of exception raised in the listener, return the original value
-      return original;
+      return ret;
+    } finally {
+      NOTIFYING_FLAG.set(Boolean.FALSE);
+    }
+  }
+
+  /**
+   * Callback method for FinishListener instances.
+   *
+   * @param th The original Throwable to be changed by the listener.
+   */
+  @SuppressWarnings("BoxedValueEquality")
+  public static Throwable onThrow(Throwable th, int methodId,
+      Class clazz, Object instance, int i, Object[] args) {
+    if (!CallbackEnabler.isThreadNotificationEnabled()) {
+      return th;
+    }
+    if (Boolean.TRUE == NOTIFYING_FLAG.get()) {
+      return th;
+    }
+    try {
+      NOTIFYING_FLAG.set(Boolean.TRUE);
+      return ((GenericMethodThrowableListener) listeners[i])
+          .onThrow(methodId, clazz, instance, args, th);
+    } catch (Throwable thr) {
+      handleThrowable(thr);
+      // In case of exception raised in the listener, return the original value
+      return th;
     } finally {
       NOTIFYING_FLAG.set(Boolean.FALSE);
     }

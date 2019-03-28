@@ -27,12 +27,12 @@ package io.shiftleft.bctrace;
 import static org.junit.Assert.assertEquals;
 
 import io.shiftleft.bctrace.BcTraceTest.ByteClassLoader;
-import io.shiftleft.bctrace.filter.MethodFilter;
+import io.shiftleft.bctrace.filter.MethodFilter.DirectMethodFilter;
+import io.shiftleft.bctrace.hook.DirectMethodHook;
 import io.shiftleft.bctrace.hook.Hook;
-import io.shiftleft.bctrace.hook.direct.MethodHook;
 import io.shiftleft.bctrace.runtime.listener.direct.$io_shiftleft_bctrace_CallBackTransformerTest$SampleListener1;
 import io.shiftleft.bctrace.runtime.listener.direct.$io_shiftleft_bctrace_CallBackTransformerTest$SampleListener2;
-import io.shiftleft.bctrace.runtime.listener.direct.DirectListener;
+import io.shiftleft.bctrace.runtime.listener.direct.DirectMethodStartListener;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import org.junit.Test;
@@ -51,12 +51,14 @@ public class CallBackTransformerTest {
   public void testDynamic() throws Exception {
 
     final long aLong = System.currentTimeMillis();
-    DirectListener listener1 = new SampleListener1();
-    DirectListener listener2 = new SampleListener2();
+    SampleListener1 listener1 = new SampleListener1();
+    SampleListener2 listener2 = new SampleListener2();
     Hook[] hooks = new Hook[]{
-        new MethodHook(new MethodFilter("io/shiftleft/bctrace/TestClass", "fact", "(J)J"),
-            listener1),
-        new MethodHook(new MethodFilter("io/shiftleft/bctrace/TestClass", "factWrapper",
+        new DirectMethodHook(
+            new DirectMethodFilter("io/shiftleft/bctrace/TestClass", "fact", "(J)J"),
+            listener1) {
+        },
+        new DirectMethodHook(new DirectMethodFilter("io/shiftleft/bctrace/TestClass", "factWrapper",
             "(Ljava/lang/Long;)J"),
             listener2)};
 
@@ -78,12 +80,12 @@ public class CallBackTransformerTest {
     assertEquals(listener2.toString(), Long.toString(aLong));
   }
 
-  public static class SampleListener1 extends DirectListener implements
+  public static class SampleListener1 extends DirectMethodStartListener implements
       $io_shiftleft_bctrace_CallBackTransformerTest$SampleListener1 {
 
     final StringBuilder sb = new StringBuilder();
 
-    @ListenerMethod(type = ListenerType.onStart)
+    @ListenerMethod
     public void onEvent1(Class clazz, Object instance, long n) {
       sb.append(n);
     }
@@ -94,12 +96,12 @@ public class CallBackTransformerTest {
     }
   }
 
-  public static class SampleListener2 extends DirectListener implements
+  public static class SampleListener2 extends DirectMethodStartListener implements
       $io_shiftleft_bctrace_CallBackTransformerTest$SampleListener2 {
 
     final StringBuilder sb = new StringBuilder();
 
-    @ListenerMethod(type = ListenerType.onStart)
+    @ListenerMethod
     public void onEvent2(Class clazz, Object instance, Long n) {
       sb.append(n);
     }

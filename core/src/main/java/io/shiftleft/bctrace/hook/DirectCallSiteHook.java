@@ -22,30 +22,16 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.jmx;
+package io.shiftleft.bctrace.hook;
 
-import io.shiftleft.bctrace.filter.MethodFilter;
-import io.shiftleft.bctrace.hook.GenericMethodHook;
-import io.shiftleft.bctrace.runtime.listener.generic.GenericMethodStartListener;
+import io.shiftleft.bctrace.filter.CallSiteFilter;
+import io.shiftleft.bctrace.hook.util.DirectListenerValidator;
+import io.shiftleft.bctrace.runtime.listener.direct.DirectCallSiteListener;
 
-/**
- * @author Ignacio del Valle Alles idelvall@shiftleft.io
- */
-public class CallCounterHook extends
-    GenericMethodHook<MethodFilter, GenericMethodStartListener> {
+public class DirectCallSiteHook extends Hook<CallSiteFilter, DirectCallSiteListener> {
 
-  public CallCounterHook() {
-    setListener(
-        new GenericMethodStartListener() {
-          @Override
-          public boolean requiresArguments() {
-            return false;
-          }
-
-          @Override
-          public void onStart(int methodId, Class clazz, Object instance, Object[] args) {
-            MethodMetrics.getInstance().incrementCallCounter(methodId);
-          }
-        });
+  public DirectCallSiteHook(CallSiteFilter filter, DirectCallSiteListener listener) {
+    super(filter, listener);
+    DirectListenerValidator.checkListenerMethod(filter.getMethodDescriptor(), listener);
   }
 }

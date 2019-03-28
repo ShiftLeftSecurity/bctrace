@@ -22,30 +22,18 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.jmx;
+package io.shiftleft.bctrace.hook;
 
 import io.shiftleft.bctrace.filter.MethodFilter;
-import io.shiftleft.bctrace.hook.GenericMethodHook;
-import io.shiftleft.bctrace.runtime.listener.generic.GenericMethodStartListener;
+import io.shiftleft.bctrace.runtime.listener.generic.GenericMethodListener;
 
-/**
- * @author Ignacio del Valle Alles idelvall@shiftleft.io
- */
-public class CallCounterHook extends
-    GenericMethodHook<MethodFilter, GenericMethodStartListener> {
+public class GenericMethodHook<F extends MethodFilter, L extends GenericMethodListener>
+    extends Hook<F, L> {
 
-  public CallCounterHook() {
-    setListener(
-        new GenericMethodStartListener() {
-          @Override
-          public boolean requiresArguments() {
-            return false;
-          }
+  public GenericMethodHook() {
+  }
 
-          @Override
-          public void onStart(int methodId, Class clazz, Object instance, Object[] args) {
-            MethodMetrics.getInstance().incrementCallCounter(methodId);
-          }
-        });
+  public GenericMethodHook(F filter, L listener) {
+    super(filter, listener);
   }
 }
