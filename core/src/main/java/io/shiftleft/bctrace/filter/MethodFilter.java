@@ -25,6 +25,7 @@
 package io.shiftleft.bctrace.filter;
 
 import io.shiftleft.bctrace.hierarchy.BctraceClass;
+import io.shiftleft.bctrace.hierarchy.UnloadedClass;
 import java.security.ProtectionDomain;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
@@ -35,7 +36,7 @@ import org.objectweb.asm.tree.MethodNode;
  * ClassLoader) acceptClass} method. If this return <code>true</code> the class bytecode is
  * parsed and the filter {@link #acceptClass(BctraceClass, ProtectionDomain, ClassLoader)
  * acceptMethod} is called. It this other returns true the filter {@link
- * #acceptMethod(ClassNode, MethodNode) acceptMethod} method will be invoked once per non
+ * #acceptMethod(UnloadedClass, MethodNode) acceptMethod} method will be invoked once per non
  * abstract nor native method in the class. Invocations returning <code>true</code> lead to a hook
  * insertions into the bytecode of the method.
  *
@@ -46,7 +47,7 @@ public abstract class MethodFilter extends ClassFilter {
   /**
    * Returns a boolean that determines whether to instrument the specified method
    */
-  public abstract boolean acceptMethod(ClassNode cn, MethodNode mn);
+  public abstract boolean acceptMethod(UnloadedClass clazz, MethodNode mn);
 
   /**
    * A filter that accepts all classes and methods.
@@ -68,7 +69,7 @@ public abstract class MethodFilter extends ClassFilter {
     }
 
     @Override
-    public boolean acceptMethod(ClassNode cn, MethodNode mn) {
+    public boolean acceptMethod(UnloadedClass clazz, MethodNode mn) {
       return true;
     }
   }
@@ -132,7 +133,7 @@ public abstract class MethodFilter extends ClassFilter {
     }
 
     @Override
-    public boolean acceptMethod(ClassNode cn, MethodNode mn) {
+    public boolean acceptMethod(UnloadedClass clazz, MethodNode mn) {
       return this.methodName.equals(mn.name) && this.methodDescriptor.equals(mn.desc);
     }
   }

@@ -31,6 +31,7 @@ import static org.junit.Assert.assertTrue;
 import io.shiftleft.bctrace.BcTraceTest;
 import io.shiftleft.bctrace.TestClass;
 import io.shiftleft.bctrace.filter.CallSiteFilter;
+import io.shiftleft.bctrace.hierarchy.UnloadedClass;
 import io.shiftleft.bctrace.hook.DirectCallSiteHook;
 import io.shiftleft.bctrace.hook.Hook;
 import io.shiftleft.bctrace.runtime.BctraceRuntimeException;
@@ -59,7 +60,7 @@ public class DirectCallSiteStartTest extends BcTraceTest {
         "arraycopy",
         "(Ljava/lang/Object;ILjava/lang/Object;II)V") {
       @Override
-      public boolean acceptMethod(ClassNode cn, MethodNode mn) {
+      public boolean acceptMethod(UnloadedClass clazz, MethodNode mn) {
         return true;
       }
     };
@@ -81,7 +82,7 @@ public class DirectCallSiteStartTest extends BcTraceTest {
         "getUpperCase",
         "(Ljava/lang/String;)Ljava/lang/String;") {
       @Override
-      public boolean acceptMethod(ClassNode cn, MethodNode mn) {
+      public boolean acceptMethod(UnloadedClass clazz, MethodNode mn) {
         return true;
       }
     };
@@ -104,7 +105,7 @@ public class DirectCallSiteStartTest extends BcTraceTest {
         "getUpperCase",
         "(Ljava/lang/String;)Ljava/lang/String;") {
       @Override
-      public boolean acceptMethod(ClassNode cn, MethodNode mn) {
+      public boolean acceptMethod(UnloadedClass clazz, MethodNode mn) {
         return true;
       }
     };
@@ -158,7 +159,7 @@ public class DirectCallSiteStartTest extends BcTraceTest {
         "(Ljava/lang/String;)Ljava/lang/String;",
         new int[]{156}) {
       @Override
-      public boolean acceptMethod(ClassNode cn, MethodNode mn) {
+      public boolean acceptMethod(UnloadedClass clazz, MethodNode mn) {
         return true;
       }
     };
@@ -207,7 +208,7 @@ public class DirectCallSiteStartTest extends BcTraceTest {
         "(Ljava/lang/String;)Ljava/lang/String;",
         new int[]{154, 158}) {
       @Override
-      public boolean acceptMethod(ClassNode cn, MethodNode mn) {
+      public boolean acceptMethod(UnloadedClass clazz, MethodNode mn) {
         return true;
       }
     };

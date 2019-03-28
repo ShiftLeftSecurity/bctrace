@@ -32,6 +32,7 @@ import io.shiftleft.bctrace.BcTraceTest;
 import io.shiftleft.bctrace.TestClass;
 import io.shiftleft.bctrace.TestClass.TestRuntimeException;
 import io.shiftleft.bctrace.filter.MethodFilter.AllFilter;
+import io.shiftleft.bctrace.hierarchy.UnloadedClass;
 import io.shiftleft.bctrace.hook.GenericMethodHook;
 import io.shiftleft.bctrace.hook.Hook;
 import io.shiftleft.bctrace.runtime.BctraceRuntimeException;
@@ -55,7 +56,7 @@ public class GenericMethodThrowableTest extends BcTraceTest {
         new GenericMethodHook(
             new AllFilter() {
               @Override
-              public boolean acceptMethod(ClassNode cn, MethodNode mn) {
+              public boolean acceptMethod(UnloadedClass clazz, MethodNode mn) {
                 return mn.name.equals("getLongWithConditionalException");
               }
             },
@@ -93,7 +94,7 @@ public class GenericMethodThrowableTest extends BcTraceTest {
         new GenericMethodHook(
             new AllFilter() {
               @Override
-              public boolean acceptMethod(ClassNode cn, MethodNode mn) {
+              public boolean acceptMethod(UnloadedClass clazz, MethodNode mn) {
                 return mn.name.equals("<init>");
               }
             },
@@ -128,7 +129,7 @@ public class GenericMethodThrowableTest extends BcTraceTest {
         new GenericMethodHook(
             new AllFilter() {
               @Override
-              public boolean acceptMethod(ClassNode cn, MethodNode mn) {
+              public boolean acceptMethod(UnloadedClass clazz, MethodNode mn) {
                 return mn.name.equals("<init>");
               }
             },
@@ -164,7 +165,7 @@ public class GenericMethodThrowableTest extends BcTraceTest {
         new GenericMethodHook(
             new AllFilter() {
               @Override
-              public boolean acceptMethod(ClassNode cn, MethodNode mn) {
+              public boolean acceptMethod(UnloadedClass clazz, MethodNode mn) {
                 return mn.name.equals("<init>");
               }
             },
@@ -197,7 +198,7 @@ public class GenericMethodThrowableTest extends BcTraceTest {
         new GenericMethodHook(
             new AllFilter() {
               @Override
-              public boolean acceptMethod(ClassNode cn, MethodNode mn) {
+              public boolean acceptMethod(UnloadedClass clazz, MethodNode mn) {
                 return mn.name.equals("<init>");
               }
             },

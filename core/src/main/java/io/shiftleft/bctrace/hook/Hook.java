@@ -53,11 +53,11 @@ public abstract class Hook<F extends MethodFilter, L> {
     return listener;
   }
 
-  protected void setFilter(F filter) {
+  protected final void setFilter(F filter) {
     this.filter = filter;
   }
 
-  protected void setListener(L listener) {
+  protected final void setListener(L listener) {
     this.listener = listener;
   }
 }

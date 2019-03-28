@@ -2,6 +2,7 @@ package io.shiftleft.bctrace.hook.util;
 
 import io.shiftleft.bctrace.asm.util.ASMUtils;
 import io.shiftleft.bctrace.filter.MethodFilter;
+import io.shiftleft.bctrace.hierarchy.UnloadedClass;
 import io.shiftleft.bctrace.hook.GenericMethodHook;
 import io.shiftleft.bctrace.runtime.listener.generic.GenericMethodReturnListener;
 import java.security.ProtectionDomain;
@@ -22,7 +23,7 @@ public abstract class MainMethodEndHook extends
       }
 
       @Override
-      public boolean acceptMethod(ClassNode cn, MethodNode mn) {
+      public boolean acceptMethod(UnloadedClass clazz, MethodNode mn) {
         return ASMUtils.isStatic(mn.access) && ASMUtils.isPublic(mn.access) && mn.name.equals("util")
             && mn.desc.equals("([Ljava/lang/String;)V");
       }

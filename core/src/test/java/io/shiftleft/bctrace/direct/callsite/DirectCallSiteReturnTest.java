@@ -31,6 +31,7 @@ import static org.junit.Assert.assertTrue;
 import io.shiftleft.bctrace.BcTraceTest;
 import io.shiftleft.bctrace.TestClass;
 import io.shiftleft.bctrace.filter.CallSiteFilter;
+import io.shiftleft.bctrace.hierarchy.UnloadedClass;
 import io.shiftleft.bctrace.hook.DirectCallSiteHook;
 import io.shiftleft.bctrace.hook.Hook;
 import io.shiftleft.bctrace.runtime.BctraceRuntimeException;
@@ -38,11 +39,9 @@ import io.shiftleft.bctrace.runtime.listener.direct.$io_shiftleft_bctrace_direct
 import io.shiftleft.bctrace.runtime.listener.direct.$io_shiftleft_bctrace_direct_callsite_DirectCallSiteReturnTest$ExceptionListener;
 import io.shiftleft.bctrace.runtime.listener.direct.$io_shiftleft_bctrace_direct_callsite_DirectCallSiteReturnTest$TestBarCallSiteMutableListener;
 import io.shiftleft.bctrace.runtime.listener.direct.DirectCallSiteReturnListener;
-import io.shiftleft.bctrace.runtime.listener.direct.DirectCallSiteStartListener;
 import java.lang.reflect.InvocationTargetException;
 import jdk.nashorn.internal.codegen.types.Type;
 import org.junit.Test;
-import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 
 /**
@@ -58,7 +57,7 @@ public class DirectCallSiteReturnTest extends BcTraceTest {
     CallSiteFilter arrayCopyCallSiteFilter = new CallSiteFilter("java/lang/System", "arraycopy",
         "(Ljava/lang/Object;ILjava/lang/Object;II)V") {
       @Override
-      public boolean acceptMethod(ClassNode cn, MethodNode mn) {
+      public boolean acceptMethod(UnloadedClass clazz, MethodNode mn) {
         return true;
       }
     };
@@ -109,7 +108,7 @@ public class DirectCallSiteReturnTest extends BcTraceTest {
                 "bar",
                 "(Ljava/lang/String;)I") {
               @Override
-              public boolean acceptMethod(ClassNode cn, MethodNode mn) {
+              public boolean acceptMethod(UnloadedClass clazz, MethodNode mn) {
                 return true;
               }
             },
@@ -132,7 +131,7 @@ public class DirectCallSiteReturnTest extends BcTraceTest {
                 "bar",
                 "(Ljava/lang/String;)I") {
               @Override
-              public boolean acceptMethod(ClassNode cn, MethodNode mn) {
+              public boolean acceptMethod(UnloadedClass clazz, MethodNode mn) {
                 return true;
               }
             },
@@ -155,7 +154,7 @@ public class DirectCallSiteReturnTest extends BcTraceTest {
                 "bar",
                 "(Ljava/lang/String;)I") {
               @Override
-              public boolean acceptMethod(ClassNode cn, MethodNode mn) {
+              public boolean acceptMethod(UnloadedClass clazz, MethodNode mn) {
                 return true;
               }
             },

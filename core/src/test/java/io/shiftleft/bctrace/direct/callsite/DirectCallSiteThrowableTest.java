@@ -30,6 +30,7 @@ import static org.junit.Assert.assertTrue;
 import io.shiftleft.bctrace.BcTraceTest;
 import io.shiftleft.bctrace.TestClass;
 import io.shiftleft.bctrace.filter.CallSiteFilter;
+import io.shiftleft.bctrace.hierarchy.UnloadedClass;
 import io.shiftleft.bctrace.hook.DirectCallSiteHook;
 import io.shiftleft.bctrace.hook.Hook;
 import io.shiftleft.bctrace.runtime.BctraceRuntimeException;
@@ -58,7 +59,7 @@ public class DirectCallSiteThrowableTest extends BcTraceTest {
                 "throwRuntimeException",
                 "()V") {
               @Override
-              public boolean acceptMethod(ClassNode cn, MethodNode mn) {
+              public boolean acceptMethod(UnloadedClass clazz, MethodNode mn) {
                 return true;
               }
             },
@@ -101,7 +102,7 @@ public class DirectCallSiteThrowableTest extends BcTraceTest {
                 "throwRuntimeException",
                 "()V") {
               @Override
-              public boolean acceptMethod(ClassNode cn, MethodNode mn) {
+              public boolean acceptMethod(UnloadedClass clazz, MethodNode mn) {
                 return true;
               }
             },
@@ -145,7 +146,7 @@ public class DirectCallSiteThrowableTest extends BcTraceTest {
                 "throwRuntimeException",
                 "()V") {
               @Override
-              public boolean acceptMethod(ClassNode cn, MethodNode mn) {
+              public boolean acceptMethod(UnloadedClass clazz, MethodNode mn) {
                 return true;
               }
             },
@@ -175,7 +176,7 @@ public class DirectCallSiteThrowableTest extends BcTraceTest {
                 "throwRuntimeException",
                 "()V") {
               @Override
-              public boolean acceptMethod(ClassNode cn, MethodNode mn) {
+              public boolean acceptMethod(UnloadedClass clazz, MethodNode mn) {
                 return true;
               }
             },
