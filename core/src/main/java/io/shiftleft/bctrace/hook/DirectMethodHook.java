@@ -22,29 +22,29 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.jmx;
+package io.shiftleft.bctrace.hook;
 
-import io.shiftleft.bctrace.filter.MethodFilter;
-import io.shiftleft.bctrace.hook.GenericMethodHook;
-import io.shiftleft.bctrace.runtime.listener.generic.GenericMethodStartListener;
+import io.shiftleft.bctrace.filter.MethodFilter.DirectMethodFilter;
+import io.shiftleft.bctrace.hook.util.DirectListenerValidator;
+import io.shiftleft.bctrace.runtime.listener.direct.DirectMethodListener;
+import io.shiftleft.bctrace.runtime.listener.direct.DirectMethodReturnListener;
+import io.shiftleft.bctrace.runtime.listener.direct.DirectMethodStartListener;
+import io.shiftleft.bctrace.runtime.listener.direct.DirectMethodThrowableListener;
 
-/**
- * @author Ignacio del Valle Alles idelvall@shiftleft.io
- */
-public class CallCounterHook extends
-    GenericMethodHook<MethodFilter, GenericMethodStartListener> {
+public class DirectMethodHook extends Hook<DirectMethodFilter, DirectMethodListener> {
 
-  public CallCounterHook() {
-    setListener(
-        new GenericMethodStartListener() {
-          @Override
-          public boolean requiresArguments() {
-            return false;
-          }
+  public DirectMethodHook(DirectMethodFilter filter, DirectMethodListener listener) {
+    super(filter, listener);
+    DirectListenerValidator.checkListenerMethod(filter.getMethodDescriptor(), listener);
+  }
 
-          @Override
-          public void onStart(int methodId, Class clazz, Object instance, Object[] args) {
-            MethodMetrics.getInstance().incrementCallCounter(methodId);
+  public static void main(String[] args) {
+    new DirectMethodHook(new DirectMethodFilter("AA", "mm", "(Ljava/lang/String;D)I"),
+        new DirectMethodReturnListener(){
+
+          @ListenerMethod
+          public int listen(Class clazz, Object instance, String str, double i, int ret, int y) {
+            return 1;
           }
         });
   }

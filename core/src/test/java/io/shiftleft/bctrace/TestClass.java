@@ -27,6 +27,7 @@ package io.shiftleft.bctrace;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
 import io.shiftleft.bctrace.util.Utils;
 import java.io.InputStream;
+import java.util.Arrays;
 
 /**
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
@@ -148,6 +149,20 @@ public class TestClass extends TestSuperClass {
   public static void execVoid() {
   }
 
+  public static String greet() {
+    StringBuilder sb = new StringBuilder();
+    sb.append(getUpperCase("hello"));
+    sb.append(" ");
+    sb.append(getUpperCase("world"));
+    sb.append(" ");
+    sb.append(getUpperCase("!"));
+    return sb.toString();
+  }
+
+  public static String getUpperCase(String message) {
+    return message.toUpperCase();
+  }
+
   public static void main(String[] args) throws Exception {
     Class clazz = TestClass.class;
     String className = clazz.getCanonicalName();
@@ -155,6 +170,11 @@ public class TestClass extends TestSuperClass {
     InputStream is = clazz.getClassLoader().getResourceAsStream(resourceName);
     byte[] bytes = Utils.toByteArray(is);
     ASMUtils.viewByteCode(bytes);
+
+    char[] a = new char[]{'a', 'b', 'c'};
+    char[] b = new char[2];
+    System.arraycopy(a, 1, b, 0, 2);
+    System.out.println(Arrays.toString(b));
   }
 
   public static class TestRuntimeException extends RuntimeException {
