@@ -1,4 +1,4 @@
-/*
+package io.shiftleft.bctrace;/*
  * ShiftLeft, Inc. CONFIDENTIAL
  * Unpublished Copyright (c) 2017 ShiftLeft, Inc., All Rights Reserved.
  *
@@ -22,7 +22,6 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace;
 
 /**
  *
@@ -33,4 +32,6 @@ public interface SystemProperty {
   public static final String DUMP_FOLDER = "bctrace.dump.path";
   public static final String LOG_LEVEL = "bctrace.log.level";
   public static final String IGNORE_FILE = "bctrace.ignore";
+  public static final String AGENT_JAR = "bctrace.agent.jar";
+
 }
