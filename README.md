@@ -1,6 +1,51 @@
 # io.shiftleft:bctrace
 
-An extensible java agent framework aimed at instrumenting programs running on the JVM (modifying their original bytecode both at class-loading-time, and at run-time), with the purpose of capturing method invocation events (start, finish, errors ...) and notifying custom listeners.
+An extensible framework for creating production-ready java agents aimed at tracing and changing the behaviour of java applications without changing their source code.
+
+`bctrace` offers a simple event-driven programming model, built around the `Hook` abstraction, and 
+saves the developer from the complexity of dealing with bytecode manipulation.
+
+It offers a set of high level primitives that allow:
+
+- Notifying events to hook listeners in the case of:
+  - Method started
+  - Method about to return
+  - Method about to rise a `Throwable`
+  - Call site about to be invoked
+  - Call site just returned
+  - Call site just raised a `Throwable`
+- Changing runtime data: 
+  - Method/call-site passed argument values
+  - Method/call-site value to be returned
+  - Method/call-site `Throwable` to be raised
+  
+ Generic API vs Direct API:
+ 
+ https://github.com/opentracing/opentracing-java
+ 
+ https://github.com/census-instrumentation/opencensus-java
+
+ https://github.com/opentracing-contrib/java-specialagent
+ 
+ ### Features
+ 
+ - Battle tested and production-ready
+ - Automatic packaging of dependencies
+ - Supports filtering based on class hierarchy
+ - Custom off-heap classloader, that ensures no side effects in the target application
+ - Ensures no recursive event notification are triggered from listener code
+ - Ensures no exceptions raised by listeners reach the application
+ - JMX metrics
+ - Extensible
+   - Logging
+   - Help menu
+ 
+ ### Generic vs Direct APIs:
+
+
+
+
+ aimed at instrumenting programs running on the JVM (modifying their original bytecode both at class-loading-time, and at run-time), with the purpose of capturing method invocation events (start, finish, errors ...) and notifying custom listeners.
 
 > This project is a candidate to be released as OSS in the future, so its scope should be kept as generic as possible without including any ShiftLeft core feature.
 
