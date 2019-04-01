@@ -132,6 +132,24 @@ public class BctraceClassLoader extends ClassLoader {
     return Collections.enumeration(entryMap.keySet());
   }
 
+
+  /**
+   * Default getResource() fails to get resources from bootstrap classloader inside a jar added via
+   * {@link java.lang.instrument.Instrumentation#appendToBootstrapClassLoaderSearch(JarFile)},
+   * ClassLoader.getSystemResource succeeds though
+   */
+  @Override
+  public URL getResource(String name) {
+    ClassLoader parent = getParent();
+    if (parent == null) {
+      URL url = ClassLoader.getSystemResource(name);
+      if (url != null) {
+        return url;
+      }
+    }
+    return super.getResource(name);
+  }
+
   @Override
   protected URL findResource(String name) {
     name = removeLeadingSlash(name);
