@@ -41,13 +41,13 @@ public class BctraceClassLoader extends ClassLoader {
 
   private final ProtectionDomain agentProtectionDomain;
 
-  public BctraceClassLoader() {
+  public BctraceClassLoader(String agentJarName) {
     super(null);
     try {
       Permissions permissions = new Permissions();
       permissions.add(new AllPermission());
       this.agentProtectionDomain = new ProtectionDomain(new CodeSource(
-          new URL(URL_PROTOCOL, null, -1, "jar", handler),
+          new URL(URL_PROTOCOL, null, -1, agentJarName, handler),
           (Certificate[]) null),
           permissions,
           this,
