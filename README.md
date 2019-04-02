@@ -2,10 +2,12 @@
 
 An extensible framework for creating production-ready java agents aimed at tracing and changing the behaviour of java applications without changing their source code.
 
-`bctrace` offers a simple event-driven programming model, built around the `Hook` abstraction, and 
+`bctrace` exposes a simple event-driven programming model, built around the `Hook` abstraction, and 
 saves the developer from the complexity of dealing with bytecode manipulation.
 
-It offers a set of high level primitives that allow:
+**Use cases:**
+ 
+It offers a set of high level primitives targeted at:
 
 - Notifying events to hook listeners in the case of:
   - Method started
@@ -19,81 +21,22 @@ It offers a set of high level primitives that allow:
   - Method/call-site value to be returned
   - Method/call-site `Throwable` to be raised
   
- Generic API vs Direct API:
- 
- https://github.com/opentracing/opentracing-java
- 
- https://github.com/census-instrumentation/opencensus-java
-
- https://github.com/opentracing-contrib/java-specialagent
- 
- ### Features
+**Features:**
  
  - Battle tested and production-ready
+ - Generic vs direct APIs (this last suited for instrumenting hot spot methods)
  - Automatic packaging of dependencies
  - Supports filtering based on class hierarchy
- - Custom off-heap classloader, that ensures no side effects in the target application
- - Ensures no recursive event notification are triggered from listener code
+ - Off-heap classloading, that ensures no side effects in the target application
+ - Ensures no recursive event notifications are triggered from listener code
  - Ensures no exceptions raised by listeners reach the application
  - JMX metrics
  - Extensible
    - Logging
    - Help menu
  
- ### Generic vs Direct APIs:
-
-
-
-
- aimed at instrumenting programs running on the JVM (modifying their original bytecode both at class-loading-time, and at run-time), with the purpose of capturing method invocation events (start, finish, errors ...) and notifying custom listeners.
-
-> This project is a candidate to be released as OSS in the future, so its scope should be kept as generic as possible without including any ShiftLeft core feature.
-
-**Table of Contents**
-- [io.shiftleft:bctrace](#ioshiftleftctrace)
-  - [How it works](#how-it-works)
-  - [Usage](#usage)
-  - [Registering hooks](#registering-hooks)
-  - [API](#api)
-  - [Maven dependency](#maven-dependency)
-  - [Authors](#authors)
-  - [License](#license)
-	
-## How it works
-The [java instrumentation package](http://docs.oracle.com/javase/6/docs/api/java/lang/instrument/package-summary.html) introduced in Java version 1.5, provides a simple way to transform java-class definition at loading time, consisting basically in a `byte[]` to `byte[]` transformation, by the so called "java agents".
-
-Since Java version 1.6 these agents can perform also dynamic instrumentation; that is, retransforming the bytecode of classes already loaded. 
-
-This library provides an configurable agent ([io.shiftleft.btrace.Init](src/main/java/io/shiftleft/bctrace/Init.java)) (to be used as an external dependency by extending agent implementations) aimed at injecting custom [hooks](src/main/java/io/shiftleft/bctrace/spi/Hook.java) into the code of the specified methods of the target application.
-
-
-From a simplified point of view, the dynamic transformation turns a method like this: 
-```java
-public Object foo(Object bar){
-    return new Object();
-}
-```
-
-into that:
-```java
-public Object foo(Object bar){
-    hook1.getListener().onStart(bar);
-    ...
-    hookn.getListener().onStart(bar);
-    try {
-        Object ret = new Object();
-	hook1.getListener().onFinishedReturn(ret);
-	...
-	hookn.getListener().onFinishedReturn(ret);
-        return ret;
-    } catch(Throwable th) {
-    	hook1.getListener().onFinishedThrowable(th);
-	...
-	hookn.getListener().onFinishedThrowable(th);
-        throw th; // at bytecode level this is legal
-    }
-}
-```
+## Getting started
+ 
 ## Usage
 Agent projects making use of this library must create a **fat-jar** including all their dependencies. 
 Agent jars must contain at least this entry in its manifest:
