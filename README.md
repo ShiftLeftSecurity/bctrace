@@ -8,7 +8,7 @@ saves the developer from the complexity of dealing with bytecode manipulation.
 
  
 ## Instrumentation primitives
-- Notifying events to hook listeners in the case of:
+- Notifying events to hook listeners in the case of
   - Method started
   - Method about to return
   - Method about to rise a `Throwable`
