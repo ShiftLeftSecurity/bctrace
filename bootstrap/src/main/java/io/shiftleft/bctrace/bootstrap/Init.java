@@ -1,7 +1,7 @@
 package io.shiftleft.bctrace.bootstrap;
 
+import io.shiftleft.bctrace.SystemProperty;
 import java.lang.instrument.Instrumentation;
-import java.security.CodeSource;
 import java.util.jar.JarFile;
 
 /**
@@ -11,11 +11,17 @@ import java.util.jar.JarFile;
  */
 public class Init {
 
-  private static final ClassLoader AGENT_CLASS_LOADER = new BctraceClassLoader();
+  private static final String AGENT_JAR;
+  private static final ClassLoader AGENT_CLASS_LOADER;
+
+  static {
+    AGENT_JAR = Init.class.getProtectionDomain().getCodeSource().getLocation().getFile();
+    System.setProperty(SystemProperty.AGENT_JAR, AGENT_JAR);
+    AGENT_CLASS_LOADER = new BctraceClassLoader(AGENT_JAR);
+  }
 
   public static void premain(final String arg, Instrumentation inst) throws Exception {
-    CodeSource src = Init.class.getProtectionDomain().getCodeSource();
-    inst.appendToBootstrapClassLoaderSearch(new JarFile(src.getLocation().getFile()));
+    inst.appendToBootstrapClassLoaderSearch(new JarFile(AGENT_JAR));
     ClassLoader initialContextClassLoader = Thread.currentThread().getContextClassLoader();
     Thread.currentThread().setContextClassLoader(AGENT_CLASS_LOADER);
     Class<?> initClass = AGENT_CLASS_LOADER.loadClass("io.shiftleft.bctrace.Init");
