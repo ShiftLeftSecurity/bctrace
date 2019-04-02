@@ -177,8 +177,6 @@
               <Premain-Class>io.shiftleft.bctrace.bootstrap.Init</Premain-Class>
               <Can-Retransform-Classes>true</Can-Retransform-Classes>
               <Can-Set-Native-Method-Prefix>true</Can-Set-Native-Method-Prefix>
-              <Boot-Class-Path>${project.artifactId}-${project.version}.${project.packaging}
-              </Boot-Class-Path>
             </manifestEntries>
           </archive>
         </configuration>
