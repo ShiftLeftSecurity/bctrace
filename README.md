@@ -35,16 +35,14 @@ saves the developer from the complexity of dealing with bytecode manipulation.
  
 ## Getting started
 
-### Create and build a new agent project
-Bootstrap a new agent project by using the `bctrace` maven archetype:
-
+### Bootstraping a new agent project
 Set the coordinates for you new agent project
 ```bash
 export ORG_ID=org.myorganization
 export ARTIFACT_ID=test-agent
 export VERSION=0.0.0-SNAPSHOT
 ```
-Generate the project into a new folder of the current directory by running:
+Generate the project into a new folder of the current directory by using the provided archetype:
 ```bash
 mvn archetype:generate -B \
 -DarchetypeGroupId=io.shiftleft \
@@ -63,11 +61,12 @@ And build it
 mvn clean package
 
 ```
-### Running the agent 
+### Project structure
 The newly created agent project is a multi-module Maven project, than contains 
 - `/agent`: The agent project
 - `/playground`: Several target applications to test instrumentation
 
+### Running the agent 
 Run the `/playground/hello-word` test application by:
 ```bash
 $ java -jar playground/hello-world/target/$ARTIFACT_ID-playground-hello-world-$VERSION.jar
