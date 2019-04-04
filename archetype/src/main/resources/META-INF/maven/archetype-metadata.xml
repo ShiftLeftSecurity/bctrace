@@ -4,13 +4,49 @@
   name="Brutusin-RPC::jar">
   <fileSets>
     <fileSet encoding="UTF-8" filtered="true">
-      <directory>src/main/resources</directory>
+      <directory>agent</directory>
+      <includes>
+        <include>pom.xml</include>
+      </includes>
+    </fileSet>
+    <fileSet encoding="UTF-8" filtered="true">
+      <directory>playground</directory>
+      <includes>
+        <include>pom.xml</include>
+      </includes>
+    </fileSet>
+    <fileSet encoding="UTF-8" filtered="true">
+      <directory>agent/src/main/resources</directory>
       <includes>
         <include>**/*</include>
       </includes>
     </fileSet>
     <fileSet packaged="true" filtered="true">
-      <directory>src/main/java</directory>
+      <directory>agent/src/main/java</directory>
+      <includes>
+        <include>**/*</include>
+      </includes>
+    </fileSet>
+    <fileSet encoding="UTF-8" filtered="true">
+      <directory>playground/hello-servlet</directory>
+      <includes>
+        <include>pom.xml</include>
+      </includes>
+    </fileSet>
+    <fileSet packaged="true" filtered="true">
+      <directory>playground/hello-servlet/src/main/java</directory>
+      <includes>
+        <include>**/*</include>
+      </includes>
+    </fileSet>
+    <fileSet encoding="UTF-8" filtered="true">
+      <directory>playground/hello-world</directory>
+      <includes>
+        <include>pom.xml</include>
+      </includes>
+    </fileSet>
+    <fileSet packaged="true" filtered="true">
+      <directory>playground/hello-world/src/main/java</directory>
       <includes>
         <include>**/*</include>
       </includes>

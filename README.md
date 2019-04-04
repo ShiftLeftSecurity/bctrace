@@ -1,102 +1,149 @@
 # io.shiftleft:bctrace
 
-An extensible java agent framework aimed at instrumenting programs running on the JVM (modifying their original bytecode both at class-loading-time, and at run-time), with the purpose of capturing method invocation events (start, finish, errors ...) and notifying custom listeners.
-
-> This project is a candidate to be released as OSS in the future, so its scope should be kept as generic as possible without including any ShiftLeft core feature.
-
-**Table of Contents**
-- [io.shiftleft:bctrace](#ioshiftleftctrace)
-  - [How it works](#how-it-works)
-  - [Usage](#usage)
-  - [Registering hooks](#registering-hooks)
-  - [API](#api)
-  - [Maven dependency](#maven-dependency)
-  - [Authors](#authors)
-  - [License](#license)
-	
-## How it works
-The [java instrumentation package](http://docs.oracle.com/javase/6/docs/api/java/lang/instrument/package-summary.html) introduced in Java version 1.5, provides a simple way to transform java-class definition at loading time, consisting basically in a `byte[]` to `byte[]` transformation, by the so called "java agents".
-
-Since Java version 1.6 these agents can perform also dynamic instrumentation; that is, retransforming the bytecode of classes already loaded. 
-
-This library provides an configurable agent ([io.shiftleft.btrace.Init](src/main/java/io/shiftleft/bctrace/Init.java)) (to be used as an external dependency by extending agent implementations) aimed at injecting custom [hooks](src/main/java/io/shiftleft/bctrace/spi/Hook.java) into the code of the specified methods of the target application.
+An extensible framework for creating production-ready **java agents**.
 
 
-From a simplified point of view, the dynamic transformation turns a method like this: 
-```java
-public Object foo(Object bar){
-    return new Object();
-}
+`bctrace` exposes a simple event-driven programming model, built around the [`Hook`](core/src/main/java/io/shiftleft/bctrace/hook/Hook.java) abstraction, and 
+saves the developer from the complexity of dealing with bytecode manipulation.
+
+ 
+## Instrumentation primitives
+- Notifying events to hook listeners in the case of
+  - Method started
+  - Method about to return
+  - Method about to rise a `Throwable`
+  - Call site about to be invoked
+  - Call site just returned
+  - Call site just raised a `Throwable`
+- Changing runtime data: 
+  - Method/call-site passed argument values
+  - Method/call-site value to be returned
+  - Method/call-site `Throwable` to be raised
+  
+## Features
+ - Battle tested and production-ready
+ - Generic vs direct APIs (this last suited for instrumenting hot spot methods)
+ - Automatic packaging of dependencies
+ - Supports filtering based on class hierarchy
+ - Off-heap classloading, that ensures no side effects in the target application
+ - Ensures no recursive event notifications are triggered from listener code
+ - Ensures no exceptions raised by listeners reach the application
+ - JMX metrics
+ - Extensible
+   - Logging
+   - Help menu
+ 
+## Getting started
+
+### Bootstraping a new agent project
+Set the coordinates for you new agent project
+```bash
+export ORG_ID=org.myorganization
+export ARTIFACT_ID=test-agent
+export VERSION=0.0.0-SNAPSHOT
 ```
-
-into that:
-```java
-public Object foo(Object bar){
-    hook1.getListener().onStart(bar);
-    ...
-    hookn.getListener().onStart(bar);
-    try {
-        Object ret = new Object();
-	hook1.getListener().onFinishedReturn(ret);
-	...
-	hookn.getListener().onFinishedReturn(ret);
-        return ret;
-    } catch(Throwable th) {
-    	hook1.getListener().onFinishedThrowable(th);
-	...
-	hookn.getListener().onFinishedThrowable(th);
-        throw th; // at bytecode level this is legal
-    }
-}
+Generate the project into a new folder of the current directory by using the provided archetype:
+```bash
+mvn archetype:generate -B \
+-DarchetypeGroupId=io.shiftleft \
+-DarchetypeArtifactId=bctrace-archetype \
+-DarchetypeVersion=0.0.0-SNAPSHOT \
+-DgroupId=$ORG_ID \
+-DartifactId=$ARTIFACT_ID \
+-Dversion=$VERSION
 ```
-## Usage
-Agent projects making use of this library must create a **fat-jar** including all their dependencies. 
-Agent jars must contain at least this entry in its manifest:
+Move to the new agent project root folder
+```bash
+cd $ARTIFACT_ID`
 ```
-Premain-Class: io.shiftleft.bctrace.Init
-```
-This fat-jar is the agent jar that will be passed as an argument to the java command:
+And build it 
+```bash
+mvn clean package
 
 ```
--javaagent:thefat.jar
-```
+### Project structure
+The newly created agent project is a multi-module Maven project, than contains 
+- `/agent`: The agent module. 
+- `/playground`: Several target applications to test instrumentation.
 
-## Registering hooks
-On agent bootstrap, a resource called `.bctrace` (if any) is read by the agent classloader (root namespace), where the initial (before class-loading) hook implementation class names are declared.
+### Running the agent 
+Run the `/playground/hello-word` test application by:
+```bash
+$ java -jar playground/hello-world/target/$ARTIFACT_ID-playground-hello-world-$VERSION.jar
+Hello world!
+```  
+By default, the generated agent contains two Hooks that log `String` constructor and `StringBuilder.append()` invocations.
 
-The agent also offers an API for registering hooks dynamically.
-
-## API
-These are the main types to consider:
-
-### BcTrace
-[`BcTrace`](src/main/java/o/shiftleft/bctrace/Bctrace.java) class offers a singleton instance that allows to register/unregister hooks dinamically from code.
-
-### Hook
-[`Hook`](src/main/java/io/shiftleft/bctrace/spi/Hook.java) class represents the main abstraction that client projects has to implement. Hooks are registered programatically using the previous API, or statically from the descriptor file (see ["registering hooks"](#registering-hooks)).
-
-Hooks offer two main functionalities: 
-- Filtering information (what methods to instrument)  
-- Event callback (what actions to perform under the execution events ocurred in the intrumented methods)
-
-### Instrumentation
-On hook initialization, the framework passes a unique instance of [`Instrumentation`](src/main/java/io/shiftleft/bctrace/spi/Instrumentation.java) to the hook instances, to provide them retransformation capabilities, as well as accounting of all the classes they are instrumenting.
-
-### MethodRegistry
-[`MethodRegistry`](src/main/java/io/shiftleft/bctrace/runtime/MethodRegistry.java) offers a singleton instance that provides O(1) mappings: id ([`int:FrameData.methodId`](https://github.com/ShiftLeftSecurity/bctrace/blob/master/src/main/java/io/shiftleft/bctrace/runtime/FrameData.java)) <> method ([`MethodInfo`](src/main/java/io/shiftleft/bctrace/runtime/MethodInfo.java)).
-
-## System properties
-- `-Dbctrace.dump.path`: Dump instrumented class byte code to the specified folder
-- `-Dbctrace.debug.server`: Track call statistics and start debug http server. Value in the form `hostname:port` 
-
-## Maven dependency 
-
-```xml
-<dependency>
-    <groupId>io.shiftleft</groupId>
-    <artifactId>bctrace</artifactId>
-</dependency>
-```
+Now, run it again attaching the agent, and compare the results:
+```bash
+$ java -javaagent:agent/target/$ARTIFACT_ID-$VERSION.jar -jar playground/hello-world/target/$ARTIFACT_ID-playground-hello-world-$VERSION.jar
+INFO 1554349422236 Starting bctrace agent ...
+INFO 1554349422267 Created String instance: "playground/hello-world/target/test-agent-playground-hello-world-0.0.0-SNAPSHOT.jar"
+INFO 1554349422267 Created String instance: "playground/hello-world/target/test-agent-playground-hello-world-0.0.0-SNAPSHOT.jar"
+INFO 1554349422267 Created String instance: "META-INF/MANIFEST.MF"
+INFO 1554349422268 Created String instance: "Manifest-Version"
+INFO 1554349422268 Created String instance: "1.0"
+INFO 1554349422268 Created String instance: "Archiver-Version"
+INFO 1554349422268 Created String instance: "Plexus Archiver"
+INFO 1554349422268 Created String instance: "Built-By"
+INFO 1554349422268 Created String instance: "nacho"
+INFO 1554349422268 Created String instance: "Created-By"
+INFO 1554349422268 Created String instance: "Apache Maven 3.5.4"
+INFO 1554349422269 Created String instance: "Build-Jdk"
+INFO 1554349422269 Created String instance: "1.8.0_191"
+INFO 1554349422269 Created String instance: "Main-Class"
+INFO 1554349422269 Created String instance: "org.myorganization.testagent.playground.helloworld.Main"
+INFO 1554349422269 Created String instance: "org/myorganization/testagent/playground/helloworld/Main"
+INFO 1554349422269 Created String instance: "org/myorganization/testagent/playground/helloworld/Main.class"
+INFO 1554349422269 Created String instance: "org/myorganization/testagent/playground/helloworld/Main"
+INFO 1554349422269 Created String instance: "org/myorganization/testagent/playground/helloworld/Main.class"
+INFO 1554349422269 Created String instance: "org/myorganization/testagent/playground/helloworld/Main.class"
+INFO 1554349422270 Created String instance: "org/myorganization/testagent/playground/helloworld/Main.class"
+INFO 1554349422270 Created String instance: "org/"
+INFO 1554349422270 Appending "" + "file:/tmp/test-agent/playground/hello-world/target/test-agent-playground-hello-world-0.0.0-SNAPSHOT.jar!/"
+INFO 1554349422270 Appending "file:/tmp/test-agent/playground/hello-world/target/test-agent-playground-hello-world-0.0.0-SNAPSHOT.jar!/" + "org/myorganization/testagent/playground/helloworld/Main.class"
+INFO 1554349422270 Created String instance: "file:/tmp/test-agent/playground/hello-world/target/test-agent-playground-hello-world-0.0.0-SNAPSHOT.jar!/org/myorganization/testagent/playground/helloworld/Main.class"
+INFO 1554349422270 Created String instance: "file:/tmp/test-agent/playground/hello-world/target/test-agent-playground-hello-world-0.0.0-SNAPSHOT.jar!"
+INFO 1554349422270 Created String instance: "/org/myorganization/testagent/playground/helloworld/Main.class"
+INFO 1554349422270 Appending "" + "file:/tmp/test-agent/playground/hello-world/target/test-agent-playground-hello-world-0.0.0-SNAPSHOT.jar!"
+INFO 1554349422271 Appending "file:/tmp/test-agent/playground/hello-world/target/test-agent-playground-hello-world-0.0.0-SNAPSHOT.jar!" + "/org/myorganization/testagent/playground/helloworld/Main.class"
+INFO 1554349422271 Created String instance: "file:/tmp/test-agent/playground/hello-world/target/test-agent-playground-hello-world-0.0.0-SNAPSHOT.jar!/org/myorganization/testagent/playground/helloworld/Main.class"
+INFO 1554349422271 Created String instance: "org.myorganization.testagent.playground.helloworld"
+INFO 1554349422271 Created String instance: "META-INF/MAVEN/"
+INFO 1554349422271 Created String instance: "META-INF/MAVEN/ORG.MYORGANIZATION/"
+INFO 1554349422271 Created String instance: "META-INF/MAVEN/ORG.MYORGANIZATION/TEST-AGENT-PLAYGROUND-HELLO-WORLD/"
+INFO 1554349422271 Created String instance: "META-INF/MAVEN/ORG.MYORGANIZATION/TEST-AGENT-PLAYGROUND-HELLO-WORLD/POM.XML"
+INFO 1554349422271 Created String instance: "META-INF/MAVEN/ORG.MYORGANIZATION/TEST-AGENT-PLAYGROUND-HELLO-WORLD/POM.PROPERTIES"
+INFO 1554349422272 Created String instance: "Manifest-Version"
+INFO 1554349422272 Created String instance: "1.0"
+INFO 1554349422272 Created String instance: "Archiver-Version"
+INFO 1554349422272 Created String instance: "Plexus Archiver"
+INFO 1554349422272 Created String instance: "Built-By"
+INFO 1554349422272 Created String instance: "nacho"
+INFO 1554349422272 Created String instance: "Created-By"
+INFO 1554349422272 Created String instance: "Apache Maven 3.5.4"
+INFO 1554349422272 Created String instance: "Build-Jdk"
+INFO 1554349422272 Created String instance: "1.8.0_191"
+INFO 1554349422272 Created String instance: "Main-Class"
+INFO 1554349422272 Created String instance: "org.myorganization.testagent.playground.helloworld.Main"
+INFO 1554349422272 Created String instance: "org/myorganization/testagent/playground/helloworld"
+INFO 1554349422272 Created String instance: "org/myorganization/testagent/playground/helloworld/"
+INFO 1554349422273 Created String instance: "org/myorganization/testagent/playground/helloworld"
+INFO 1554349422273 Created String instance: "org/myorganization/testagent/playground/helloworld/"
+INFO 1554349422273 Created String instance: "org/myorganization/testagent/playground/helloworld"
+INFO 1554349422273 Created String instance: "org/myorganization/testagent/playground/helloworld/"
+INFO 1554349422273 Created String instance: "org.myorganization.testagent.playground.helloworld"
+INFO 1554349422273 Created String instance: "file:/tmp/test-agent/playground/hello-world/target/test-agent-playground-hello-world-0.0.0-SNAPSHOT.jar"
+INFO 1554349422274 Appending "" + "Hello "
+INFO 1554349422274 Appending "Hello " + "world"
+INFO 1554349422274 Appending "Hello world" + "!"
+INFO 1554349422274 Created String instance: "Hello world!"
+Hello world!
+INFO 1554349422274 Appending "" + ""
+INFO 1554349422274 Appending "" + ".level"
+INFO 1554349422275 Created String instance: ".level"  
+```  
+Congratulations, your `bctrace` agent is up and running (and ready to grow)!
 
 ## Main stack
 This module could not be possible without:

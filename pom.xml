@@ -113,6 +113,10 @@
             <configuration>
               <source>${compileTestJavaVersion}</source>
               <target>${compileTestJavaVersion}</target>
+              <encoding>UTF-8</encoding>
+              <compilerArgs>
+                <arg>-parameters</arg>
+              </compilerArgs>
             </configuration>
           </execution>
         </executions>
@@ -125,6 +129,17 @@
           <releaseProfiles>release</releaseProfiles>
           <goals>deploy</goals>
         </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-source-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>attach-sources</id>
+            <goals>
+              <goal>jar-no-fork</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>
@@ -146,17 +161,6 @@
       <id>release</id>
       <build>
         <plugins>
-          <plugin>
-            <artifactId>maven-source-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>attach-sources</id>
-                <goals>
-                  <goal>jar-no-fork</goal>
-                </goals>
-              </execution>
-            </executions>
-          </plugin>
           <plugin>
             <artifactId>maven-javadoc-plugin</artifactId>
             <configuration>
