@@ -36,46 +36,116 @@ It offers a set of high level primitives targeted at:
    - Help menu
  
 ## Getting started
- 
-## Usage
-Agent projects making use of this library must create a **fat-jar** including all their dependencies. 
-Agent jars must contain at least this entry in its manifest:
+
+### Create and build a new agent project
+Bootstrap a new agent project by using the `bctrace` maven archetype:
+
+Set the coordinates for you new agent project
+```bash
+export ORG_ID=org.myorganization
+export ARTIFACT_ID=test-agent
+export VERSION=0.0.0-SNAPSHOT
 ```
-Premain-Class: io.shiftleft.bctrace.Init
+Generate the project into a new folder of the current directory by running:
+```bash
+mvn archetype:generate -B \
+-DarchetypeGroupId=io.shiftleft \
+-DarchetypeArtifactId=bctrace-archetype \
+-DarchetypeVersion=0.0.0-SNAPSHOT \
+-DgroupId=$ORG_ID \
+-DartifactId=$ARTIFACT_ID \
+-Dversion=$VERSION
 ```
-This fat-jar is the agent jar that will be passed as an argument to the java command:
+Move to the new agent project root folder
+```bash
+cd $ARTIFACT_ID`
+```
+And build it 
+```bash
+mvn clean package
 
 ```
--javaagent:thefat.jar
-```
+### Running the agent 
+The newly created agent project is a multi-module Maven project, than contains 
+- `/agent`: The agent project
+- `/playground`: Several target applications to test instrumentation
 
-## Registering hooks
-On agent bootstrap, a resource called `.bctrace` (if any) is read by the agent classloader (root namespace), where the initial (before class-loading) hook implementation class names are declared.
+Run the `/playground/hello-word` test application by:
+```bash
+$ java -jar playground/hello-world/target/$ARTIFACT_ID-playground-hello-world-$VERSION.jar
+Hello world!
+```  
+By default, the generated agent contains two Hooks that log `String` constructor and `StringBuilder.append()` invocations.
 
-The agent also offers an API for registering hooks dynamically.
-
-## API
-These are the main types to consider:
-
-### BcTrace
-[`BcTrace`](src/main/java/o/shiftleft/bctrace/Bctrace.java) class offers a singleton instance that allows to register/unregister hooks dinamically from code.
-
-### Hook
-[`Hook`](src/main/java/io/shiftleft/bctrace/spi/Hook.java) class represents the main abstraction that client projects has to implement. Hooks are registered programatically using the previous API, or statically from the descriptor file (see ["registering hooks"](#registering-hooks)).
-
-Hooks offer two main functionalities: 
-- Filtering information (what methods to instrument)  
-- Event callback (what actions to perform under the execution events ocurred in the intrumented methods)
-
-### Instrumentation
-On hook initialization, the framework passes a unique instance of [`Instrumentation`](src/main/java/io/shiftleft/bctrace/spi/Instrumentation.java) to the hook instances, to provide them retransformation capabilities, as well as accounting of all the classes they are instrumenting.
-
-### MethodRegistry
-[`MethodRegistry`](src/main/java/io/shiftleft/bctrace/runtime/MethodRegistry.java) offers a singleton instance that provides O(1) mappings: id ([`int:FrameData.methodId`](https://github.com/ShiftLeftSecurity/bctrace/blob/master/src/main/java/io/shiftleft/bctrace/runtime/FrameData.java)) <> method ([`MethodInfo`](src/main/java/io/shiftleft/bctrace/runtime/MethodInfo.java)).
-
-## System properties
-- `-Dbctrace.dump.path`: Dump instrumented class byte code to the specified folder
-- `-Dbctrace.debug.server`: Track call statistics and start debug http server. Value in the form `hostname:port` 
+Now, run it again attaching the agent, and compare the results:
+```bash
+$ java -javaagent:agent/target/$ARTIFACT_ID-$VERSION.jar -jar playground/hello-world/target/$ARTIFACT_ID-playground-hello-world-$VERSION.jar
+INFO 1554349422236 Starting bctrace agent ...
+INFO 1554349422267 Created String instance: "playground/hello-world/target/test-agent-playground-hello-world-0.0.0-SNAPSHOT.jar"
+INFO 1554349422267 Created String instance: "playground/hello-world/target/test-agent-playground-hello-world-0.0.0-SNAPSHOT.jar"
+INFO 1554349422267 Created String instance: "META-INF/MANIFEST.MF"
+INFO 1554349422268 Created String instance: "Manifest-Version"
+INFO 1554349422268 Created String instance: "1.0"
+INFO 1554349422268 Created String instance: "Archiver-Version"
+INFO 1554349422268 Created String instance: "Plexus Archiver"
+INFO 1554349422268 Created String instance: "Built-By"
+INFO 1554349422268 Created String instance: "nacho"
+INFO 1554349422268 Created String instance: "Created-By"
+INFO 1554349422268 Created String instance: "Apache Maven 3.5.4"
+INFO 1554349422269 Created String instance: "Build-Jdk"
+INFO 1554349422269 Created String instance: "1.8.0_191"
+INFO 1554349422269 Created String instance: "Main-Class"
+INFO 1554349422269 Created String instance: "org.myorganization.testagent.playground.helloworld.Main"
+INFO 1554349422269 Created String instance: "org/myorganization/testagent/playground/helloworld/Main"
+INFO 1554349422269 Created String instance: "org/myorganization/testagent/playground/helloworld/Main.class"
+INFO 1554349422269 Created String instance: "org/myorganization/testagent/playground/helloworld/Main"
+INFO 1554349422269 Created String instance: "org/myorganization/testagent/playground/helloworld/Main.class"
+INFO 1554349422269 Created String instance: "org/myorganization/testagent/playground/helloworld/Main.class"
+INFO 1554349422270 Created String instance: "org/myorganization/testagent/playground/helloworld/Main.class"
+INFO 1554349422270 Created String instance: "org/"
+INFO 1554349422270 Appending "" + "file:/tmp/test-agent/playground/hello-world/target/test-agent-playground-hello-world-0.0.0-SNAPSHOT.jar!/"
+INFO 1554349422270 Appending "file:/tmp/test-agent/playground/hello-world/target/test-agent-playground-hello-world-0.0.0-SNAPSHOT.jar!/" + "org/myorganization/testagent/playground/helloworld/Main.class"
+INFO 1554349422270 Created String instance: "file:/tmp/test-agent/playground/hello-world/target/test-agent-playground-hello-world-0.0.0-SNAPSHOT.jar!/org/myorganization/testagent/playground/helloworld/Main.class"
+INFO 1554349422270 Created String instance: "file:/tmp/test-agent/playground/hello-world/target/test-agent-playground-hello-world-0.0.0-SNAPSHOT.jar!"
+INFO 1554349422270 Created String instance: "/org/myorganization/testagent/playground/helloworld/Main.class"
+INFO 1554349422270 Appending "" + "file:/tmp/test-agent/playground/hello-world/target/test-agent-playground-hello-world-0.0.0-SNAPSHOT.jar!"
+INFO 1554349422271 Appending "file:/tmp/test-agent/playground/hello-world/target/test-agent-playground-hello-world-0.0.0-SNAPSHOT.jar!" + "/org/myorganization/testagent/playground/helloworld/Main.class"
+INFO 1554349422271 Created String instance: "file:/tmp/test-agent/playground/hello-world/target/test-agent-playground-hello-world-0.0.0-SNAPSHOT.jar!/org/myorganization/testagent/playground/helloworld/Main.class"
+INFO 1554349422271 Created String instance: "org.myorganization.testagent.playground.helloworld"
+INFO 1554349422271 Created String instance: "META-INF/MAVEN/"
+INFO 1554349422271 Created String instance: "META-INF/MAVEN/ORG.MYORGANIZATION/"
+INFO 1554349422271 Created String instance: "META-INF/MAVEN/ORG.MYORGANIZATION/TEST-AGENT-PLAYGROUND-HELLO-WORLD/"
+INFO 1554349422271 Created String instance: "META-INF/MAVEN/ORG.MYORGANIZATION/TEST-AGENT-PLAYGROUND-HELLO-WORLD/POM.XML"
+INFO 1554349422271 Created String instance: "META-INF/MAVEN/ORG.MYORGANIZATION/TEST-AGENT-PLAYGROUND-HELLO-WORLD/POM.PROPERTIES"
+INFO 1554349422272 Created String instance: "Manifest-Version"
+INFO 1554349422272 Created String instance: "1.0"
+INFO 1554349422272 Created String instance: "Archiver-Version"
+INFO 1554349422272 Created String instance: "Plexus Archiver"
+INFO 1554349422272 Created String instance: "Built-By"
+INFO 1554349422272 Created String instance: "nacho"
+INFO 1554349422272 Created String instance: "Created-By"
+INFO 1554349422272 Created String instance: "Apache Maven 3.5.4"
+INFO 1554349422272 Created String instance: "Build-Jdk"
+INFO 1554349422272 Created String instance: "1.8.0_191"
+INFO 1554349422272 Created String instance: "Main-Class"
+INFO 1554349422272 Created String instance: "org.myorganization.testagent.playground.helloworld.Main"
+INFO 1554349422272 Created String instance: "org/myorganization/testagent/playground/helloworld"
+INFO 1554349422272 Created String instance: "org/myorganization/testagent/playground/helloworld/"
+INFO 1554349422273 Created String instance: "org/myorganization/testagent/playground/helloworld"
+INFO 1554349422273 Created String instance: "org/myorganization/testagent/playground/helloworld/"
+INFO 1554349422273 Created String instance: "org/myorganization/testagent/playground/helloworld"
+INFO 1554349422273 Created String instance: "org/myorganization/testagent/playground/helloworld/"
+INFO 1554349422273 Created String instance: "org.myorganization.testagent.playground.helloworld"
+INFO 1554349422273 Created String instance: "file:/tmp/test-agent/playground/hello-world/target/test-agent-playground-hello-world-0.0.0-SNAPSHOT.jar"
+INFO 1554349422274 Appending "" + "Hello "
+INFO 1554349422274 Appending "Hello " + "world"
+INFO 1554349422274 Appending "Hello world" + "!"
+INFO 1554349422274 Created String instance: "Hello world!"
+Hello world!
+INFO 1554349422274 Appending "" + ""
+INFO 1554349422274 Appending "" + ".level"
+INFO 1554349422275 Created String instance: ".level"  
+```  
 
 ## Maven dependency 
 
