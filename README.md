@@ -1,15 +1,14 @@
 # io.shiftleft:bctrace
 
-An extensible framework for creating production-ready java agents aimed at tracing and changing the behaviour of java applications without changing their source code.
+An extensible framework for creating production-ready **java agents**.
+
 
 `bctrace` exposes a simple event-driven programming model, built around the `Hook` abstraction, and 
 saves the developer from the complexity of dealing with bytecode manipulation.
 
-**Use cases:**
  
-It offers a set of high level primitives targeted at:
-
-- Notifying events to hook listeners in the case of:
+## Instrumentation primitives
+- Notifying events to hook listeners in the case of
   - Method started
   - Method about to return
   - Method about to rise a `Throwable`
@@ -21,8 +20,7 @@ It offers a set of high level primitives targeted at:
   - Method/call-site value to be returned
   - Method/call-site `Throwable` to be raised
   
-**Features:**
- 
+## Features
  - Battle tested and production-ready
  - Generic vs direct APIs (this last suited for instrumenting hot spot methods)
  - Automatic packaging of dependencies
