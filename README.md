@@ -3,7 +3,7 @@
 An extensible framework for creating production-ready **java agents**.
 
 
-`bctrace` exposes a simple event-driven programming model, built around the `Hook` abstraction, and 
+`bctrace` exposes a simple event-driven programming model, built around the [`Hook`](core/src/main/java/io/shiftleft/bctrace/hook/Hook.java) abstraction, and 
 saves the developer from the complexity of dealing with bytecode manipulation.
 
  
@@ -73,7 +73,7 @@ Run the `/playground/hello-word` test application by:
 $ java -jar playground/hello-world/target/$ARTIFACT_ID-playground-hello-world-$VERSION.jar
 Hello world!
 ```  
-By default, the generated agent contains two Hooks that log `String` constructor and `StringBuilder.append()` invocations.
+By default, the generated agent contains two hooks that log `String` constructor and `StringBuilder.append()` invocations.
 
 Now, run it again attaching the agent, and compare the results:
 ```bash
@@ -144,15 +144,6 @@ INFO 1554349422274 Appending "" + ""
 INFO 1554349422274 Appending "" + ".level"
 INFO 1554349422275 Created String instance: ".level"  
 ```  
-
-## Maven dependency 
-
-```xml
-<dependency>
-    <groupId>io.shiftleft</groupId>
-    <artifactId>bctrace</artifactId>
-</dependency>
-```
 
 ## Main stack
 This module could not be possible without:
