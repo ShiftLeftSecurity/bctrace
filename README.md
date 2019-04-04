@@ -63,7 +63,8 @@ mvn clean package
 ```
 ### Project structure
 The newly created agent project is a multi-module Maven project, than contains 
-- `/agent`: The agent project
+- `/agent`: The agent project that, by default, contains two hooks that log `String` constructor and `StringBuilder.append()` invocations.
+
 - `/playground`: Several target applications to test instrumentation
 
 ### Running the agent 
@@ -72,8 +73,6 @@ Run the `/playground/hello-word` test application by:
 $ java -jar playground/hello-world/target/$ARTIFACT_ID-playground-hello-world-$VERSION.jar
 Hello world!
 ```  
-By default, the generated agent contains two hooks that log `String` constructor and `StringBuilder.append()` invocations.
-
 Now, run it again attaching the agent, and compare the results:
 ```bash
 $ java -javaagent:agent/target/$ARTIFACT_ID-$VERSION.jar -jar playground/hello-world/target/$ARTIFACT_ID-playground-hello-world-$VERSION.jar
