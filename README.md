@@ -54,7 +54,7 @@ mvn archetype:generate -B \
 ```
 Move to the new agent project root folder
 ```bash
-cd $ARTIFACT_ID`
+cd $ARTIFACT_ID
 ```
 And build it 
 ```bash
