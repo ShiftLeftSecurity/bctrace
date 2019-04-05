@@ -75,7 +75,11 @@ java -jar playground/hello-world/target/$ARTIFACT_ID-playground-hello-world-$VER
 $ java -jar playground/hello-world/target/$ARTIFACT_ID-playground-hello-world-$VERSION.jar
 Hello world!
 ```  
-By default, the generated agent contains two Hooks that log `String` constructor and `StringBuilder.append()` invocations.
+By default, the generated agent contains two Hooks: 
+- [`StringConstructorHook`](https://github.com/ShiftLeftSecurity/bctrace/blob/master/archetype/src/main/resources/archetype-resources/agent/src/main/java/__artifactIdUnhyphenated__/hooks/StringConstructorHook.java), that logs `String` constructors invocations.
+- [StringBuilderAppendHook](https://github.com/ShiftLeftSecurity/bctrace/blob/master/archetype/src/main/resources/archetype-resources/agent/src/main/java/__artifactIdUnhyphenated__/hooks/StringBuilderAppendHook.java) that logs `StringBuilder.append()` invocations.
+
+https://github.com/ShiftLeftSecurity/bctrace/blob/e6c8da17277dbc84f19fe0354066f40ac6823cf3/archetype/src/main/resources/archetype-resources/agent/src/main/java/__artifactIdUnhyphenated__/hooks/StringBuilderAppendHook.java#L11-L23
 
 Now, run it again attaching the agent, and compare the results:
 ```bash
