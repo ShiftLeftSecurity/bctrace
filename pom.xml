@@ -42,8 +42,8 @@
   </distributionManagement>
   <scm>
     <url>https://github.com/ShiftLeftSecurity/bctrace</url>
-    <connection>scm:git:https://github.com/ShiftLeftSecurity/bctrace.git</connection>
-    <developerConnection>scm:git:https://github.com/ShiftLeftSecurity/bctrace.git
+    <connection>scm:git:ssh://git@github.com/ShiftLeftSecurity/bctrace.git</connection>
+    <developerConnection>scm:git:ssh://git@github.com/ShiftLeftSecurity/bctrace.git
     </developerConnection>
     <tag>HEAD</tag>
   </scm>
