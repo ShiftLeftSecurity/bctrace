@@ -3,11 +3,11 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>io.shiftleft</groupId>
   <artifactId>bctrace-core</artifactId>
-  <version>0.0.0-SNAPSHOT</version>
+  <version>3.0.3</version>
   <parent>
     <groupId>io.shiftleft</groupId>
     <artifactId>bctrace</artifactId>
-    <version>0.0.0-SNAPSHOT</version>
+    <version>3.0.3</version>
   </parent>
   <name>${project.groupId}:${project.artifactId}</name>
   <dependencies>
@@ -25,12 +25,12 @@
     <dependency>
       <groupId>io.shiftleft</groupId>
       <artifactId>bctrace-runtime</artifactId>
-      <version>0.0.0-SNAPSHOT</version>
+      <version>3.0.3</version>
     </dependency>
     <dependency>
       <groupId>io.shiftleft</groupId>
       <artifactId>bctrace-spi</artifactId>
-      <version>0.0.0-SNAPSHOT</version>
+      <version>3.0.3</version>
     </dependency>
   </dependencies>
 </project>
