@@ -67,7 +67,10 @@ The newly created agent project is a multi-module Maven project, than contains
 - `/playground`: Several target applications to test instrumentation.
 
 ### Running the agent 
-Run the `/playground/hello-word` test application by:
+Run the `/playground/hello-word` test application:
+```bash
+java -jar playground/hello-world/target/$ARTIFACT_ID-playground-hello-world-$VERSION.jar
+``` 
 ```bash
 $ java -jar playground/hello-world/target/$ARTIFACT_ID-playground-hello-world-$VERSION.jar
 Hello world!
@@ -75,6 +78,9 @@ Hello world!
 By default, the generated agent contains two Hooks that log `String` constructor and `StringBuilder.append()` invocations.
 
 Now, run it again attaching the agent, and compare the results:
+```bash
+java -javaagent:agent/target/$ARTIFACT_ID-$VERSION.jar -jar playground/hello-world/target/$ARTIFACT_ID-playground-hello-world-$VERSION.jar
+```
 ```bash
 $ java -javaagent:agent/target/$ARTIFACT_ID-$VERSION.jar -jar playground/hello-world/target/$ARTIFACT_ID-playground-hello-world-$VERSION.jar
 INFO 1554349422236 Starting bctrace agent ...
