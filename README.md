@@ -149,6 +149,9 @@ INFO 1554349422275 Created String instance: ".level"
 ```  
 Congratulations, your `bctrace` agent is up and running (and ready to grow)!
 
+### Next steps
+Explore the agent documentation
+
 ## Main stack
 This module could not be possible without:
 * [org.ow2.asm:asm-all](http://asm.ow2.org/)
