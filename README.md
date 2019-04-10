@@ -16,9 +16,9 @@ saves the developer from the complexity of dealing with bytecode manipulation.
   - Call site just returned
   - Call site just raised a `Throwable`
 - Changing runtime data: 
-  - Method/call-site passed argument values
-  - Method/call-site value to be returned
-  - Method/call-site `Throwable` to be raised
+  - Method/call-site (about to be) passed arguments
+  - Method/call-site (about to be) returned value
+  - Method/call-site (about to be) thrown `Throwable`
   
 ## Features
  - Battle tested and production-ready
