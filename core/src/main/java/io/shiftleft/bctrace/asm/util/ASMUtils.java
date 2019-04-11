@@ -24,22 +24,17 @@
  */
 package io.shiftleft.bctrace.asm.util;
 
-import io.shiftleft.bctrace.runtime.listener.direct.DirectListener;
-import io.shiftleft.bctrace.runtime.listener.direct.DirectListener.ListenerMethod;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
-import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.FrameNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.IntInsnNode;
@@ -127,7 +122,7 @@ public final class ASMUtils {
     return new VarInsnNode(opCode, position);
   }
 
-  public static Object[] getParametersFrameTypes(ClassNode cn, MethodNode mn) {
+  public static Object[] getTopLocals(ClassNode cn, MethodNode mn) {
     Type[] argumentTypes = Type.getArgumentTypes(mn.desc);
     Object[] ret;
     int offset;
@@ -142,7 +137,27 @@ public final class ASMUtils {
     for (int i = 0; i < argumentTypes.length; i++) {
       ret[i + offset] = getFrameType(argumentTypes[i]);
     }
+    updateLocalsOfIncompleteFrames(mn, ret);
     return ret;
+  }
+
+  /**
+   * Updates existent full frames that have only a subset of the top locals. Otherwise, adding a
+   * frame on top of them with the whole top locals will make verification fail
+   */
+  private static void updateLocalsOfIncompleteFrames(MethodNode mn, Object[] topLocals) {
+    InsnList il = mn.instructions;
+    Iterator<AbstractInsnNode> it = il.iterator();
+    while (it.hasNext()) {
+      AbstractInsnNode node = it.next();
+      if (node instanceof FrameNode) {
+        FrameNode fn = (FrameNode) node;
+        if ((fn.type == Opcodes.F_FULL || fn.type == Opcodes.F_NEW) &&
+            (fn.local == null || fn.local.size() < topLocals.length)) {
+          fn.local = Arrays.asList(topLocals);
+        }
+      }
+    }
   }
 
   private static Object getFrameType(Type type) {

@@ -387,9 +387,9 @@ public class CallSiteHelper extends Helper {
         if (filter.acceptCallSite(cn, mn, callSite, lineNumber)) {
           if (il == null) {
             il = new InsnList();
-            Object[] parametersFrameTypes = ASMUtils.getParametersFrameTypes(cn, mn);
+            Object[] topLocals = ASMUtils.getTopLocals(cn, mn);
             il.add(
-                new FrameNode(Opcodes.F_FULL, parametersFrameTypes.length, parametersFrameTypes, 1,
+                new FrameNode(Opcodes.F_FULL, topLocals.length, topLocals, 1,
                     new Object[]{"java/lang/Throwable"}));
             handlerNode = new LabelNode();
             il.insert(handlerNode);

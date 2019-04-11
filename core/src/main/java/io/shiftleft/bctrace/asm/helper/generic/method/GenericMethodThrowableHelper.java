@@ -111,8 +111,8 @@ public class GenericMethodThrowableHelper extends Helper {
     mn.instructions.add(endNode);
 
     InsnList il = new InsnList();
-    Object[] parametersFrameTypes = ASMUtils.getParametersFrameTypes(cn, mn);
-    il.add(new FrameNode(Opcodes.F_FULL, parametersFrameTypes.length, parametersFrameTypes, 1,
+    Object[] topLocals = ASMUtils.getTopLocals(cn, mn);
+    il.add(new FrameNode(Opcodes.F_FULL, topLocals.length, topLocals, 1,
         new Object[]{"java/lang/Throwable"}));
 
     LabelNode handlerNode = new LabelNode();
