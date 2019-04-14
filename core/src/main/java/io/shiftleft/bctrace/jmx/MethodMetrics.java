@@ -24,10 +24,12 @@
  */
 package io.shiftleft.bctrace.jmx;
 
+import io.shiftleft.bctrace.Bctrace;
 import io.shiftleft.bctrace.MethodInfo;
 import io.shiftleft.bctrace.MethodRegistry;
 import io.shiftleft.bctrace.jmx.ClassMetrics.ClassInfo;
 import io.shiftleft.bctrace.jmx.ClassMetrics.ClassInfoMBean;
+import io.shiftleft.bctrace.logging.Level;
 import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -56,7 +58,8 @@ public class MethodMetrics implements MethodMetricsMXBean {
       ObjectName name = new ObjectName("io.shiftleft.bctrace:type=MethodMetrics");
       mbs.registerMBean(INSTANCE, name);
     } catch (Throwable th) {
-      throw new AssertionError();
+      Bctrace.getAgentLogger().log(Level.ERROR,
+          "Error found while registering bctrace JMX method metrics mBean", th);
     }
   }
 
