@@ -164,7 +164,7 @@ public abstract class BctraceClass {
       ret = new UnloadedClass(name, cl, inst);
     } catch (ClassNotFoundException ex) {
       Bctrace.getAgentLogger()
-          .log(Level.WARNING, "Could not obtain class bytecode for unloaded class " + name);
+          .log(Level.DEBUG, "Could not obtain class bytecode for unloaded class " + name);
       ret = new UnresolvedClass(name, cl);
     }
     return ret;
