@@ -24,9 +24,8 @@
  */
 package io.shiftleft.bctrace.filter;
 
-import io.shiftleft.bctrace.hierarchy.BctraceClass;
+import io.shiftleft.bctrace.hierarchy.UnloadedClass;
 import java.security.ProtectionDomain;
-import org.objectweb.asm.tree.MethodNode;
 
 /**
  * Determines if a class is instrumented.
@@ -53,7 +52,7 @@ public abstract class ClassFilter {
    * The class bytecode has been parsed at this point, and the class hierarchy is accessible through
    * the BctraceClass API.
    */
-  public boolean acceptClass(BctraceClass clazz, ProtectionDomain protectionDomain,
+  public boolean acceptClass(UnloadedClass clazz, ProtectionDomain protectionDomain,
       ClassLoader cl) {
     return true;
   }

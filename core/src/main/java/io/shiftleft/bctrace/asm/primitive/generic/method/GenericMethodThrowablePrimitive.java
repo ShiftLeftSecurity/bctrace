@@ -22,15 +22,15 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.asm.helper.direct.method;
+package io.shiftleft.bctrace.asm.primitive.generic.method;
 
 import io.shiftleft.bctrace.Bctrace;
-import io.shiftleft.bctrace.asm.CallbackTransformer;
-import io.shiftleft.bctrace.asm.helper.Helper;
+import io.shiftleft.bctrace.MethodInfo;
+import io.shiftleft.bctrace.MethodRegistry;
+import io.shiftleft.bctrace.asm.primitive.InstrumentationPrimitive;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
 import io.shiftleft.bctrace.logging.Level;
-import io.shiftleft.bctrace.runtime.listener.direct.DirectListener;
-import io.shiftleft.bctrace.runtime.listener.direct.DirectMethodThrowableListener;
+import io.shiftleft.bctrace.runtime.listener.generic.GenericMethodThrowableListener;
 import java.util.ArrayList;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -42,23 +42,58 @@ import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
-import org.objectweb.asm.tree.VarInsnNode;
 
-public class DirectMethodThrowableHelper extends Helper {
+/**
+ * Inserts the bytecode instructions within method node, needed to handle the return listeners
+ * registered.
+ *
+ * This primitive turns the method node instructions of a method like this:
+ * <br><pre>{@code
+ * public Object foo(Object arg){
+ *   return void(arg);
+ * }
+ * }
+ * </pre>
+ * Into that:
+ * <br><pre>{@code
+ * public Object foo(Object arg){
+ *   try{
+ *     Object ret = void(arg);
+ *     // Notify listeners that apply to this method
+ *     ret = Callback.onFinish(ret, ret, null, clazz, this, 0, arg);
+ *     ret = Callback.onFinish(ret, ret, null, clazz, this, 2, arg);
+ *     ret = Callback.onFinish(ret, ret, null, clazz, this, 10, arg);
+ *     // Return the original value
+ *     return ret;
+ *   } catch (Throwable th){
+ *     th = Callback.onFinish(th, null, th, clazz, this, 0, arg);
+ *     th = Callback.onFinish(th, null, th, clazz, this, 2, arg);
+ *     th = Callback.onFinish(th, null, th, clazz, this, 10, arg);
+ *     throw th;
+ *   }
+ * }
+ * </pre>
+ *
+ * @author Ignacio del Valle Alles idelvall@shiftleft.io
+ */
+public class GenericMethodThrowablePrimitive extends InstrumentationPrimitive {
 
-  public boolean addByteCodeInstructions(ClassNode cn, MethodNode mn,
+  @Override
+  public boolean addByteCodeInstructions(String classRegistryName, ClassNode cn, MethodNode mn,
       ArrayList<Integer> hooksToUse) {
 
     ArrayList<Integer> listenersToUse = getListenersOfType(hooksToUse,
-        DirectMethodThrowableListener.class);
+        GenericMethodThrowableListener.class);
+
     if (!isInstrumentationNeeded(listenersToUse)) {
       return false;
     }
-    addTryCatchInstructions(cn, mn, listenersToUse);
+
+    addTryCatchInstructions(classRegistryName, cn, mn, listenersToUse);
     return true;
   }
 
-  private boolean addTryCatchInstructions(ClassNode cn, MethodNode mn,
+  private boolean addTryCatchInstructions(String classRegistryName, ClassNode cn, MethodNode mn,
       ArrayList<Integer> listenersToUse) {
 
     LabelNode startNode = getStartNodeForGlobalTryCatch(mn);
@@ -68,6 +103,9 @@ public class DirectMethodThrowableHelper extends Helper {
           "Could not add try/catch handler to constructor " + cn.name + "." + mn.name + mn.desc);
       return false;
     }
+
+    Integer methodId = MethodRegistry.getInstance()
+        .registerMethodId(MethodInfo.from(classRegistryName, mn));
 
     LabelNode endNode = new LabelNode();
     mn.instructions.add(endNode);
@@ -80,31 +118,27 @@ public class DirectMethodThrowableHelper extends Helper {
     LabelNode handlerNode = new LabelNode();
     il.add(handlerNode);
 
-    int thVarIndex = mn.maxLocals;
-    mn.maxLocals = mn.maxLocals + 1;
-    il.add(new VarInsnNode(Opcodes.ASTORE, thVarIndex));
-
     for (int i = 0; i < listenersToUse.size(); i++) {
       Integer index = listenersToUse.get(i);
-      DirectListener listener = (DirectListener) bctrace.getHooks()[index]
-          .getListener();
-      il.add(ASMUtils.getPushInstruction(index)); // hook id
-      il.add(new VarInsnNode(Opcodes.ALOAD, thVarIndex));// original value consumed from the stack
-      il.add(getClassConstantReference(Type.getObjectType(cn.name), cn.version)); // caller class
+      GenericMethodThrowableListener listener = (GenericMethodThrowableListener) bctrace
+          .getHooks()[index].getListener();
+      il.add(new InsnNode(Opcodes.DUP)); //throwable
+      il.add(ASMUtils.getPushInstruction(methodId)); // method id
+      il.add(getClassConstantReference(Type.getObjectType(cn.name), cn.version));
       pushInstance(il, mn); // current instance
-      pushMethodArgs(il, mn); // method args
-      il.add(new VarInsnNode(Opcodes.ALOAD, thVarIndex));
-      // Invoke dynamically generated callback method. See CallbackTransformer
+      il.add(ASMUtils.getPushInstruction(index)); // hook id
+      if (listener.requiresArguments()) {
+        pushMethodArgsArray(il, mn);
+      } else {
+        il.add(new InsnNode(Opcodes.ACONST_NULL));
+      }
       il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
-          "io/shiftleft/bctrace/runtime/Callback",
-          CallbackTransformer.getDynamicListenerMethodName(listener),
-          CallbackTransformer.getDynamicListenerMutatorMethodDescriptor(listener),
+          "io/shiftleft/bctrace/runtime/Callback", "onThrow",
+          "(Ljava/lang/Throwable;ILjava/lang/Class;Ljava/lang/Object;I[Ljava/lang/Object;)Ljava/lang/Throwable;",
           false));
-      // Update return value local variable, so each listener receives the modified value from the ones before
-      // instead of getting all of them the original value
-      il.add(new VarInsnNode(Opcodes.ASTORE, thVarIndex));
+
     }
-    il.add(new VarInsnNode(Opcodes.ALOAD, thVarIndex));
+
     il.add(new InsnNode(Opcodes.ATHROW));
 
     TryCatchBlockNode blockNode = new TryCatchBlockNode(startNode, endNode, handlerNode, null);

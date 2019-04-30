@@ -22,10 +22,10 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.asm.helper.direct.callsite;
+package io.shiftleft.bctrace.asm.primitive.direct.callsite;
 
 import io.shiftleft.bctrace.asm.CallbackTransformer;
-import io.shiftleft.bctrace.asm.helper.Helper;
+import io.shiftleft.bctrace.asm.primitive.InstrumentationPrimitive;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
 import io.shiftleft.bctrace.filter.CallSiteFilter;
 import io.shiftleft.bctrace.hook.Hook;
@@ -55,7 +55,7 @@ import org.objectweb.asm.tree.VarInsnNode;
  * is about to be executed.
  *
  * Suppose one listener interested in calls to <tt>System.arrayCopy(Object, int, Object, int,
- * int)</tt> Then this helper turns a method with this call:
+ * int)</tt> Then this primitive turns a method with this call:
  * <br><pre>{@code
  * System.arrayCopy(src, 0, target, 0, length);
  * }
@@ -69,17 +69,19 @@ import org.objectweb.asm.tree.VarInsnNode;
  * }
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public class CallSiteHelper extends Helper {
+public class CallSitePrimitive extends InstrumentationPrimitive {
+
 
   /**
    * Iterates over all instructions and for each call site adds corresponding instructions
    *
    * @return true if the method has been transformed. False otherwise
    */
-  public boolean addByteCodeInstructions(ClassNode cn, MethodNode mn,
+  @Override
+  public boolean addByteCodeInstructions(String classResgistryName, ClassNode cn, MethodNode mn,
       ArrayList<Integer> hooksToUse) {
 
-    // Helper local variables
+    // InstrumentationPrimitive local variables
     int callSiteInstanceVarIndex = mn.maxLocals;
     mn.maxLocals = mn.maxLocals + 1;
     int throwableVarIndex = mn.maxLocals;

@@ -22,16 +22,16 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.asm.helper;
+package io.shiftleft.bctrace.asm.primitive;
 
 import io.shiftleft.bctrace.Bctrace;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
 import io.shiftleft.bctrace.hook.Hook;
-import io.shiftleft.bctrace.runtime.listener.direct.DirectListener;
 import java.util.ArrayList;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
+import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.JumpInsnNode;
@@ -47,9 +47,12 @@ import org.objectweb.asm.tree.VarInsnNode;
 /**
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public abstract class Helper {
+public abstract class InstrumentationPrimitive {
 
   protected Bctrace bctrace;
+
+  public abstract boolean addByteCodeInstructions(String classResgistryName, ClassNode cn, MethodNode mn,
+      ArrayList<Integer> hooksToUse);
 
   public void setBctrace(Bctrace bctrace) {
     this.bctrace = bctrace;

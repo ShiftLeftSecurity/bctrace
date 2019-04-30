@@ -22,13 +22,12 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.asm.helper.direct.method;
+package io.shiftleft.bctrace.asm.primitive.direct.method;
 
 import io.shiftleft.bctrace.asm.CallbackTransformer;
-import io.shiftleft.bctrace.asm.helper.Helper;
+import io.shiftleft.bctrace.asm.primitive.InstrumentationPrimitive;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
 import io.shiftleft.bctrace.hook.Hook;
-import io.shiftleft.bctrace.runtime.listener.direct.DirectListener;
 import io.shiftleft.bctrace.runtime.listener.direct.DirectMethodStartListener;
 import java.util.ArrayList;
 import org.objectweb.asm.Opcodes;
@@ -38,9 +37,10 @@ import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
-public class DirectMethodStartHelper extends Helper {
+public class DirectMethodStartPrimitive extends InstrumentationPrimitive {
 
-  public boolean addByteCodeInstructions(ClassNode cn, MethodNode mn,
+  @Override
+  public boolean addByteCodeInstructions(String classRegistryName, ClassNode cn, MethodNode mn,
       ArrayList<Integer> hooksToUse) {
 
     ArrayList<Integer> listenersToUse = getListenersOfType(hooksToUse,

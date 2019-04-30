@@ -120,7 +120,7 @@ public abstract class MethodFilter extends ClassFilter {
     }
 
     @Override
-    public boolean acceptClass(BctraceClass clazz, ProtectionDomain protectionDomain,
+    public boolean acceptClass(UnloadedClass clazz, ProtectionDomain protectionDomain,
         ClassLoader cl) {
 
       if (!virtual) {
