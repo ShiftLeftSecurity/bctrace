@@ -22,11 +22,11 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.asm.helper.generic.method;
+package io.shiftleft.bctrace.asm.primitive.generic.method;
 
 import io.shiftleft.bctrace.MethodInfo;
 import io.shiftleft.bctrace.MethodRegistry;
-import io.shiftleft.bctrace.asm.helper.Helper;
+import io.shiftleft.bctrace.asm.primitive.InstrumentationPrimitive;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
 import io.shiftleft.bctrace.runtime.listener.generic.GenericMethodReturnListener;
 import java.util.ArrayList;
@@ -45,7 +45,7 @@ import org.objectweb.asm.tree.TypeInsnNode;
  * Inserts the bytecode instructions within method node, needed to handle the return listeners
  * registered.
  *
- * This helper turns the method node instructions of a method like this:
+ * This primitive turns the method node instructions of a method like this:
  * <br><pre>{@code
  * public Object foo(Object arg){
  *   return void(arg);
@@ -74,10 +74,10 @@ import org.objectweb.asm.tree.TypeInsnNode;
  *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public class GenericMethodReturnHelper extends Helper {
+public class GenericMethodReturnPrimitive extends InstrumentationPrimitive {
 
-
-  public boolean addByteCodeInstructions(ClassNode cn, MethodNode mn,
+  @Override
+  public boolean addByteCodeInstructions(String classRegistryName, ClassNode cn, MethodNode mn,
       ArrayList<Integer> hooksToUse) {
 
     ArrayList<Integer> listenersToUse = getListenersOfType(hooksToUse,
@@ -87,11 +87,11 @@ public class GenericMethodReturnHelper extends Helper {
       return false;
     }
 
-    addReturnTrace(cn, mn, listenersToUse);
+    addReturnTrace(classRegistryName, cn, mn, listenersToUse);
     return true;
   }
 
-  private void addReturnTrace(ClassNode cn, MethodNode mn,
+  private void addReturnTrace(String classRegistryName, ClassNode cn, MethodNode mn,
       ArrayList<Integer> listenersToUse) {
     InsnList il = mn.instructions;
     Iterator<AbstractInsnNode> it = il.iterator();
@@ -107,38 +107,12 @@ public class GenericMethodReturnHelper extends Helper {
         case Opcodes.ARETURN:
         case Opcodes.DRETURN:
           il.insertBefore(abstractInsnNode,
-              getReturnInstructions(cn, mn, listenersToUse));
+              getReturnInstructions(classRegistryName, cn, mn, listenersToUse));
       }
     }
   }
 
-  private InsnList getVoidReturnTraceInstructions(int methodId, ClassNode cn, MethodNode mn,
-      ArrayList<Integer> listenersToUse) {
-    InsnList il = new InsnList();
-    for (int i = listenersToUse.size() - 1; i >= 0; i--) {
-      Integer index = listenersToUse.get(i);
-      GenericMethodReturnListener listener = (GenericMethodReturnListener) bctrace.getHooks()[index]
-          .getListener();
-      il.add(new InsnNode(Opcodes.ACONST_NULL)); // return value
-      il.add(ASMUtils.getPushInstruction(methodId)); // method id
-      il.add(getClassConstantReference(Type.getObjectType(cn.name), cn.version)); // class
-      pushInstance(il, mn, true); // current instance
-      il.add(ASMUtils.getPushInstruction(index)); // hook id
-      if (listener.requiresArguments()) {
-        pushMethodArgsArray(il, mn);
-      } else {
-        il.add(new InsnNode(Opcodes.ACONST_NULL));
-      }
-      il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
-          "io/shiftleft/bctrace/runtime/Callback", "onReturn",
-          "(Ljava/lang/Object;ILjava/lang/Class;Ljava/lang/Object;I[Ljava/lang/Object;)Ljava/lang/Object;",
-          false));
-      il.add(new InsnNode(Opcodes.POP));
-    }
-    return il;
-  }
-
-  private InsnList getReturnInstructions(ClassNode cn, MethodNode mn,
+  private InsnList getReturnInstructions(String classRegistryName, ClassNode cn, MethodNode mn,
       ArrayList<Integer> listenersToUse) {
     Type returnType = Type.getReturnType(mn.desc);
     InsnList il = new InsnList();
@@ -149,7 +123,8 @@ public class GenericMethodReturnHelper extends Helper {
       // Store original return value into a local variable
       il.add(ASMUtils.getStoreInst(returnType, returnVarIndex));
     }
-    Integer methodId = MethodRegistry.getInstance().registerMethodId(MethodInfo.from(cn.name, mn));
+    Integer methodId = MethodRegistry.getInstance().registerMethodId(MethodInfo.from(
+        classRegistryName, mn));
     for (int i = listenersToUse.size() - 1; i >= 0; i--) {
       Integer index = listenersToUse.get(i);
       GenericMethodReturnListener listener = (GenericMethodReturnListener) bctrace.getHooks()[index]

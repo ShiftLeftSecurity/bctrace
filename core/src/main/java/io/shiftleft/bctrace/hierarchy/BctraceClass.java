@@ -208,4 +208,8 @@ public abstract class BctraceClass {
     }
     return false;
   }
+
+  public ClassLoader getClassloader() {
+    return cl;
+  }
 }

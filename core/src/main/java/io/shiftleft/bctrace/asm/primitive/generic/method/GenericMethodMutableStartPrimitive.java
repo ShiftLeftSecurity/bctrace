@@ -22,13 +22,13 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.asm.helper.generic.method;
+package io.shiftleft.bctrace.asm.primitive.generic.method;
 
 import io.shiftleft.bctrace.MethodInfo;
 import io.shiftleft.bctrace.MethodRegistry;
-import io.shiftleft.bctrace.asm.helper.Helper;
+import io.shiftleft.bctrace.asm.primitive.InstrumentationPrimitive;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
-import io.shiftleft.bctrace.runtime.listener.generic.GenericMethodStartListener;
+import io.shiftleft.bctrace.runtime.listener.generic.GenericMethodMutableStartListener;
 import java.util.ArrayList;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -37,6 +37,7 @@ import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.TypeInsnNode;
 
 /**
  * Inserts the bytecode instructions within method node, needed to handle the different start
@@ -44,18 +45,18 @@ import org.objectweb.asm.tree.MethodNode;
  *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public class GenericMethodStartHelper extends Helper {
+public class GenericMethodMutableStartPrimitive extends InstrumentationPrimitive {
 
-  public boolean addByteCodeInstructions(ClassNode cn, MethodNode mn,
+  @Override
+  public boolean addByteCodeInstructions(String classRegistryName, ClassNode cn, MethodNode mn,
       ArrayList<Integer> hooksToUse) {
 
-    return addTraceStart(cn, mn, hooksToUse);
+    return addMutableTraceStart(classRegistryName, cn, mn, hooksToUse);
   }
 
-
   /**
-   * Depending on the {@link GenericMethodStartListener} listeners that apply to this method,  this
-   * helper turns the method node instructions of a method like this:
+   * Depending on the {@link GenericMethodMutableStartListener} listeners that apply to this method,
+   * this primitive turns the method node instructions of a method like this:
    * <br><pre>{@code
    * public Object foo(Object arg1, Object arg2, ..., Object argn){
    *   return void(arg1, arg2, ..., argn);
@@ -66,30 +67,31 @@ public class GenericMethodStartHelper extends Helper {
    * <br><pre>{@code
    * public Object foo(Object args){
    *   Object[] args = new Object[]{arg1, arg2, ..., argn};
-   *   Object ret = void(args);
    *   // Notify listeners that apply to this method (methodId 1550)
-   *   Callback.onStart(args, 1550, clazz, this, 0);
-   *   Callback.onStart(args, 1550, clazz, this, 2);
-   *   Callback.onStart(args, 1550, clazz, this, 10);
+   *   args = Callback.onStart(args, 1550, clazz, this, 0);
+   *   args = Callback.onStart(args, 1550, clazz, this, 2);
+   *   args = Callback.onStart(args, 1550, clazz, this, 10);
    *   return void(arg1, arg2, ..., argn);
    * }
    * }
    * </pre>
    */
-  private boolean addTraceStart(ClassNode cn, MethodNode mn,
+  private boolean addMutableTraceStart(String classRegistryName, ClassNode cn, MethodNode mn,
       ArrayList<Integer> hooksToUse) {
     ArrayList<Integer> listenersToUse = getListenersOfType(hooksToUse,
-        GenericMethodStartListener.class);
+        GenericMethodMutableStartListener.class);
     if (!isInstrumentationNeeded(listenersToUse)) {
       return false;
     }
-    Integer methodId = MethodRegistry.getInstance().registerMethodId(MethodInfo.from(cn.name, mn));
+    Integer methodId = MethodRegistry.getInstance().registerMethodId(MethodInfo.from(classRegistryName, mn));
     InsnList il = new InsnList();
+    Type[] methodArguments = Type.getArgumentTypes(mn.desc);
     boolean someRequiresArguments = false;
     for (int i = 0; i < listenersToUse.size(); i++) {
       Integer index = listenersToUse.get(i);
-      GenericMethodStartListener listener = (GenericMethodStartListener) bctrace
-          .getHooks()[index].getListener();
+      GenericMethodMutableStartListener listener = (GenericMethodMutableStartListener) bctrace
+          .getHooks()[index]
+          .getListener();
       if (listener.requiresArguments()) {
         someRequiresArguments = true;
         break;
@@ -102,20 +104,50 @@ public class GenericMethodStartHelper extends Helper {
     }
     for (int i = 0; i < listenersToUse.size(); i++) {
       Integer index = listenersToUse.get(i);
-      GenericMethodStartListener listener = (GenericMethodStartListener) bctrace
-          .getHooks()[index].getListener();
-      if (i < listenersToUse.size() - 1) {
-        il.add(new InsnNode(Opcodes.DUP));
-      }
+      GenericMethodMutableStartListener listener = (GenericMethodMutableStartListener) bctrace
+          .getHooks()[index]
+          .getListener();
       il.add(ASMUtils.getPushInstruction(methodId));
       il.add(getClassConstantReference(Type.getObjectType(cn.name), cn.version)); // class
       pushInstance(il, mn); // current instance
       il.add(ASMUtils.getPushInstruction(index));
       il.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
-          "io/shiftleft/bctrace/runtime/Callback", "onStart",
-          "([Ljava/lang/Object;ILjava/lang/Class;Ljava/lang/Object;I)V", false));
+          "io/shiftleft/bctrace/runtime/Callback", "onMutableStart",
+          "([Ljava/lang/Object;ILjava/lang/Class;Ljava/lang/Object;I)[Ljava/lang/Object;", false));
+      overwriteMethodArgsFromArray(il, mn);
     }
+    il.add(new InsnNode(Opcodes.POP));
     mn.instructions.insert(il);
     return true;
   }
+
+  /**
+   * Overwrites the argument local variables from the array in top of the operand stack
+   */
+  protected void overwriteMethodArgsFromArray(InsnList il, MethodNode mn) {
+    Type[] methodArguments = Type.getArgumentTypes(mn.desc);
+    if (methodArguments.length > 0) {
+      int index = ASMUtils.isStatic(mn.access) ? 0 : 1;
+      for (int i = 0; i < methodArguments.length; i++) {
+        il.add(new InsnNode(Opcodes.DUP));
+        il.add(ASMUtils.getPushInstruction(i));
+        il.add(new InsnNode(Opcodes.AALOAD));
+        MethodInsnNode wrapperToPrimitiveInst = ASMUtils
+            .getWrapperToPrimitiveInst(methodArguments[i]);
+        String castType = methodArguments[i].getInternalName();
+        String wrapperType = ASMUtils.getWrapper(methodArguments[i]);
+        if (wrapperType != null) {
+          castType = wrapperType;
+        }
+        il.add(new TypeInsnNode(Opcodes.CHECKCAST, castType));
+        if (wrapperToPrimitiveInst != null) {
+          il.add(wrapperToPrimitiveInst);
+        }
+        il.add(ASMUtils.getStoreInst(methodArguments[i], index));
+        index += methodArguments[i].getSize();
+      }
+    }
+  }
 }
+
+

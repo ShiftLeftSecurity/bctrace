@@ -29,14 +29,14 @@ import io.shiftleft.bctrace.InstrumentationImpl;
 import io.shiftleft.bctrace.MethodInfo;
 import io.shiftleft.bctrace.MethodRegistry;
 import io.shiftleft.bctrace.SystemProperty;
-import io.shiftleft.bctrace.asm.helper.direct.callsite.CallSiteHelper;
-import io.shiftleft.bctrace.asm.helper.direct.method.DirectMethodReturnHelper;
-import io.shiftleft.bctrace.asm.helper.direct.method.DirectMethodStartHelper;
-import io.shiftleft.bctrace.asm.helper.direct.method.DirectMethodThrowableHelper;
-import io.shiftleft.bctrace.asm.helper.generic.method.GenericMethodMutableStartHelper;
-import io.shiftleft.bctrace.asm.helper.generic.method.GenericMethodReturnHelper;
-import io.shiftleft.bctrace.asm.helper.generic.method.GenericMethodStartHelper;
-import io.shiftleft.bctrace.asm.helper.generic.method.GenericMethodThrowableHelper;
+import io.shiftleft.bctrace.asm.primitive.direct.callsite.CallSitePrimitive;
+import io.shiftleft.bctrace.asm.primitive.direct.method.DirectMethodReturnPrimitive;
+import io.shiftleft.bctrace.asm.primitive.direct.method.DirectMethodStartPrimitive;
+import io.shiftleft.bctrace.asm.primitive.direct.method.DirectMethodThrowablePrimitive;
+import io.shiftleft.bctrace.asm.primitive.generic.method.GenericMethodMutableStartPrimitive;
+import io.shiftleft.bctrace.asm.primitive.generic.method.GenericMethodReturnPrimitive;
+import io.shiftleft.bctrace.asm.primitive.generic.method.GenericMethodStartPrimitive;
+import io.shiftleft.bctrace.asm.primitive.generic.method.GenericMethodThrowablePrimitive;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
 import io.shiftleft.bctrace.hierarchy.BctraceClass;
 import io.shiftleft.bctrace.hierarchy.UnloadedClass;
@@ -104,15 +104,15 @@ public class Transformer implements ClassFileTransformer {
 
 
   private final CallbackTransformer cbTransformer;
-  private final GenericMethodStartHelper genericMethodStartHelper = new GenericMethodStartHelper();
-  private final GenericMethodMutableStartHelper genericMethodMutableStartHelper = new GenericMethodMutableStartHelper();
-  private final GenericMethodReturnHelper genericMethodReturnHelper = new GenericMethodReturnHelper();
-  private final GenericMethodThrowableHelper genericMethodThrowableHelper = new GenericMethodThrowableHelper();
+  private final GenericMethodStartPrimitive genericMethodStartPrimitive = new GenericMethodStartPrimitive();
+  private final GenericMethodMutableStartPrimitive genericMethodMutableStartPrimitive = new GenericMethodMutableStartPrimitive();
+  private final GenericMethodReturnPrimitive genericMethodReturnPrimitive = new GenericMethodReturnPrimitive();
+  private final GenericMethodThrowablePrimitive genericMethodThrowablePrimitive = new GenericMethodThrowablePrimitive();
 
-  private final CallSiteHelper callSiteHelper = new CallSiteHelper();
-  private final DirectMethodStartHelper directMethodStartHelper = new DirectMethodStartHelper();
-  private final DirectMethodReturnHelper directMethodReturnHelper = new DirectMethodReturnHelper();
-  private final DirectMethodThrowableHelper directMethodThrowableHelper = new DirectMethodThrowableHelper();
+  private final CallSitePrimitive callSitePrimitive = new CallSitePrimitive();
+  private final DirectMethodStartPrimitive directMethodStartPrimitive = new DirectMethodStartPrimitive();
+  private final DirectMethodReturnPrimitive directMethodReturnPrimitive = new DirectMethodReturnPrimitive();
+  private final DirectMethodThrowablePrimitive directMethodThrowablePrimitive = new DirectMethodThrowablePrimitive();
 
   private final InstrumentationImpl instrumentation;
   private final Hook[] hooks;
@@ -126,16 +126,16 @@ public class Transformer implements ClassFileTransformer {
     this.hooks = bctrace.getHooks();
     this.cbTransformer = cbTransformer;
 
-    this.genericMethodStartHelper.setBctrace(bctrace);
-    this.genericMethodMutableStartHelper.setBctrace(bctrace);
-    this.genericMethodReturnHelper.setBctrace(bctrace);
-    this.genericMethodThrowableHelper.setBctrace(bctrace);
+    this.genericMethodStartPrimitive.setBctrace(bctrace);
+    this.genericMethodMutableStartPrimitive.setBctrace(bctrace);
+    this.genericMethodReturnPrimitive.setBctrace(bctrace);
+    this.genericMethodThrowablePrimitive.setBctrace(bctrace);
 
-    this.directMethodStartHelper.setBctrace(bctrace);
-    this.directMethodReturnHelper.setBctrace(bctrace);
-    this.directMethodThrowableHelper.setBctrace(bctrace);
+    this.directMethodStartPrimitive.setBctrace(bctrace);
+    this.directMethodReturnPrimitive.setBctrace(bctrace);
+    this.directMethodThrowablePrimitive.setBctrace(bctrace);
 
-    this.callSiteHelper.setBctrace(bctrace);
+    this.callSitePrimitive.setBctrace(bctrace);
 
     ClassMetrics.getInstance();
 
@@ -278,7 +278,7 @@ public class Transformer implements ClassFileTransformer {
   }
 
   private ArrayList<Integer> getMatchingHooksByClassInfo(ArrayList<Integer> candidateHookIndexes,
-      BctraceClass bctraceClass, ProtectionDomain protectionDomain,
+      UnloadedClass unloadedClass, ProtectionDomain protectionDomain,
       ClassLoader loader) {
 
     if (candidateHookIndexes == null) {
@@ -287,7 +287,7 @@ public class Transformer implements ClassFileTransformer {
     ArrayList<Integer> ret = new ArrayList<Integer>(hooks.length);
     for (int i = 0; i < candidateHookIndexes.size(); i++) {
       Integer hookIndex = candidateHookIndexes.get(i);
-      if (hooks[hookIndex].getFilter().acceptClass(bctraceClass, protectionDomain, loader)) {
+      if (hooks[hookIndex].getFilter().acceptClass(unloadedClass, protectionDomain, loader)) {
         ret.add(hookIndex);
       }
     }
@@ -321,14 +321,23 @@ public class Transformer implements ClassFileTransformer {
         continue;
       }
       boolean methodTransformed = false;
+      String registryClassName;
+      if (unloadedClass.getRegistryClassName() != null) {
+        registryClassName = unloadedClass.getRegistryClassName();
+      } else {
+        registryClassName = unloadedClass.getJVMName();
+      }
+
       if (!hooksToUse.isEmpty()) {
-        methodTransformed = modifyMethod(cn, mn, hooksToUse);
+        methodTransformed = modifyMethod(registryClassName, cn, mn, hooksToUse);
       }
       if (methodTransformed) {
-        modifyMethod(cn, mn, getAdditionalHooks(classMatchingHooks));
+        modifyMethod(registryClassName, cn, mn,
+            getAdditionalHooks(classMatchingHooks));
         classTransformed = true;
         MethodMetrics.getInstance().reportInstrumented(
-            MethodRegistry.getInstance().registerMethodId(MethodInfo.from(cn.name, mn)));
+            MethodRegistry.getInstance()
+                .registerMethodId(MethodInfo.from(registryClassName, mn)));
       }
     }
     return classTransformed;
@@ -346,7 +355,11 @@ public class Transformer implements ClassFileTransformer {
     return additionalHooks;
   }
 
-  private boolean modifyMethod(ClassNode cn, MethodNode mn, ArrayList<Integer> hooksToUse) {
+  private boolean modifyMethod(String classRegistryName, ClassNode cn, MethodNode mn,
+      ArrayList<Integer> hooksToUse) {
+    if (classRegistryName == null) {
+      classRegistryName = cn.name;
+    }
     boolean transformed = false;
     boolean hasGenericHooks = false;
     for (int h = 0; h < hooksToUse.size(); h++) {
@@ -358,29 +371,35 @@ public class Transformer implements ClassFileTransformer {
       }
     }
     if (hasGenericHooks) {
-      if (genericMethodMutableStartHelper.addByteCodeInstructions(cn, mn, hooksToUse)) {
+      if (genericMethodMutableStartPrimitive
+          .addByteCodeInstructions(classRegistryName, cn, mn, hooksToUse)) {
         transformed = true;
       }
-      if (genericMethodStartHelper.addByteCodeInstructions(cn, mn, hooksToUse)) {
+      if (genericMethodStartPrimitive
+          .addByteCodeInstructions(classRegistryName, cn, mn, hooksToUse)) {
         transformed = true;
       }
-      if (genericMethodReturnHelper.addByteCodeInstructions(cn, mn, hooksToUse)) {
+      if (genericMethodReturnPrimitive
+          .addByteCodeInstructions(classRegistryName, cn, mn, hooksToUse)) {
         transformed = true;
       }
-      if (genericMethodThrowableHelper.addByteCodeInstructions(cn, mn, hooksToUse)) {
+      if (genericMethodThrowablePrimitive
+          .addByteCodeInstructions(classRegistryName, cn, mn, hooksToUse)) {
         transformed = true;
       }
     }
-    if (callSiteHelper.addByteCodeInstructions(cn, mn, hooksToUse)) {
+    if (callSitePrimitive.addByteCodeInstructions(classRegistryName, cn, mn, hooksToUse)) {
       transformed = true;
     }
-    if (directMethodStartHelper.addByteCodeInstructions(cn, mn, hooksToUse)) {
+    if (directMethodStartPrimitive.addByteCodeInstructions(classRegistryName, cn, mn, hooksToUse)) {
       transformed = true;
     }
-    if (directMethodReturnHelper.addByteCodeInstructions(cn, mn, hooksToUse)) {
+    if (directMethodReturnPrimitive
+        .addByteCodeInstructions(classRegistryName, cn, mn, hooksToUse)) {
       transformed = true;
     }
-    if (directMethodThrowableHelper.addByteCodeInstructions(cn, mn, hooksToUse)) {
+    if (directMethodThrowablePrimitive
+        .addByteCodeInstructions(classRegistryName, cn, mn, hooksToUse)) {
       transformed = true;
     }
     return transformed;

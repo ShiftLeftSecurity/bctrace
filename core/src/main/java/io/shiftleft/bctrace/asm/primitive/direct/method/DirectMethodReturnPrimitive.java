@@ -22,10 +22,10 @@
  * CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS
  * CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package io.shiftleft.bctrace.asm.helper.direct.method;
+package io.shiftleft.bctrace.asm.primitive.direct.method;
 
 import io.shiftleft.bctrace.asm.CallbackTransformer;
-import io.shiftleft.bctrace.asm.helper.Helper;
+import io.shiftleft.bctrace.asm.primitive.InstrumentationPrimitive;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
 import io.shiftleft.bctrace.hook.Hook;
 import io.shiftleft.bctrace.runtime.listener.direct.DirectListener;
@@ -40,9 +40,10 @@ import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
-public class DirectMethodReturnHelper extends Helper {
+public class DirectMethodReturnPrimitive extends InstrumentationPrimitive {
 
-  public boolean addByteCodeInstructions(ClassNode cn, MethodNode mn,
+  @Override
+  public boolean addByteCodeInstructions(String classRegistryName, ClassNode cn, MethodNode mn,
       ArrayList<Integer> hooksToUse) {
 
     ArrayList<Integer> listenersToUse = getListenersOfType(hooksToUse,
@@ -54,8 +55,7 @@ public class DirectMethodReturnHelper extends Helper {
     return true;
   }
 
-  private void addReturnTrace(ClassNode cn, MethodNode mn,
-      ArrayList<Integer> listenersToUse) {
+  private void addReturnTrace(ClassNode cn, MethodNode mn, ArrayList<Integer> listenersToUse) {
 
     InsnList il = mn.instructions;
     Iterator<AbstractInsnNode> it = il.iterator();
