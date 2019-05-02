@@ -24,27 +24,52 @@
  */
 package io.shiftleft.bctrace;
 
+import io.shiftleft.bctrace.util.collections.IntObjectHashMap;
+import io.shiftleft.bctrace.util.collections.ObjectIntHashMap;
+import io.shiftleft.bctrace.util.collections.ObjectIntMap;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public abstract class MethodRegistry {
+public final class MethodRegistryImpl extends MethodRegistry {
 
-  private static final MethodRegistry INSTANCE = new MethodRegistryImpl();
+  private AtomicInteger counter = new AtomicInteger(1);
+  private final IntObjectHashMap<MethodInfo> map1 = new IntObjectHashMap<MethodInfo>();
+  private final ObjectIntHashMap<MethodInfo> map2 = new ObjectIntHashMap<MethodInfo>();
 
-  public static MethodRegistry getInstance() {
-    return INSTANCE;
+  MethodRegistryImpl() {
   }
 
-  MethodRegistry() {
+  public synchronized MethodInfo getMethod(int methodId) {
+    return map1.get(methodId);
   }
 
-  public abstract MethodInfo getMethod(int methodId);
+  public synchronized int registerMethodId(MethodInfo mi) {
+    int methodId = map2.get(mi);
+    if (methodId == 0) {
+      methodId = counter.getAndIncrement();
+      map1.put(methodId, mi);
+      map2.put(mi, methodId);
+    }
+    return methodId;
+  }
 
-  public abstract int getMethodId(MethodInfo mi);
+  public synchronized int getMethodId(MethodInfo mi) {
+    return map2.get(mi);
+  }
 
-  public abstract int size();
+  public synchronized int size() {
+    return map1.size();
+  }
+
+  public synchronized void remove(int methodId) {
+    MethodInfo mi = map1.remove(methodId);
+    if (mi != null) {
+      map2.remove(mi);
+    }
+  }
 }

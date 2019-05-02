@@ -78,7 +78,7 @@ public class CallSitePrimitive extends InstrumentationPrimitive {
    * @return true if the method has been transformed. False otherwise
    */
   @Override
-  public boolean addByteCodeInstructions(String classResgistryName, ClassNode cn, MethodNode mn,
+  public boolean addByteCodeInstructions(int methodId, ClassNode cn, MethodNode mn,
       ArrayList<Integer> hooksToUse) {
 
     // InstrumentationPrimitive local variables

@@ -39,8 +39,6 @@ import org.objectweb.asm.tree.ClassNode;
 public final class UnloadedClass extends BctraceClass {
 
   private final ClassNode cn;
-  private String registryClassName;
-
 
   UnloadedClass(String name, ClassLoader cl, Instrumentation instrumentation)
       throws ClassNotFoundException {
@@ -51,14 +49,6 @@ public final class UnloadedClass extends BctraceClass {
   public UnloadedClass(String name, ClassLoader cl, ClassNode cn, Instrumentation instrumentation) {
     super(name, cl, instrumentation);
     this.cn = cn;
-  }
-
-  public void setRegistryClassName(String registryClassName) {
-    this.registryClassName = registryClassName;
-  }
-
-  public String getRegistryClassName() {
-    return registryClassName;
   }
 
   private static ClassNode createClassNode(final URL url) throws ClassNotFoundException {
@@ -86,7 +76,6 @@ public final class UnloadedClass extends BctraceClass {
     } catch (IOException ex) {
       throw new RuntimeException(ex);
     }
-
   }
 
   public ClassNode getClassNode() {

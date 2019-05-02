@@ -28,6 +28,7 @@ import io.shiftleft.bctrace.Bctrace;
 import io.shiftleft.bctrace.InstrumentationImpl;
 import io.shiftleft.bctrace.MethodInfo;
 import io.shiftleft.bctrace.MethodRegistry;
+import io.shiftleft.bctrace.MethodRegistryImpl;
 import io.shiftleft.bctrace.SystemProperty;
 import io.shiftleft.bctrace.asm.primitive.direct.callsite.CallSitePrimitive;
 import io.shiftleft.bctrace.asm.primitive.direct.method.DirectMethodReturnPrimitive;
@@ -38,7 +39,6 @@ import io.shiftleft.bctrace.asm.primitive.generic.method.GenericMethodReturnPrim
 import io.shiftleft.bctrace.asm.primitive.generic.method.GenericMethodStartPrimitive;
 import io.shiftleft.bctrace.asm.primitive.generic.method.GenericMethodThrowablePrimitive;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
-import io.shiftleft.bctrace.hierarchy.BctraceClass;
 import io.shiftleft.bctrace.hierarchy.UnloadedClass;
 import io.shiftleft.bctrace.hook.GenericMethodHook;
 import io.shiftleft.bctrace.hook.Hook;
@@ -66,6 +66,9 @@ import org.objectweb.asm.tree.MethodNode;
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
 public class Transformer implements ClassFileTransformer {
+
+  protected static final MethodRegistryImpl METHOD_REGISTRY = (MethodRegistryImpl) MethodRegistry
+      .getInstance();
 
   static String TRANSFORMATION_SUPPORT_CLASS_NAME = TransformationSupport.class.getName()
       .replace('.', '/');
@@ -309,6 +312,8 @@ public class Transformer implements ClassFileTransformer {
     boolean classTransformed = false;
     for (int m = 0; m < methods.size(); m++) {
       MethodNode mn = methods.get(m);
+      int methodId = METHOD_REGISTRY
+          .registerMethodId(MethodInfo.from(unloadedClass.getJVMName(), mn));
       ArrayList<Integer> hooksToUse = new ArrayList<Integer>(classMatchingHooks.size());
       for (int h = 0; h < classMatchingHooks.size(); h++) {
         Integer i = classMatchingHooks.get(h);
@@ -321,23 +326,17 @@ public class Transformer implements ClassFileTransformer {
         continue;
       }
       boolean methodTransformed = false;
-      String registryClassName;
-      if (unloadedClass.getRegistryClassName() != null) {
-        registryClassName = unloadedClass.getRegistryClassName();
-      } else {
-        registryClassName = unloadedClass.getJVMName();
-      }
 
       if (!hooksToUse.isEmpty()) {
-        methodTransformed = modifyMethod(registryClassName, cn, mn, hooksToUse);
+        methodTransformed = modifyMethod(methodId, cn, mn, hooksToUse);
       }
       if (methodTransformed) {
-        modifyMethod(registryClassName, cn, mn,
+        modifyMethod(methodId, cn, mn,
             getAdditionalHooks(classMatchingHooks));
         classTransformed = true;
-        MethodMetrics.getInstance().reportInstrumented(
-            MethodRegistry.getInstance()
-                .registerMethodId(MethodInfo.from(registryClassName, mn)));
+        MethodMetrics.getInstance().reportInstrumented(methodId);
+      } else {
+        METHOD_REGISTRY.remove(methodId);
       }
     }
     return classTransformed;
@@ -355,11 +354,8 @@ public class Transformer implements ClassFileTransformer {
     return additionalHooks;
   }
 
-  private boolean modifyMethod(String classRegistryName, ClassNode cn, MethodNode mn,
+  private boolean modifyMethod(int methodId, ClassNode cn, MethodNode mn,
       ArrayList<Integer> hooksToUse) {
-    if (classRegistryName == null) {
-      classRegistryName = cn.name;
-    }
     boolean transformed = false;
     boolean hasGenericHooks = false;
     for (int h = 0; h < hooksToUse.size(); h++) {
@@ -372,34 +368,34 @@ public class Transformer implements ClassFileTransformer {
     }
     if (hasGenericHooks) {
       if (genericMethodMutableStartPrimitive
-          .addByteCodeInstructions(classRegistryName, cn, mn, hooksToUse)) {
+          .addByteCodeInstructions(methodId, cn, mn, hooksToUse)) {
         transformed = true;
       }
       if (genericMethodStartPrimitive
-          .addByteCodeInstructions(classRegistryName, cn, mn, hooksToUse)) {
+          .addByteCodeInstructions(methodId, cn, mn, hooksToUse)) {
         transformed = true;
       }
       if (genericMethodReturnPrimitive
-          .addByteCodeInstructions(classRegistryName, cn, mn, hooksToUse)) {
+          .addByteCodeInstructions(methodId, cn, mn, hooksToUse)) {
         transformed = true;
       }
       if (genericMethodThrowablePrimitive
-          .addByteCodeInstructions(classRegistryName, cn, mn, hooksToUse)) {
+          .addByteCodeInstructions(methodId, cn, mn, hooksToUse)) {
         transformed = true;
       }
     }
-    if (callSitePrimitive.addByteCodeInstructions(classRegistryName, cn, mn, hooksToUse)) {
+    if (callSitePrimitive.addByteCodeInstructions(methodId, cn, mn, hooksToUse)) {
       transformed = true;
     }
-    if (directMethodStartPrimitive.addByteCodeInstructions(classRegistryName, cn, mn, hooksToUse)) {
+    if (directMethodStartPrimitive.addByteCodeInstructions(methodId, cn, mn, hooksToUse)) {
       transformed = true;
     }
     if (directMethodReturnPrimitive
-        .addByteCodeInstructions(classRegistryName, cn, mn, hooksToUse)) {
+        .addByteCodeInstructions(methodId, cn, mn, hooksToUse)) {
       transformed = true;
     }
     if (directMethodThrowablePrimitive
-        .addByteCodeInstructions(classRegistryName, cn, mn, hooksToUse)) {
+        .addByteCodeInstructions(methodId, cn, mn, hooksToUse)) {
       transformed = true;
     }
     return transformed;

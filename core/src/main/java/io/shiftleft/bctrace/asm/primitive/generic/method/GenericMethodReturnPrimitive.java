@@ -25,7 +25,6 @@
 package io.shiftleft.bctrace.asm.primitive.generic.method;
 
 import io.shiftleft.bctrace.MethodInfo;
-import io.shiftleft.bctrace.MethodRegistry;
 import io.shiftleft.bctrace.asm.primitive.InstrumentationPrimitive;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
 import io.shiftleft.bctrace.runtime.listener.generic.GenericMethodReturnListener;
@@ -77,7 +76,7 @@ import org.objectweb.asm.tree.TypeInsnNode;
 public class GenericMethodReturnPrimitive extends InstrumentationPrimitive {
 
   @Override
-  public boolean addByteCodeInstructions(String classRegistryName, ClassNode cn, MethodNode mn,
+  public boolean addByteCodeInstructions(int methodId, ClassNode cn, MethodNode mn,
       ArrayList<Integer> hooksToUse) {
 
     ArrayList<Integer> listenersToUse = getListenersOfType(hooksToUse,
@@ -87,11 +86,11 @@ public class GenericMethodReturnPrimitive extends InstrumentationPrimitive {
       return false;
     }
 
-    addReturnTrace(classRegistryName, cn, mn, listenersToUse);
+    addReturnTrace(methodId, cn, mn, listenersToUse);
     return true;
   }
 
-  private void addReturnTrace(String classRegistryName, ClassNode cn, MethodNode mn,
+  private void addReturnTrace(int methodId, ClassNode cn, MethodNode mn,
       ArrayList<Integer> listenersToUse) {
     InsnList il = mn.instructions;
     Iterator<AbstractInsnNode> it = il.iterator();
@@ -107,12 +106,12 @@ public class GenericMethodReturnPrimitive extends InstrumentationPrimitive {
         case Opcodes.ARETURN:
         case Opcodes.DRETURN:
           il.insertBefore(abstractInsnNode,
-              getReturnInstructions(classRegistryName, cn, mn, listenersToUse));
+              getReturnInstructions(methodId, cn, mn, listenersToUse));
       }
     }
   }
 
-  private InsnList getReturnInstructions(String classRegistryName, ClassNode cn, MethodNode mn,
+  private InsnList getReturnInstructions(int methodId, ClassNode cn, MethodNode mn,
       ArrayList<Integer> listenersToUse) {
     Type returnType = Type.getReturnType(mn.desc);
     InsnList il = new InsnList();
@@ -123,8 +122,6 @@ public class GenericMethodReturnPrimitive extends InstrumentationPrimitive {
       // Store original return value into a local variable
       il.add(ASMUtils.getStoreInst(returnType, returnVarIndex));
     }
-    Integer methodId = MethodRegistry.getInstance().registerMethodId(MethodInfo.from(
-        classRegistryName, mn));
     for (int i = listenersToUse.size() - 1; i >= 0; i--) {
       Integer index = listenersToUse.get(i);
       GenericMethodReturnListener listener = (GenericMethodReturnListener) bctrace.getHooks()[index]

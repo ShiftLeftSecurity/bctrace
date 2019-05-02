@@ -47,7 +47,7 @@ import org.objectweb.asm.tree.VarInsnNode;
 public class DirectMethodThrowablePrimitive extends InstrumentationPrimitive {
 
   @Override
-  public boolean addByteCodeInstructions(String classRegistryName, ClassNode cn, MethodNode mn,
+  public boolean addByteCodeInstructions(int methodId, ClassNode cn, MethodNode mn,
       ArrayList<Integer> hooksToUse) {
 
     ArrayList<Integer> listenersToUse = getListenersOfType(hooksToUse,

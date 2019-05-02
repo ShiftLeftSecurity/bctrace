@@ -24,8 +24,6 @@
  */
 package io.shiftleft.bctrace.asm.primitive.generic.method;
 
-import io.shiftleft.bctrace.MethodInfo;
-import io.shiftleft.bctrace.MethodRegistry;
 import io.shiftleft.bctrace.asm.primitive.InstrumentationPrimitive;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
 import io.shiftleft.bctrace.runtime.listener.generic.GenericMethodStartListener;
@@ -47,10 +45,10 @@ import org.objectweb.asm.tree.MethodNode;
 public class GenericMethodStartPrimitive extends InstrumentationPrimitive {
 
   @Override
-  public boolean addByteCodeInstructions(String classRegistryName, ClassNode cn, MethodNode mn,
+  public boolean addByteCodeInstructions(int methodId, ClassNode cn, MethodNode mn,
       ArrayList<Integer> hooksToUse) {
 
-    return addTraceStart(classRegistryName, cn, mn, hooksToUse);
+    return addTraceStart(methodId, cn, mn, hooksToUse);
   }
 
 
@@ -77,14 +75,13 @@ public class GenericMethodStartPrimitive extends InstrumentationPrimitive {
    * }
    * </pre>
    */
-  private boolean addTraceStart(String classRegistryName, ClassNode cn, MethodNode mn,
+  private boolean addTraceStart(int methodId, ClassNode cn, MethodNode mn,
       ArrayList<Integer> hooksToUse) {
     ArrayList<Integer> listenersToUse = getListenersOfType(hooksToUse,
         GenericMethodStartListener.class);
     if (!isInstrumentationNeeded(listenersToUse)) {
       return false;
     }
-    Integer methodId = MethodRegistry.getInstance().registerMethodId(MethodInfo.from(classRegistryName, mn));
     InsnList il = new InsnList();
     boolean someRequiresArguments = false;
     for (int i = 0; i < listenersToUse.size(); i++) {

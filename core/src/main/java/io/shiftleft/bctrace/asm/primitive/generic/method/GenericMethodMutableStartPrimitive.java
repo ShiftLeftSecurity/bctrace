@@ -24,8 +24,6 @@
  */
 package io.shiftleft.bctrace.asm.primitive.generic.method;
 
-import io.shiftleft.bctrace.MethodInfo;
-import io.shiftleft.bctrace.MethodRegistry;
 import io.shiftleft.bctrace.asm.primitive.InstrumentationPrimitive;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
 import io.shiftleft.bctrace.runtime.listener.generic.GenericMethodMutableStartListener;
@@ -48,10 +46,10 @@ import org.objectweb.asm.tree.TypeInsnNode;
 public class GenericMethodMutableStartPrimitive extends InstrumentationPrimitive {
 
   @Override
-  public boolean addByteCodeInstructions(String classRegistryName, ClassNode cn, MethodNode mn,
+  public boolean addByteCodeInstructions(int methodId, ClassNode cn, MethodNode mn,
       ArrayList<Integer> hooksToUse) {
 
-    return addMutableTraceStart(classRegistryName, cn, mn, hooksToUse);
+    return addMutableTraceStart(methodId, cn, mn, hooksToUse);
   }
 
   /**
@@ -63,7 +61,7 @@ public class GenericMethodMutableStartPrimitive extends InstrumentationPrimitive
    * }
    * }
    * </pre>
-   * Into that:
+   * Into that:int methodId
    * <br><pre>{@code
    * public Object foo(Object args){
    *   Object[] args = new Object[]{arg1, arg2, ..., argn};
@@ -76,14 +74,13 @@ public class GenericMethodMutableStartPrimitive extends InstrumentationPrimitive
    * }
    * </pre>
    */
-  private boolean addMutableTraceStart(String classRegistryName, ClassNode cn, MethodNode mn,
+  private boolean addMutableTraceStart(int methodId, ClassNode cn, MethodNode mn,
       ArrayList<Integer> hooksToUse) {
     ArrayList<Integer> listenersToUse = getListenersOfType(hooksToUse,
         GenericMethodMutableStartListener.class);
     if (!isInstrumentationNeeded(listenersToUse)) {
       return false;
     }
-    Integer methodId = MethodRegistry.getInstance().registerMethodId(MethodInfo.from(classRegistryName, mn));
     InsnList il = new InsnList();
     Type[] methodArguments = Type.getArgumentTypes(mn.desc);
     boolean someRequiresArguments = false;

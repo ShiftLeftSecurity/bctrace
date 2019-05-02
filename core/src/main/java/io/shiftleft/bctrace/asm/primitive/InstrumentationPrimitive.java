@@ -25,6 +25,8 @@
 package io.shiftleft.bctrace.asm.primitive;
 
 import io.shiftleft.bctrace.Bctrace;
+import io.shiftleft.bctrace.MethodRegistry;
+import io.shiftleft.bctrace.MethodRegistryImpl;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
 import io.shiftleft.bctrace.hook.Hook;
 import java.util.ArrayList;
@@ -51,7 +53,7 @@ public abstract class InstrumentationPrimitive {
 
   protected Bctrace bctrace;
 
-  public abstract boolean addByteCodeInstructions(String classResgistryName, ClassNode cn, MethodNode mn,
+  public abstract boolean addByteCodeInstructions(int methodId, ClassNode cn, MethodNode mn,
       ArrayList<Integer> hooksToUse);
 
   public void setBctrace(Bctrace bctrace) {

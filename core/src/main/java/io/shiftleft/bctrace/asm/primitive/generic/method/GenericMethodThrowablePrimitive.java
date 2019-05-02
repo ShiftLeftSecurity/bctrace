@@ -25,8 +25,6 @@
 package io.shiftleft.bctrace.asm.primitive.generic.method;
 
 import io.shiftleft.bctrace.Bctrace;
-import io.shiftleft.bctrace.MethodInfo;
-import io.shiftleft.bctrace.MethodRegistry;
 import io.shiftleft.bctrace.asm.primitive.InstrumentationPrimitive;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
 import io.shiftleft.bctrace.logging.Level;
@@ -79,7 +77,7 @@ import org.objectweb.asm.tree.TryCatchBlockNode;
 public class GenericMethodThrowablePrimitive extends InstrumentationPrimitive {
 
   @Override
-  public boolean addByteCodeInstructions(String classRegistryName, ClassNode cn, MethodNode mn,
+  public boolean addByteCodeInstructions(int methodId, ClassNode cn, MethodNode mn,
       ArrayList<Integer> hooksToUse) {
 
     ArrayList<Integer> listenersToUse = getListenersOfType(hooksToUse,
@@ -89,11 +87,11 @@ public class GenericMethodThrowablePrimitive extends InstrumentationPrimitive {
       return false;
     }
 
-    addTryCatchInstructions(classRegistryName, cn, mn, listenersToUse);
+    addTryCatchInstructions(methodId, cn, mn, listenersToUse);
     return true;
   }
 
-  private boolean addTryCatchInstructions(String classRegistryName, ClassNode cn, MethodNode mn,
+  private boolean addTryCatchInstructions(int methodId, ClassNode cn, MethodNode mn,
       ArrayList<Integer> listenersToUse) {
 
     LabelNode startNode = getStartNodeForGlobalTryCatch(mn);
@@ -103,9 +101,6 @@ public class GenericMethodThrowablePrimitive extends InstrumentationPrimitive {
           "Could not add try/catch handler to constructor " + cn.name + "." + mn.name + mn.desc);
       return false;
     }
-
-    Integer methodId = MethodRegistry.getInstance()
-        .registerMethodId(MethodInfo.from(classRegistryName, mn));
 
     LabelNode endNode = new LabelNode();
     mn.instructions.add(endNode);
