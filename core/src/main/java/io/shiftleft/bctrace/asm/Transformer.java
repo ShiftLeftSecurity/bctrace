@@ -26,9 +26,8 @@ package io.shiftleft.bctrace.asm;
 
 import io.shiftleft.bctrace.Bctrace;
 import io.shiftleft.bctrace.InstrumentationImpl;
-import io.shiftleft.bctrace.MethodInfo;
 import io.shiftleft.bctrace.MethodRegistry;
-import io.shiftleft.bctrace.MethodRegistryImpl;
+import io.shiftleft.bctrace.MethodRegistry.MethodInfo;
 import io.shiftleft.bctrace.SystemProperty;
 import io.shiftleft.bctrace.asm.primitive.direct.callsite.CallSitePrimitive;
 import io.shiftleft.bctrace.asm.primitive.direct.method.DirectMethodReturnPrimitive;
@@ -42,8 +41,6 @@ import io.shiftleft.bctrace.asm.util.ASMUtils;
 import io.shiftleft.bctrace.hierarchy.UnloadedClass;
 import io.shiftleft.bctrace.hook.GenericMethodHook;
 import io.shiftleft.bctrace.hook.Hook;
-import io.shiftleft.bctrace.jmx.ClassMetrics;
-import io.shiftleft.bctrace.jmx.MethodMetrics;
 import io.shiftleft.bctrace.logging.Level;
 import io.shiftleft.bctrace.runtime.Callback;
 import io.shiftleft.bctrace.runtime.CallbackEnabler;
@@ -139,9 +136,6 @@ public class Transformer implements ClassFileTransformer {
     this.directMethodThrowablePrimitive.setBctrace(bctrace);
 
     this.callSitePrimitive.setBctrace(bctrace);
-
-    ClassMetrics.getInstance();
-
   }
 
   @Override
@@ -165,7 +159,6 @@ public class Transformer implements ClassFileTransformer {
       if (this.cbTransformer != null && !this.cbTransformer.isCompleted()) {
         return null;
       }
-      ClassMetrics.getInstance().addInstrumentableClass(className, loader);
       instrumentation.removeTransformedClass(className.replace('/', '.'), loader);
 
       if (classfileBuffer == null) {
@@ -312,8 +305,10 @@ public class Transformer implements ClassFileTransformer {
     boolean classTransformed = false;
     for (int m = 0; m < methods.size(); m++) {
       MethodNode mn = methods.get(m);
-      int methodId = METHOD_REGISTRY
-          .registerMethodId(MethodInfo.from(unloadedClass.getJVMName(), mn));
+      MethodInfo mi = MethodRegistryImpl.getInstance()
+          .newMethodInfo(unloadedClass.getClassloader(), unloadedClass.getJVMName(), mn.name,
+              mn.desc, mn.access);
+      int methodId = METHOD_REGISTRY.add(mi);
       ArrayList<Integer> hooksToUse = new ArrayList<Integer>(classMatchingHooks.size());
       for (int h = 0; h < classMatchingHooks.size(); h++) {
         Integer i = classMatchingHooks.get(h);
@@ -334,7 +329,6 @@ public class Transformer implements ClassFileTransformer {
         modifyMethod(methodId, cn, mn,
             getAdditionalHooks(classMatchingHooks));
         classTransformed = true;
-        MethodMetrics.getInstance().reportInstrumented(methodId);
       } else {
         METHOD_REGISTRY.remove(methodId);
       }

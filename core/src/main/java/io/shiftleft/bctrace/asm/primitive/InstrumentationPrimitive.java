@@ -25,8 +25,6 @@
 package io.shiftleft.bctrace.asm.primitive;
 
 import io.shiftleft.bctrace.Bctrace;
-import io.shiftleft.bctrace.MethodRegistry;
-import io.shiftleft.bctrace.MethodRegistryImpl;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
 import io.shiftleft.bctrace.hook.Hook;
 import java.util.ArrayList;

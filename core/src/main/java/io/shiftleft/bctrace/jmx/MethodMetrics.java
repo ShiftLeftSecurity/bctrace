@@ -25,22 +25,12 @@
 package io.shiftleft.bctrace.jmx;
 
 import io.shiftleft.bctrace.Bctrace;
-import io.shiftleft.bctrace.MethodInfo;
 import io.shiftleft.bctrace.MethodRegistry;
-import io.shiftleft.bctrace.jmx.ClassMetrics.ClassInfo;
-import io.shiftleft.bctrace.jmx.ClassMetrics.ClassInfoMBean;
+import io.shiftleft.bctrace.MethodRegistry.MethodInfo;
 import io.shiftleft.bctrace.logging.Level;
+import io.shiftleft.bctrace.util.collections.IntObjectHashMap;
+import io.shiftleft.bctrace.util.collections.IntObjectHashMap.EntryVisitor;
 import java.lang.management.ManagementFactory;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
@@ -63,8 +53,7 @@ public class MethodMetrics implements MethodMetricsMXBean {
     }
   }
 
-  private volatile Map<Integer, AtomicInteger> instrumentedMethodCallCounters;
-  private final Set<Integer> instrumentedMethodIds = new TreeSet<Integer>();
+  private volatile IntObjectHashMap<AtomicInteger> callCounters;
 
   private MethodMetrics() {
   }
@@ -73,15 +62,11 @@ public class MethodMetrics implements MethodMetricsMXBean {
     return INSTANCE;
   }
 
-  public synchronized void reportInstrumented(Integer methodId) {
-    instrumentedMethodIds.add(methodId);
-  }
-
   public Integer getCallCount(int methodId) {
-    if (instrumentedMethodCallCounters != null) {
+    if (callCounters != null) {
       synchronized (this) {
-        if (instrumentedMethodCallCounters != null) {
-          AtomicInteger counter = instrumentedMethodCallCounters.get(methodId);
+        if (callCounters != null) {
+          AtomicInteger counter = callCounters.get(methodId);
           if (counter == null) {
             return null;
           }
@@ -93,13 +78,13 @@ public class MethodMetrics implements MethodMetricsMXBean {
   }
 
   public void incrementCallCounter(int methodId) {
-    if (instrumentedMethodCallCounters != null) {
+    if (callCounters != null) {
       synchronized (this) {
-        if (instrumentedMethodCallCounters != null) {
-          AtomicInteger counter = instrumentedMethodCallCounters.get(methodId);
+        if (callCounters != null) {
+          AtomicInteger counter = callCounters.get(methodId);
           if (counter == null) {
             counter = new AtomicInteger();
-            instrumentedMethodCallCounters.put(methodId, counter);
+            callCounters.put(methodId, counter);
           }
           counter.incrementAndGet();
         }
@@ -109,15 +94,15 @@ public class MethodMetrics implements MethodMetricsMXBean {
 
   @Override
   public boolean isInstrumentedMethodCountersEnabled() {
-    return instrumentedMethodCallCounters != null;
+    return callCounters != null;
   }
 
   @Override
   public synchronized void setInstrumentedMethodCountersEnabled(boolean enabled) {
     if (enabled == false) {
-      instrumentedMethodCallCounters = null;
-    } else if (instrumentedMethodCallCounters == null) {
-      instrumentedMethodCallCounters = new HashMap<Integer, AtomicInteger>();
+      callCounters = null;
+    } else if (callCounters == null) {
+      callCounters = new IntObjectHashMap<AtomicInteger>();
     }
   }
 
@@ -129,7 +114,7 @@ public class MethodMetrics implements MethodMetricsMXBean {
     sb.append("\n");
     for (int i = 0; i < mr.size(); i++) {
       MethodInfo mi = mr.getMethod(i);
-      sb.append(i).append("\t").append(mi.getBinaryClassName()).append("\t")
+      sb.append(i).append("\t").append(mi.getJvmClassName()).append("\t")
           .append(mi.getMethodName()).append(mi.getMethodDescriptor());
       sb.append("\n");
     }
@@ -138,35 +123,26 @@ public class MethodMetrics implements MethodMetricsMXBean {
 
   @Override
   public synchronized String viewInstrumentedMethodsCallCounters() {
-    if (instrumentedMethodCallCounters == null) {
+    if (callCounters == null) {
       throw new IllegalStateException(
           "Call counters are disabled. Run setInstrumentedMethodCountersEnabled(true) to enable them");
     }
-    StringBuilder sb = new StringBuilder();
+    final StringBuilder sb = new StringBuilder();
     sb.append("# id").append("\t").append("class").append("\t").append("method").append("\t")
         .append("calls");
     sb.append("\n");
-    for (Entry<Integer, AtomicInteger> entry : instrumentedMethodCallCounters.entrySet()) {
-      MethodInfo mi = MethodRegistry.getInstance().getMethod(entry.getKey());
-      sb.append(entry.getKey()).append("\t").append(mi.getBinaryClassName()).append("\t")
-          .append(mi.getMethodName()).append(mi.getMethodDescriptor()).append("\t")
-          .append(entry.getValue().get());
-      sb.append("\n");
-    }
-    return sb.toString();
-  }
-
-  @Override
-  public String viewInstrumentedMethods() {
-    StringBuilder sb = new StringBuilder();
-    sb.append("# id").append("\t").append("class").append("\t").append("method").append("\t");
-    sb.append("\n");
-    for (Integer methodId : instrumentedMethodIds) {
-      MethodInfo mi = MethodRegistry.getInstance().getMethod(methodId);
-      sb.append(methodId).append("\t").append(mi.getBinaryClassName()).append("\t")
-          .append(mi.getMethodName()).append(mi.getMethodDescriptor());
-      sb.append("\n");
-    }
+    final MethodRegistry methodRegistry = MethodRegistry.getInstance();
+    callCounters.visitEntries(new EntryVisitor<AtomicInteger>() {
+      @Override
+      public boolean remove(int key, AtomicInteger value) {
+        MethodInfo mi = MethodRegistry.getInstance().getMethod(key);
+        sb.append(key).append("\t").append(mi.getJvmClassName()).append("\t")
+            .append(mi.getMethodName()).append(mi.getMethodDescriptor()).append("\t")
+            .append(value.get());
+        sb.append("\n");
+        return false;
+      }
+    });
     return sb.toString();
   }
 }

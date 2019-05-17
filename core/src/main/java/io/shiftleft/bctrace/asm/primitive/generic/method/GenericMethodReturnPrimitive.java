@@ -24,7 +24,6 @@
  */
 package io.shiftleft.bctrace.asm.primitive.generic.method;
 
-import io.shiftleft.bctrace.MethodInfo;
 import io.shiftleft.bctrace.asm.primitive.InstrumentationPrimitive;
 import io.shiftleft.bctrace.asm.util.ASMUtils;
 import io.shiftleft.bctrace.runtime.listener.generic.GenericMethodReturnListener;

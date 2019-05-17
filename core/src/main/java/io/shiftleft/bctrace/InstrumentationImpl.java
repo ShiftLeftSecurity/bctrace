@@ -25,7 +25,6 @@
 package io.shiftleft.bctrace;
 
 import io.shiftleft.bctrace.asm.TransformationSupport;
-import io.shiftleft.bctrace.jmx.ClassMetrics;
 import java.lang.instrument.UnmodifiableClassException;
 import java.lang.ref.WeakReference;
 import java.security.AccessController;
@@ -82,7 +81,6 @@ public final class InstrumentationImpl implements Instrumentation {
         if (!isModifiableClass(clazz)) {
           throw new UnmodifiableClassException(clazz.getName());
         }
-        ClassMetrics.getInstance().addRequestedToInstrument(clazz);
       }
       javaInstrumentation.retransformClasses(classes);
     }

@@ -24,27 +24,48 @@
  */
 package io.shiftleft.bctrace;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
+import io.shiftleft.bctrace.asm.MethodRegistryImpl;
 
 /**
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
 public abstract class MethodRegistry {
 
-  private static final MethodRegistry INSTANCE = new MethodRegistryImpl();
-
   public static MethodRegistry getInstance() {
-    return INSTANCE;
+    return MethodRegistryImpl.getInstance();
   }
 
-  MethodRegistry() {
+  protected MethodRegistry() {
   }
 
   public abstract MethodInfo getMethod(int methodId);
 
-  public abstract int getMethodId(MethodInfo mi);
-
   public abstract int size();
+
+  public static interface MethodInfo {
+
+    public String getJvmClassName();
+
+    public String getMethodName();
+
+    public String getMethodDescriptor();
+
+    public int getModifiers();
+
+    public String getPackageName();
+
+    public boolean isAbstract();
+
+    public boolean isNative();
+
+    public boolean isStatic();
+
+    public boolean isPublic();
+
+    public boolean isProtected();
+
+    public boolean isDefault();
+
+    public boolean isPrivate();
+  }
 }
