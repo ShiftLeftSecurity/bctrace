@@ -313,7 +313,7 @@ public class Transformer implements ClassFileTransformer {
       for (int h = 0; h < classMatchingHooks.size(); h++) {
         Integer i = classMatchingHooks.get(h);
         if (hooks[i] != null && hooks[i].getFilter() != null && hooks[i].getFilter()
-            .acceptMethod(unloadedClass, mn)) {
+            .acceptMethod(unloadedClass, mn, methodId)) {
           hooksToUse.add(i);
         }
       }

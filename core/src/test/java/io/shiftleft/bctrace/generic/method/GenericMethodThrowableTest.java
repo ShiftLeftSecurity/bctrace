@@ -56,7 +56,7 @@ public class GenericMethodThrowableTest extends BcTraceTest {
         new GenericMethodHook(
             new AllFilter() {
               @Override
-              public boolean acceptMethod(UnloadedClass clazz, MethodNode mn) {
+              public boolean acceptMethod(UnloadedClass clazz, MethodNode mn, int methodId) {
                 return mn.name.equals("getLongWithConditionalException");
               }
             },
@@ -94,7 +94,7 @@ public class GenericMethodThrowableTest extends BcTraceTest {
         new GenericMethodHook(
             new AllFilter() {
               @Override
-              public boolean acceptMethod(UnloadedClass clazz, MethodNode mn) {
+              public boolean acceptMethod(UnloadedClass clazz, MethodNode mn, int methodId) {
                 return mn.name.equals("<init>");
               }
             },
@@ -129,7 +129,7 @@ public class GenericMethodThrowableTest extends BcTraceTest {
         new GenericMethodHook(
             new AllFilter() {
               @Override
-              public boolean acceptMethod(UnloadedClass clazz, MethodNode mn) {
+              public boolean acceptMethod(UnloadedClass clazz, MethodNode mn, int methodId) {
                 return mn.name.equals("<init>");
               }
             },
@@ -165,7 +165,7 @@ public class GenericMethodThrowableTest extends BcTraceTest {
         new GenericMethodHook(
             new AllFilter() {
               @Override
-              public boolean acceptMethod(UnloadedClass clazz, MethodNode mn) {
+              public boolean acceptMethod(UnloadedClass clazz, MethodNode mn, int methodId) {
                 return mn.name.equals("<init>");
               }
             },
@@ -198,7 +198,7 @@ public class GenericMethodThrowableTest extends BcTraceTest {
         new GenericMethodHook(
             new AllFilter() {
               @Override
-              public boolean acceptMethod(UnloadedClass clazz, MethodNode mn) {
+              public boolean acceptMethod(UnloadedClass clazz, MethodNode mn, int methodId) {
                 return mn.name.equals("<init>");
               }
             },

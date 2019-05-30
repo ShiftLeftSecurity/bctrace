@@ -24,19 +24,17 @@
  */
 package io.shiftleft.bctrace.filter;
 
-import io.shiftleft.bctrace.hierarchy.BctraceClass;
 import io.shiftleft.bctrace.hierarchy.UnloadedClass;
 import java.security.ProtectionDomain;
-import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 
 /**
  * A filter determines which class methods are instrumented. <br><br> If the class is transformable,
  * the framework performs an initial query to the {@link #acceptClass(String, ProtectionDomain,
- * ClassLoader) acceptClass} method. If this return <code>true</code> the class bytecode is
- * parsed and the filter {@link #acceptClass(BctraceClass, ProtectionDomain, ClassLoader)
- * acceptMethod} is called. It this other returns true the filter {@link
- * #acceptMethod(UnloadedClass, MethodNode) acceptMethod} method will be invoked once per non
+ * ClassLoader) acceptClass} method. If this return <code>true</code> then the class bytecode is
+ * parsed and the filter {@link #acceptClass(UnloadedClass, ProtectionDomain, ClassLoader)
+ * acceptMethod} is called. If this other returns true the filter {@link
+ * #acceptMethod(UnloadedClass, MethodNode, int) acceptMethod} method will be invoked once per non
  * abstract nor native method in the class. Invocations returning <code>true</code> lead to a hook
  * insertions into the bytecode of the method.
  *
@@ -46,8 +44,14 @@ public abstract class MethodFilter extends ClassFilter {
 
   /**
    * Returns a boolean that determines whether to instrument the specified method
+   *
+   * @param clazz Class being instrumented
+   * @param mn Method bytecode
+   * @param methodId Id that this method will be assigned to, in case of instrumentation being
+   * performed. If not (all filters returning false for this class/method) this id will be reused in
+   * future filter queries
    */
-  public abstract boolean acceptMethod(UnloadedClass clazz, MethodNode mn);
+  public abstract boolean acceptMethod(UnloadedClass clazz, MethodNode mn, int methodId);
 
   /**
    * A filter that accepts all classes and methods.
@@ -69,7 +73,7 @@ public abstract class MethodFilter extends ClassFilter {
     }
 
     @Override
-    public boolean acceptMethod(UnloadedClass clazz, MethodNode mn) {
+    public boolean acceptMethod(UnloadedClass clazz, MethodNode mn, int methodId) {
       return true;
     }
   }
@@ -133,7 +137,7 @@ public abstract class MethodFilter extends ClassFilter {
     }
 
     @Override
-    public boolean acceptMethod(UnloadedClass clazz, MethodNode mn) {
+    public boolean acceptMethod(UnloadedClass clazz, MethodNode mn, int methodId) {
       return this.methodName.equals(mn.name) && this.methodDescriptor.equals(mn.desc);
     }
   }

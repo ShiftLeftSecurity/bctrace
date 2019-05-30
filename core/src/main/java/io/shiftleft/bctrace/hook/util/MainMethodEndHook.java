@@ -23,7 +23,7 @@ public abstract class MainMethodEndHook extends
       }
 
       @Override
-      public boolean acceptMethod(UnloadedClass clazz, MethodNode mn) {
+      public boolean acceptMethod(UnloadedClass clazz, MethodNode mn, int methodId) {
         return ASMUtils.isStatic(mn.access) && ASMUtils.isPublic(mn.access) && mn.name.equals("util")
             && mn.desc.equals("([Ljava/lang/String;)V");
       }

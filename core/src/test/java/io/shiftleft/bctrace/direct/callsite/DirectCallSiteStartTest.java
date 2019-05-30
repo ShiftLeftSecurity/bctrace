@@ -60,7 +60,7 @@ public class DirectCallSiteStartTest extends BcTraceTest {
         "arraycopy",
         "(Ljava/lang/Object;ILjava/lang/Object;II)V") {
       @Override
-      public boolean acceptMethod(UnloadedClass clazz, MethodNode mn) {
+      public boolean acceptMethod(UnloadedClass clazz, MethodNode mn, int methodId) {
         return true;
       }
     };
@@ -82,7 +82,7 @@ public class DirectCallSiteStartTest extends BcTraceTest {
         "getUpperCase",
         "(Ljava/lang/String;)Ljava/lang/String;") {
       @Override
-      public boolean acceptMethod(UnloadedClass clazz, MethodNode mn) {
+      public boolean acceptMethod(UnloadedClass clazz, MethodNode mn, int methodId) {
         return true;
       }
     };
@@ -105,7 +105,7 @@ public class DirectCallSiteStartTest extends BcTraceTest {
         "getUpperCase",
         "(Ljava/lang/String;)Ljava/lang/String;") {
       @Override
-      public boolean acceptMethod(UnloadedClass clazz, MethodNode mn) {
+      public boolean acceptMethod(UnloadedClass clazz, MethodNode mn, int methodId) {
         return true;
       }
     };
@@ -159,7 +159,7 @@ public class DirectCallSiteStartTest extends BcTraceTest {
         "(Ljava/lang/String;)Ljava/lang/String;",
         new int[]{156}) {
       @Override
-      public boolean acceptMethod(UnloadedClass clazz, MethodNode mn) {
+      public boolean acceptMethod(UnloadedClass clazz, MethodNode mn, int methodId) {
         return true;
       }
     };
@@ -208,7 +208,7 @@ public class DirectCallSiteStartTest extends BcTraceTest {
         "(Ljava/lang/String;)Ljava/lang/String;",
         new int[]{154, 158}) {
       @Override
-      public boolean acceptMethod(UnloadedClass clazz, MethodNode mn) {
+      public boolean acceptMethod(UnloadedClass clazz, MethodNode mn, int methodId) {
         return true;
       }
     };

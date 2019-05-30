@@ -57,7 +57,7 @@ public class DirectCallSiteReturnTest extends BcTraceTest {
     CallSiteFilter arrayCopyCallSiteFilter = new CallSiteFilter("java/lang/System", "arraycopy",
         "(Ljava/lang/Object;ILjava/lang/Object;II)V") {
       @Override
-      public boolean acceptMethod(UnloadedClass clazz, MethodNode mn) {
+      public boolean acceptMethod(UnloadedClass clazz, MethodNode mn, int methodId) {
         return true;
       }
     };
@@ -108,7 +108,7 @@ public class DirectCallSiteReturnTest extends BcTraceTest {
                 "bar",
                 "(Ljava/lang/String;)I") {
               @Override
-              public boolean acceptMethod(UnloadedClass clazz, MethodNode mn) {
+              public boolean acceptMethod(UnloadedClass clazz, MethodNode mn, int methodId) {
                 return true;
               }
             },
@@ -131,7 +131,7 @@ public class DirectCallSiteReturnTest extends BcTraceTest {
                 "bar",
                 "(Ljava/lang/String;)I") {
               @Override
-              public boolean acceptMethod(UnloadedClass clazz, MethodNode mn) {
+              public boolean acceptMethod(UnloadedClass clazz, MethodNode mn, int methodId) {
                 return true;
               }
             },
@@ -154,7 +154,7 @@ public class DirectCallSiteReturnTest extends BcTraceTest {
                 "bar",
                 "(Ljava/lang/String;)I") {
               @Override
-              public boolean acceptMethod(UnloadedClass clazz, MethodNode mn) {
+              public boolean acceptMethod(UnloadedClass clazz, MethodNode mn, int methodId) {
                 return true;
               }
             },

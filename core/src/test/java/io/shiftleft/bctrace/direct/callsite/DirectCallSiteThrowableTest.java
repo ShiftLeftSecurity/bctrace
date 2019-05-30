@@ -59,7 +59,7 @@ public class DirectCallSiteThrowableTest extends BcTraceTest {
                 "throwRuntimeException",
                 "()V") {
               @Override
-              public boolean acceptMethod(UnloadedClass clazz, MethodNode mn) {
+              public boolean acceptMethod(UnloadedClass clazz, MethodNode mn, int methodId) {
                 return true;
               }
             },
@@ -102,7 +102,7 @@ public class DirectCallSiteThrowableTest extends BcTraceTest {
                 "throwRuntimeException",
                 "()V") {
               @Override
-              public boolean acceptMethod(UnloadedClass clazz, MethodNode mn) {
+              public boolean acceptMethod(UnloadedClass clazz, MethodNode mn, int methodId) {
                 return true;
               }
             },
@@ -146,7 +146,7 @@ public class DirectCallSiteThrowableTest extends BcTraceTest {
                 "throwRuntimeException",
                 "()V") {
               @Override
-              public boolean acceptMethod(UnloadedClass clazz, MethodNode mn) {
+              public boolean acceptMethod(UnloadedClass clazz, MethodNode mn, int methodId) {
                 return true;
               }
             },
@@ -176,7 +176,7 @@ public class DirectCallSiteThrowableTest extends BcTraceTest {
                 "throwRuntimeException",
                 "()V") {
               @Override
-              public boolean acceptMethod(UnloadedClass clazz, MethodNode mn) {
+              public boolean acceptMethod(UnloadedClass clazz, MethodNode mn, int methodId) {
                 return true;
               }
             },
