@@ -24,6 +24,7 @@
  */
 package io.shiftleft.bctrace.runtime.listener.direct;
 
+import io.shiftleft.bctrace.runtime.listener.Listener;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -42,10 +43,12 @@ import java.util.Arrays;
  * Suppose the instrumented method defined by the filter being foo(Integer arg1, String arg2), then
  * a valid direct listener method for receiving start events would be:
  *
+ * {@code @ListenerMethod public void onStart(Class clazz, Object instance, Integer arg1, String
+ * arg2)}
+ *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
- * @ListenerMethod public void onStart(Class clazz, Object instance, Integer arg1, String arg2)
  */
-public abstract class DirectListener {
+public abstract class DirectListener implements Listener {
 
   private final Method listenerMethod;
 
@@ -104,53 +107,6 @@ public abstract class DirectListener {
     return clazz.getClassLoader() == null;
   }
 
-
-
-
-//  public static enum DynamicArgsType {
-//    ARGUMENTS_RETURN,
-//    ARGUMENTS_THROWABLE,
-//    ARGUMENTS
-//  }
-
-//  /**
-//   * Defines the valid names for the listener method, and its fixed first arguments
-//   */
-//  public static enum ListenerType {
-//
-//    // Instrumented class, instrumented instance
-//    onStart(DynamicArgsType.ARGUMENTS, Class.class, Object.class),
-//    // Instrumented class, instrumented instance
-//    onReturn(DynamicArgsType.ARGUMENTS_RETURN, Class.class, Object.class),
-//    // Instrumented class, instrumented instance, throwable raised
-//    onThrowable(DynamicArgsType.ARGUMENTS_THROWABLE, Class.class, Object.class,
-//        Throwable.class),
-//    // Instrumented (caller) class, instrumented instance, callee instance
-//    onBeforeCall(DynamicArgsType.ARGUMENTS, Class.class, Object.class, Object.class),
-//    // Instrumented (caller) class, instrumented instance, callee instance
-//    onAfterCall(DynamicArgsType.ARGUMENTS_RETURN, Class.class, Object.class, Object.class),
-//    // Instrumented (caller) class, instrumented instance, callee instance,  throwable raised
-//    onAfterCallThrowable(DynamicArgsType.ARGUMENTS_THROWABLE, Class.class, Object.class,
-//        Object.class,
-//        Throwable.class);
-//
-//
-//    private Class[] fixedArgs;
-//    private DynamicArgsType dynamicArgsType;
-//
-//    ListenerType(DynamicArgsType dynamicArgsType, Class... fixedArgs) {
-//      this.fixedArgs = fixedArgs;
-//      this.dynamicArgsType = dynamicArgsType;
-//    }
-//
-//    public Class[] getFixedArgs() {
-//      return fixedArgs;
-//    }
-//
-//    public DynamicArgsType getDynamicArgsType() {
-//      return dynamicArgsType;
-//    }
-//  }
 
   @Retention(RetentionPolicy.RUNTIME)
   @Target(ElementType.METHOD)

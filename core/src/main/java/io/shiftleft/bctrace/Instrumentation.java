@@ -59,9 +59,7 @@ public interface Instrumentation {
   void retransformClasses(Class<?>... classes) throws UnmodifiableClassException;
 
   /**
-   *
-   * @param className
-   * @return
+   * Whether or not a class with this name is currently loaded by a class loader.
    */
   public boolean isLoadedByAnyClassLoader(String className);
 
@@ -72,23 +70,17 @@ public interface Instrumentation {
   public Class getClassIfLoadedByClassLoader(String className, ClassLoader cl);
 
   /**
-   *
-   * @param className
-   * @param cl
-   * @return
+   * Whether or not a class with this name is loaded by this class loader.
    */
   public boolean isLoadedBy(String className, ClassLoader cl);
 
   /**
-   *
-   * @param className
-   * @return
+   * Returns the class loaders that have loaded a class with that name
    */
   public List<ClassLoader> getClassLoadersLoading(String className);
 
   /**
-   *
-   * @return
+   * Returns all loaded classes
    */
   public Class[] getAllLoadedClasses();
 }

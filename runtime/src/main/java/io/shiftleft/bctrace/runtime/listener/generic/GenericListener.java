@@ -1,9 +1,8 @@
 package io.shiftleft.bctrace.runtime.listener.generic;
 
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Method;
+import io.shiftleft.bctrace.runtime.listener.Listener;
 
-public abstract class GenericListener {
+public abstract class GenericListener implements Listener {
 
 
   GenericListener() {

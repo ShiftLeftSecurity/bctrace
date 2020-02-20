@@ -10,10 +10,10 @@ package io.shiftleft.bctrace.runtime.listener.direct;
  * Extending classes must define a <code>@ListenerMethod</code> as follows:
  * <br>
  * <ul>
- * <li> Return type: ${call_site_return_type}, return type of the called method.
+ * <li> Return type: ${target_method_return_type}, return type of the called method.
  * <li> Return value: the value to be effectively used in the execution</li>
  * <li> Arguments:  <code>(Class callerClass, Object instance, ${target_method_arguments},
- * ${target_return_type} originalReturnedValue)</code></li>
+ * ${target_method_return_type} originalReturnedValue)</code></li>
  * </ul>
  * <br>
  * If an exception is raised by the listener method, the bctrace runtime will log that exception and

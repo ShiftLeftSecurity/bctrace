@@ -25,6 +25,7 @@
 package io.shiftleft.bctrace.hook;
 
 import io.shiftleft.bctrace.filter.MethodFilter;
+import io.shiftleft.bctrace.runtime.listener.Listener;
 
 /**
  * An <b>instrumentation hook</b> determines what methods to instrument and what actions to perform
@@ -32,7 +33,7 @@ import io.shiftleft.bctrace.filter.MethodFilter;
  *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
-public abstract class Hook<F extends MethodFilter, L> {
+public abstract class Hook<F extends MethodFilter, L extends Listener> {
 
   private F filter;
   private L listener;

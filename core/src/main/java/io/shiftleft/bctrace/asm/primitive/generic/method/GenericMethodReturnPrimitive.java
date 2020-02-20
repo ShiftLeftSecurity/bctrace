@@ -46,16 +46,15 @@ import org.objectweb.asm.tree.TypeInsnNode;
  * registered.
  *
  * This primitive turns the method node instructions of a method like this:
- * <br><pre>{@code
+ * <br><pre>
  * public Object foo(Object arg){
  *   return void(arg);
  * }
- * }
  * </pre>
  * Into that:
- * <br><pre>{@code
+ * <br><pre>
  * public Object foo(Object arg){
- *   try{
+ *   try {
  *     Object ret = void(arg);
  *     // Notify listeners that apply to this method
  *     ret = Callback.onFinish(ret, ret, null, clazz, this, 0, arg);
