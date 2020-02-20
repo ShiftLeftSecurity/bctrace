@@ -163,6 +163,8 @@ This module could not be possible without:
 ## License
 Based on [brutusin:instrumentation](https://github.com/brutusin/instrumentation) by Ignacio del Valle Alles distributed under [Apache v2.0](http://www.apache.org/licenses/LICENSE-2.0) license.
 
-ShiftLeft license to TBD (Hopefully OSS is a future)
-
-
+## Creating a release
+```bash
+mvn versions:set -DnewVersion=0.0.1
+mvn versions:commit
+```
