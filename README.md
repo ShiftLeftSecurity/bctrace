@@ -165,6 +165,10 @@ Based on [brutusin:instrumentation](https://github.com/brutusin/instrumentation)
 
 ## Creating a release
 ```bash
-mvn versions:set -DnewVersion=0.0.1
+VERSION="0.0.1"
+mvn versions:set -DnewVersion=$VERSION
 mvn versions:commit
+git add pom.xml */pom.xml
+git commit -m "updating version to $VERSION"
+git tag v$VERSION
 ```

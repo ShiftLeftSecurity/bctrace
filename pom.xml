@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.michaelpollmeier</groupId>
   <artifactId>bctrace</artifactId>
-  <version>0.0.0-SNAPSHOT</version>
+  <version>0.0.1</version>
   <packaging>pom</packaging>
   <name>${project.groupId}:${project.artifactId}</name>
   <description>Extensible java agent framework to instrument programs running on the JVM </description>
