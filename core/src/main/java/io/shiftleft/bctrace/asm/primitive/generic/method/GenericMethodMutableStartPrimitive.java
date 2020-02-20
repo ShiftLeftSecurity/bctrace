@@ -41,7 +41,8 @@ import org.objectweb.asm.tree.TypeInsnNode;
 
 /**
  * Inserts the bytecode instructions within method node, needed to handle the different start
- * listeners registered.
+ * listeners registered. It is called "mutable" because the listeners are allowed to change (mutate)
+ * the value of the arguments.
  *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
  */
@@ -71,6 +72,10 @@ public class GenericMethodMutableStartPrimitive extends InstrumentationPrimitive
    *   args = Callback.onStart(args, 1550, clazz, this, 0);
    *   args = Callback.onStart(args, 1550, clazz, this, 2);
    *   args = Callback.onStart(args, 1550, clazz, this, 10);
+   *   arg1 = args[0];
+   *   arg2 = args[1];
+   *   ...
+   *   argn = args[n-1];
    *   return void(arg1, arg2, ..., argn);
    * }
    * }
@@ -83,7 +88,8 @@ public class GenericMethodMutableStartPrimitive extends InstrumentationPrimitive
     if (!isInstrumentationNeeded(listenersToUse)) {
       return false;
     }
-    Integer methodId = MethodRegistry.getInstance().registerMethodId(MethodInfo.from(classRegistryName, mn));
+    Integer methodId = MethodRegistry.getInstance()
+        .registerMethodId(MethodInfo.from(classRegistryName, mn));
     InsnList il = new InsnList();
     Type[] methodArguments = Type.getArgumentTypes(mn.desc);
     boolean someRequiresArguments = false;
