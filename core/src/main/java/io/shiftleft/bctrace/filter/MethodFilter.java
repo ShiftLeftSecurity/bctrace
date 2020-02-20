@@ -34,7 +34,7 @@ import org.objectweb.asm.tree.MethodNode;
  * A filter determines which class methods are instrumented. <br><br> If the class is transformable,
  * the framework performs an initial query to the {@link #acceptClass(String, ProtectionDomain,
  * ClassLoader) acceptClass} method. If this return <code>true</code> the class bytecode is
- * parsed and the filter {@link #acceptClass(BctraceClass, ProtectionDomain, ClassLoader)
+ * parsed and the filter {@link #acceptClass(UnloadedClass, ProtectionDomain, ClassLoader)
  * acceptMethod} is called. It this other returns true the filter {@link
  * #acceptMethod(UnloadedClass, MethodNode) acceptMethod} method will be invoked once per non
  * abstract nor native method in the class. Invocations returning <code>true</code> lead to a hook

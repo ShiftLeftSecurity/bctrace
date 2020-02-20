@@ -43,8 +43,10 @@ import java.util.Arrays;
  * Suppose the instrumented method defined by the filter being foo(Integer arg1, String arg2), then
  * a valid direct listener method for receiving start events would be:
  *
+ * {@code @ListenerMethod public void onStart(Class clazz, Object instance, Integer arg1, String
+ * arg2)}
+ *
  * @author Ignacio del Valle Alles idelvall@shiftleft.io
- * @ListenerMethod public void onStart(Class clazz, Object instance, Integer arg1, String arg2)
  */
 public abstract class DirectListener implements Listener {
 

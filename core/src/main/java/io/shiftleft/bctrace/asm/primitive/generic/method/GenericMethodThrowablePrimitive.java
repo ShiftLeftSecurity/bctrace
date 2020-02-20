@@ -48,14 +48,13 @@ import org.objectweb.asm.tree.TryCatchBlockNode;
  * registered.
  *
  * This primitive turns the method node instructions of a method like this:
- * <br><pre>{@code
+ * <br><pre>
  * public Object foo(Object arg){
  *   return void(arg);
  * }
- * }
  * </pre>
  * Into that:
- * <br><pre>{@code
+ * <br><pre>
  * public Object foo(Object arg){
  *   try{
  *     Object ret = void(arg);
