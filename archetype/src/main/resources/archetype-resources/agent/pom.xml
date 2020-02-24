@@ -23,12 +23,12 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>com.michaelpollmeier</groupId>
+      <groupId>io.shiftleft</groupId>
       <artifactId>bctrace-bootstrap</artifactId>
       <version>${bctrace-version}</version>
     </dependency>
     <dependency>
-      <groupId>com.michaelpollmeier</groupId>
+      <groupId>io.shiftleft</groupId>
       <artifactId>bctrace-core</artifactId>
       <version>${bctrace-version}</version>
     </dependency>
