@@ -171,4 +171,6 @@ mvn versions:commit
 git add pom.xml */pom.xml
 git commit -m "updating version to $VERSION"
 git tag v$VERSION
+mvn clean test javadoc:jar deploy
+git push origin $VERSION
 ```
