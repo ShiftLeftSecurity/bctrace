@@ -163,6 +163,14 @@ This module could not be possible without:
 ## License
 Based on [brutusin:instrumentation](https://github.com/brutusin/instrumentation) by Ignacio del Valle Alles distributed under [Apache v2.0](http://www.apache.org/licenses/LICENSE-2.0) license.
 
-ShiftLeft license to TBD (Hopefully OSS is a future)
-
-
+## Creating a release
+```bash
+VERSION="0.0.1"
+mvn versions:set -DnewVersion=$VERSION
+mvn versions:commit
+git add pom.xml */pom.xml
+git commit -m "updating version to $VERSION"
+git tag v$VERSION
+mvn clean test javadoc:jar deploy
+git push origin $VERSION
+```

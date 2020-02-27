@@ -3,11 +3,16 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>io.shiftleft</groupId>
   <artifactId>bctrace</artifactId>
-  <version>0.0.0-SNAPSHOT</version>
+  <version>0.0.2</version>
   <packaging>pom</packaging>
   <name>${project.groupId}:${project.artifactId}</name>
-  <description>Extensible java agent framework to instrument programs running on the JVM
-  </description>
+  <description>Extensible java agent framework to instrument programs running on the JVM </description>
+  <licenses>
+    <license>
+      <name>Apache 2</name>
+      <url>http://www.opensource.org/licenses/Apache-2.0</url>
+    </license>
+  </licenses>
   <developers>
     <developer>
       <id>idelvall</id>
@@ -30,14 +35,12 @@
   </properties>
   <distributionManagement>
     <repository>
-      <id>shiftleft-artifactory</id>
-      <name>shiftleft releases</name>
-      <url>https://shiftleft.jfrog.io/shiftleft/libs-release-local</url>
+      <id>ossrh</id>
+      <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
     </repository>
     <snapshotRepository>
-      <id>shiftleft-artifactory</id>
-      <name>shiftleft releases</name>
-      <url>https://shiftleft.jfrog.io/shiftleft/libs-snapshot-local</url>
+      <id>ossrh</id>
+      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
     </snapshotRepository>
   </distributionManagement>
   <scm>
@@ -137,6 +140,31 @@
             <id>attach-sources</id>
             <goals>
               <goal>jar-no-fork</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.sonatype.plugins</groupId>
+        <artifactId>nexus-staging-maven-plugin</artifactId>
+        <version>1.6.7</version>
+        <extensions>true</extensions>
+        <configuration>
+          <serverId>ossrh</serverId>
+          <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+          <autoReleaseAfterClose>true</autoReleaseAfterClose>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-gpg-plugin</artifactId>
+        <version>1.5</version>
+        <executions>
+          <execution>
+            <id>sign-artifacts</id>
+            <phase>verify</phase>
+            <goals>
+              <goal>sign</goal>
             </goals>
           </execution>
         </executions>
