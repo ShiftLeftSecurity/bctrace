@@ -1,3 +1,5 @@
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/io.shiftleft/bctrace-core/badge.svg)](https://search.maven.org/search?q=bctrace-core)
+
 # io.shiftleft:bctrace
 
 An extensible framework for creating production-ready **java agents**.
@@ -172,5 +174,5 @@ git add pom.xml */pom.xml
 git commit -m "updating version to $VERSION"
 git tag v$VERSION
 mvn clean test javadoc:jar deploy
-git push origin $VERSION
+git push origin v$VERSION
 ```
