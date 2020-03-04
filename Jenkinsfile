@@ -39,7 +39,7 @@ node {
         }
         stage('runBuild') {
             withEnv(["JAVA_HOME=${tool 'JDK8u121'}", "PATH+MAVEN=${tool 'Maven-3.3.9'}/bin:${env.JAVA_HOME}/bin"]) {
-                sh "mvn clean test"
+                sh "mvn clean test package"
             }
         }
         stage('archiveBuild') {
